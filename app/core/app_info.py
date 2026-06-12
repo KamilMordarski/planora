@@ -1,6 +1,6 @@
 APP_NAME = "Planora"
-APP_TAGLINE = "Kreator przejrzystych grafików"
-APP_VERSION = "1.5.0"
+APP_TAGLINE = "Rób plany w prosty sposób!"
+APP_VERSION = "1.5.1"
 APP_AUTHOR = "Kamil Mordarski"
 LAST_UPDATE = "2026-06-13"
 APP_DISCLAIMER = (
