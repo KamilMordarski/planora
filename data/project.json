@@ -1,0 +1,51 @@
+{
+  "template_id": "public_talk_watchtower",
+  "title": "WYKŁAD PUBLICZNY I STUDIUM STRAŻNICY",
+  "weeks": [
+    {
+      "date": "14 CZERWCA",
+      "type": "normal",
+      "chairman": "Łukasz Kapusta",
+      "lecture_topic": "Wyświadczajmy dobro wszystkim.",
+      "lecturer": "Sebastian Skiba",
+      "watchtower_topic": "„Bóg prawdy” zawsze realizuje swoje zamierzenie.",
+      "watchtower_conductor": "Denis Kurdyk",
+      "reader": "Paweł Ugolik"
+    },
+    {
+      "date": "21 CZERWCA",
+      "type": "normal",
+      "chairman": "Paweł Sawaryn",
+      "lecture_topic": "Czy pokładasz ufność w Jehowie?",
+      "lecturer": "Richie Fisayo",
+      "watchtower_topic": "Patrz na trudności we właściwy sposób.",
+      "watchtower_conductor": "Sławomir Mordarski",
+      "reader": "Adrian Pokojowczyk jr."
+    },
+    {
+      "date": "28 CZERWCA",
+      "type": "normal",
+      "chairman": "Łukasz Kapusta",
+      "lecture_topic": "Któremu przywódcy możesz zaufać?",
+      "lecturer": "Jerzy Godzisz",
+      "watchtower_topic": "Ucz się od „Boga wszelkiego pocieszenia”.",
+      "watchtower_conductor": "Sławomir Mordarski",
+      "reader": "Paweł Poczęsny"
+    },
+    {
+      "date": "5 LIPCA",
+      "type": "special",
+      "special_text": "Szczęście bez końca\nKongres Świadków Jehowy w roku 2026."
+    },
+    {
+      "date": "12 LIPCA",
+      "type": "normal",
+      "chairman": "Andrzej Szmit",
+      "lecture_topic": "Czy znalazłeś niezwykle cenną perłę?",
+      "lecturer": "Mirosław Różycki",
+      "watchtower_topic": "Zasady biblijne-dlaczego są ważne.",
+      "watchtower_conductor": "Sławomir Mordarski",
+      "reader": "Dominik Janus"
+    }
+  ]
+}

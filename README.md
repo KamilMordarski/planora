@@ -1,0 +1,101 @@
+# Planora
+
+Planora to modularna aplikacja desktopowa w Pythonie i PySide6 do tworzenia,
+zapisywania oraz eksportowania grafików do PDF i JPG.
+
+> Planora jest niezależnym, nieoficjalnym narzędziem. Nie jest oficjalną
+> aplikacją Świadków Jehowy ani żadnej powiązanej organizacji.
+
+Obecnie dostępne szablony:
+
+- **Wykład publiczny i Studium Strażnicy**
+- **Sprzątanie sali, nagłośnienie i porządkowi** z wykrywaniem kolizji obowiązków
+- **Plan zebrań w tygodniu** z edytowalnymi sekcjami programu i wydarzeniami specjalnymi
+
+Szablon sprzątania i porządkowych porównuje zakresy tygodniowe z konkretnymi
+datami zebrań. Ostrzega, gdy ta sama osoba ma danego dnia więcej niż jeden
+obowiązek, na przykład konsolę Zoom oraz służbę porządkowego.
+
+Szablon zebrań w tygodniu umożliwia dodawanie własnych sekcji i punktów,
+przypisywanie uczestników z biblioteki osób oraz umieszczanie wydarzeń
+specjalnych z tytułem, podtytułem i obrazem.
+
+## Personalizacja interfejsu
+
+W ustawieniach aplikacji można wybrać jeden z pięciu motywów, ustawić własny
+kolor akcentu, zmienić skalę tekstu oraz włączyć lub wyłączyć animacje i
+dźwięki. Ustawienia interfejsu nie wpływają na wygląd eksportowanych plików.
+
+Poradnik dostępny z menu głównego opisuje cały proces tworzenia grafiku.
+
+Każdy edytor prowadzi przez kolejne, swobodnie przełączane kroki. Ostatni krok
+zawiera duży podgląd dokumentu z dopasowaniem strony oraz kontrolą powiększenia.
+Kafelki, formularze i układ ekranów dopasowują się do szerokości okna.
+Nowe projekty nie zawierają przykładowych dat, osób ani przydziałów.
+
+## Uruchomienie
+
+```bash
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS/Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+python main.py
+```
+
+## Testy
+
+```bash
+python -m unittest discover
+```
+
+## Dodawanie kolejnego typu grafiku
+
+1. Utwórz katalog w `app/templates/`.
+2. Dodaj klasę szablonu udostępniającą metadane, edytor, renderer i domyślny projekt.
+3. Zarejestruj jedną instancję klasy w `app/core/template_registry.py`.
+
+Okno główne i ekran wyboru automatycznie pokażą nowy typ.
+
+## Dane użytkownika
+
+Biblioteka osób i ustawienia są przechowywane w katalogu danych użytkownika:
+
+- Windows: `%APPDATA%\Planora`
+- macOS: `~/Library/Application Support/Planora`
+- Linux: `~/.local/share/planora`
+
+Przy pierwszym uruchomieniu istniejąca biblioteka `data/people.json` zostanie
+skopiowana do katalogu użytkownika. Dane ze starszego katalogu
+`GeneratorGrafikow` są automatycznie przenoszone do Planory.
+
+## Aktualizacje
+
+Adres pliku `update.json` można zmienić w ustawieniach. Aplikacja wyłącznie
+sprawdza wersję i, po potwierdzeniu użytkownika, otwiera link pobierania.
+
+Gotowa instrukcja konfiguracji aktualizacji przez GitHub znajduje się w
+[`UPDATE_SETUP.md`](UPDATE_SETUP.md). Plik można przygotować poleceniem:
+
+```bash
+python tools/prepare_update.py --repo TWOJ_LOGIN/NAZWA_REPO --note "Opis wydania"
+```
+
+## Budowanie aplikacji
+
+Separator w `--add-data` to `;` na Windows i `:` na macOS:
+
+```bash
+pip install pyinstaller
+
+# Windows
+pyinstaller --onefile --windowed --name Planora --icon app/assets/icons/app_icon.png --add-data "app/assets;app/assets" main.py
+
+# macOS
+pyinstaller --onefile --windowed --name Planora --add-data "app/assets:app/assets" main.py
+```

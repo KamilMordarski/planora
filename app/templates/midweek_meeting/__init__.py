@@ -1,0 +1,1 @@
+"""Midweek meeting schedule template."""
