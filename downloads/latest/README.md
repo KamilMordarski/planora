@@ -1,6 +1,6 @@
 # Najnowsza Planora
 
-Aktualna wersja: **1.7.4**
+Aktualna wersja: **1.8.0**
 
 ## Windows
 
