@@ -98,6 +98,8 @@ Nie należy go zmieniać. Planora wyłącznie sprawdza wersję i, po potwierdzen
 użytkownika, pobiera bezpośrednio właściwy plik ZIP dla Windows lub macOS.
 Gotowa aplikacja następnie zamyka się, instaluje aktualizację i uruchamia ponownie.
 Jeśli podmiana plików się nie powiedzie, instalator przywraca poprzednią wersję.
+Restart po aktualizacji jest uruchamiany jako niezależny proces, dzięki czemu
+nowa wersja nie dziedziczy tymczasowego środowiska poprzedniej aplikacji.
 
 Gotowa instrukcja konfiguracji aktualizacji przez GitHub znajduje się w
 [`UPDATE_SETUP.md`](UPDATE_SETUP.md). Plik można przygotować poleceniem:

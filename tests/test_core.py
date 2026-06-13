@@ -1,10 +1,11 @@
 import json
 import io
+import subprocess
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from app.config import UPDATE_URL
 from app.core.project_io import ProjectIO
@@ -12,6 +13,8 @@ from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
 from app.core.update_installer import (
     apply_update,
+    _independent_process_environment,
+    _launch_installed_app,
     _replace_installation,
     consume_update_result,
     run_update_installer_from_args,
@@ -108,6 +111,44 @@ class UpdateCheckerTests(unittest.TestCase):
 
 
 class UpdateInstallerTests(unittest.TestCase):
+    def test_restart_environment_resets_pyinstaller_state(self):
+        with patch.dict(
+            "app.core.update_installer.os.environ",
+            {"_PYI_PARENT_PROCESS_LEVEL": "2"},
+            clear=True,
+        ):
+            environment = _independent_process_environment()
+
+        self.assertEqual(environment["PYINSTALLER_RESET_ENVIRONMENT"], "1")
+
+    def test_windows_restart_runs_as_independent_process(self):
+        target = Path("C:/Planora/Planora.exe")
+        process = MagicMock()
+        process.wait.side_effect = subprocess.TimeoutExpired(cmd=str(target), timeout=2.0)
+
+        with (
+            patch("app.core.update_installer.sys.platform", "win32"),
+            patch("app.core.update_installer.subprocess.Popen", return_value=process) as popen,
+        ):
+            _launch_installed_app(target)
+
+        kwargs = popen.call_args.kwargs
+        self.assertEqual(kwargs["cwd"], str(target.parent))
+        self.assertEqual(kwargs["env"]["PYINSTALLER_RESET_ENVIRONMENT"], "1")
+        process.wait.assert_called_once_with(timeout=2.0)
+
+    def test_windows_restart_rejects_application_that_exits_immediately(self):
+        target = Path("C:/Planora/Planora.exe")
+        process = MagicMock()
+        process.wait.return_value = 1
+
+        with (
+            patch("app.core.update_installer.sys.platform", "win32"),
+            patch("app.core.update_installer.subprocess.Popen", return_value=process),
+            self.assertRaisesRegex(OSError, "kod 1"),
+        ):
+            _launch_installed_app(target)
+
     def test_windows_update_archive_contains_expected_application(self):
         with tempfile.TemporaryDirectory() as directory:
             archive = Path(directory) / "Planora-Windows.zip"

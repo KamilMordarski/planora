@@ -16,6 +16,12 @@ class UpdateInstallError(RuntimeError):
     pass
 
 
+def _independent_process_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    return environment
+
+
 def is_install_supported() -> bool:
     return bool(getattr(sys, "frozen", False)) and (sys.platform.startswith("win") or sys.platform == "darwin")
 
@@ -81,6 +87,8 @@ def launch_update_installer(archive: Path, version: str = ""):
             "stdout": subprocess.DEVNULL,
             "stderr": subprocess.DEVNULL,
             "close_fds": True,
+            "cwd": str(helper_dir),
+            "env": _independent_process_environment(),
         }
         if sys.platform.startswith("win"):
             kwargs["creationflags"] = (
@@ -247,10 +255,17 @@ def _launch_installed_app(target: Path):
         "stdout": subprocess.DEVNULL,
         "stderr": subprocess.DEVNULL,
         "close_fds": True,
+        "cwd": str(target.parent),
+        "env": _independent_process_environment(),
     }
     if sys.platform.startswith("win"):
         kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
-        subprocess.Popen([str(target)], **kwargs)
+        process = subprocess.Popen([str(target)], **kwargs)
+        try:
+            exit_code = process.wait(timeout=2.0)
+        except subprocess.TimeoutExpired:
+            return
+        raise OSError(f"Nowa wersja Planory zakończyła działanie podczas uruchamiania (kod {exit_code}).")
     elif sys.platform == "darwin":
         kwargs["start_new_session"] = True
         subprocess.Popen(["/usr/bin/open", "-n", str(target)], **kwargs)

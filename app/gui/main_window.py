@@ -234,7 +234,9 @@ class MainWindow(QMainWindow):
             except UpdateInstallError as exc:
                 QMessageBox.warning(self, "Aktualizacja Planory", str(exc))
                 return
-            QApplication.quit()
+            self.hide()
+            QApplication.closeAllWindows()
+            QApplication.exit(0)
         else:
             QMessageBox.information(
                 self,
