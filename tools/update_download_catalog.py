@@ -20,6 +20,7 @@ def version_readme(repo: str, version: str) -> str:
 
 - [Pobierz gotowy plik EXE]({release_url}/Planora-{version}.exe)
 - [Pobierz paczkę ZIP dla aktualizatora]({release_url}/Planora-Windows.zip)
+- [Sprawdź sumy SHA-256]({release_url}/SHA256SUMS.txt)
 
 ## macOS
 
@@ -39,6 +40,7 @@ Aktualna wersja: **{version}**
 
 - [Pobierz Planora-latest.exe]({latest_url}/Planora-latest.exe)
 - [Pobierz paczkę ZIP dla aktualizatora]({latest_url}/Planora-Windows.zip)
+- [Sprawdź sumy SHA-256]({latest_url}/SHA256SUMS.txt)
 
 ## macOS
 

@@ -28,6 +28,7 @@ from app.templates.midweek_meeting.renderer import numbered_program_title
 from app.gui.theme_manager import THEMES, build_stylesheet
 from app.gui.ui_feedback import UiFeedback
 from tools.update_download_catalog import update_catalog
+from tools.generate_windows_version_info import render_version_info, version_tuple
 
 
 class UpdateCheckerTests(unittest.TestCase):
@@ -266,8 +267,19 @@ class DownloadCatalogTests(unittest.TestCase):
             root = (downloads / "README.md").read_text(encoding="utf-8")
 
             self.assertIn("Planora-latest.exe", latest)
+            self.assertIn("SHA256SUMS.txt", latest)
             self.assertIn("Planora-1.7.3.exe", version)
             self.assertLess(root.index("[1.8.0]"), root.index("[1.7.3]"))
+
+
+class WindowsVersionInfoTests(unittest.TestCase):
+    def test_version_info_contains_product_identity_and_numeric_version(self):
+        version_info = render_version_info("1.7.3")
+
+        self.assertEqual(version_tuple("1.7.3"), (1, 7, 3, 0))
+        self.assertIn("ProductName', 'Planora", version_info)
+        self.assertIn("CompanyName', 'Kamil Mordarski", version_info)
+        self.assertIn("filevers=(1, 7, 3, 0)", version_info)
 
 
 class ThemeTests(unittest.TestCase):

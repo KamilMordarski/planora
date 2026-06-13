@@ -12,6 +12,9 @@ Gotowy plik EXE dla Windows i paczka dla macOS są dostępne w
 [`downloads/latest`](downloads/latest/). Starsze wersje znajdują się w
 [`downloads`](downloads/).
 
+Każde wydanie Windows zawiera sumy SHA-256. Konfiguracja podpisu Authenticode
+jest opisana w [`CODE_SIGNING.md`](CODE_SIGNING.md).
+
 Obecnie dostępne szablony:
 
 - **Wykład publiczny i Studium Strażnicy**

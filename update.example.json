@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.7.3",
+  "latest_version": "1.7.4",
   "release_date": "2026-06-13",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.7.3/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.7.4/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.7.3/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.7.3/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.7.4/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.7.4/Planora-macOS.zip"
   },
   "notes": [
-    "Naprawiono automatyczne ponowne uruchamianie po aktualizacji",
-    "Nowa wersja uruchamia się jako niezależny proces",
-    "Instalator sprawdza poprawność restartu i w razie błędu przywraca poprzednią wersję"
+    "Dodano pełne metadane produktu do pliku EXE",
+    "Dodano sumy kontrolne SHA-256 do wydań Windows",
+    "Przygotowano automatyczne podpisywanie Authenticode po podłączeniu certyfikatu"
   ]
 }

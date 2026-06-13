@@ -40,8 +40,46 @@ jobs:
         shell: bash
         run: echo "number=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Build application
-        run: pyinstaller --onefile --windowed --name Planora --icon app/assets/icons/app_icon.png --add-data "app/assets${{ runner.os == 'Windows' && ';' || ':' }}app/assets" main.py
+      - name: Generate Windows version information
+        if: runner.os == 'Windows'
+        run: python tools/generate_windows_version_info.py
+
+      - name: Build Windows application
+        if: runner.os == 'Windows'
+        run: pyinstaller --onefile --windowed --name Planora --icon app/assets/icons/app_icon.png --version-file windows-version-info.txt --add-data "app/assets;app/assets" main.py
+
+      - name: Build macOS application
+        if: runner.os == 'macOS'
+        run: pyinstaller --onefile --windowed --name Planora --icon app/assets/icons/app_icon.png --add-data "app/assets:app/assets" main.py
+
+      - name: Sign Windows application when certificate is configured
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_BASE64)) {
+            Write-Warning "Brak certyfikatu Authenticode. EXE zostanie opublikowany bez podpisu wydawcy."
+            exit 0
+          }
+
+          $certificate = Join-Path $env:RUNNER_TEMP "planora-code-signing.pfx"
+          [IO.File]::WriteAllBytes($certificate, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
+            Where-Object FullName -Match '\\x64\\signtool\.exe$' |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signTool) {
+            throw "Nie znaleziono signtool.exe."
+          }
+
+          & $signTool.FullName sign /fd SHA256 /td SHA256 /tr "http://timestamp.digicert.com" /f $certificate /p $env:WINDOWS_CERTIFICATE_PASSWORD dist/Planora.exe
+          & $signTool.FullName verify /pa /v dist/Planora.exe
+          if ($LASTEXITCODE -ne 0) {
+            throw "Weryfikacja podpisu Authenticode nie powiodła się."
+          }
+          Remove-Item -LiteralPath $certificate -Force
 
       - name: Pack Windows application
         if: runner.os == 'Windows'
@@ -50,6 +88,12 @@ jobs:
           Compress-Archive -Path dist/Planora.exe -DestinationPath "${{ matrix.artifact }}.zip"
           Copy-Item dist/Planora.exe "Planora-latest.exe"
           Copy-Item dist/Planora.exe "Planora-${{ steps.version.outputs.number }}.exe"
+          $files = @("Planora-Windows.zip", "Planora-latest.exe", "Planora-${{ steps.version.outputs.number }}.exe")
+          $checksums = foreach ($file in $files) {
+            $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $file"
+          }
+          Set-Content -LiteralPath "SHA256SUMS.txt" -Value $checksums -Encoding utf8
 
       - name: Pack macOS application
         if: runner.os == 'macOS'
@@ -64,6 +108,7 @@ jobs:
             Planora-Windows.zip
             Planora-latest.exe
             Planora-${{ steps.version.outputs.number }}.exe
+            SHA256SUMS.txt
 
       - name: Upload macOS release file
         if: runner.os == 'macOS'
