@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QApplication
 from app.config import APP_ICON
 from app.core.app_info import APP_NAME
 from app.gui.main_window import MainWindow
+from app.gui.startup_splash import StartupSplash
 
 
 def main():
@@ -15,7 +16,15 @@ def main():
         app.setWindowIcon(QIcon(str(APP_ICON)))
 
     window = MainWindow()
-    window.show()
+    if window.settings.get("animations_enabled", True):
+        splash = StartupSplash(
+            play_sound=bool(window.settings.get("sounds_enabled", True)),
+            volume=int(window.settings.get("sound_volume", 35)),
+        )
+        splash.finished.connect(window.show)
+        splash.start()
+    else:
+        window.show()
     sys.exit(app.exec())
 
 

@@ -1,6 +1,9 @@
 import json
 import re
+import sys
+from pathlib import Path
 from typing import Any
+from urllib.parse import unquote, urlparse
 from urllib.request import Request, urlopen
 
 from app.config import UPDATE_URL
@@ -8,6 +11,14 @@ from app.core.app_info import APP_VERSION
 
 
 class UpdateCheckError(RuntimeError):
+    pass
+
+
+class UpdateDownloadError(RuntimeError):
+    pass
+
+
+class UpdateDownloadCancelled(RuntimeError):
     pass
 
 
@@ -47,3 +58,55 @@ class UpdateChecker:
 
     def get_update_info(self) -> dict[str, Any] | None:
         return self._update_info
+
+    @staticmethod
+    def _platform_key() -> str:
+        if sys.platform.startswith("win"):
+            return "windows"
+        if sys.platform == "darwin":
+            return "macos"
+        return "linux"
+
+    def get_download_url(self, platform: str | None = None) -> str:
+        info = self._update_info or {}
+        platform_urls = info.get("download_urls", {})
+        if isinstance(platform_urls, dict):
+            platform_url = platform_urls.get(platform or self._platform_key())
+            if platform_url:
+                return str(platform_url)
+        return str(info.get("download_url", ""))
+
+    def suggested_filename(self, platform: str | None = None) -> str:
+        url = self.get_download_url(platform)
+        filename = Path(unquote(urlparse(url).path)).name
+        return filename or f"Planora-{platform or self._platform_key()}.zip"
+
+    def download_update(self, destination: Path, progress_callback=None) -> Path:
+        url = self.get_download_url()
+        if not url:
+            raise UpdateDownloadError("Brak bezpośredniego adresu pobierania tej aktualizacji.")
+
+        destination = Path(destination)
+        partial = destination.with_name(f"{destination.name}.part")
+        request = Request(url, headers={"User-Agent": "Planora-Updater"})
+        try:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with urlopen(request, timeout=30) as response, partial.open("wb") as output:
+                total = int(response.headers.get("Content-Length", 0) or 0)
+                downloaded = 0
+                while True:
+                    chunk = response.read(128 * 1024)
+                    if not chunk:
+                        break
+                    output.write(chunk)
+                    downloaded += len(chunk)
+                    if progress_callback and progress_callback(downloaded, total) is False:
+                        raise UpdateDownloadCancelled("Pobieranie aktualizacji zostało anulowane.")
+            partial.replace(destination)
+            return destination
+        except UpdateDownloadCancelled:
+            partial.unlink(missing_ok=True)
+            raise
+        except Exception as exc:
+            partial.unlink(missing_ok=True)
+            raise UpdateDownloadError(f"Nie udało się pobrać aktualizacji: {exc}") from exc

@@ -1,4 +1,5 @@
 import json
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -47,6 +48,51 @@ class UpdateCheckerTests(unittest.TestCase):
     def test_missing_update_url_has_clear_error(self):
         with self.assertRaises(UpdateCheckError):
             UpdateChecker("").check_for_updates()
+
+    def test_platform_download_url_and_filename_are_selected(self):
+        checker = UpdateChecker()
+        checker._update_info = {
+            "download_url": "https://example.com/fallback.zip",
+            "download_urls": {
+                "windows": "https://example.com/Planora-Windows.zip",
+                "macos": "https://example.com/Planora-macOS.zip",
+            },
+        }
+
+        self.assertEqual(checker.get_download_url("windows"), "https://example.com/Planora-Windows.zip")
+        self.assertEqual(checker.suggested_filename("macos"), "Planora-macOS.zip")
+
+    def test_update_is_downloaded_directly_to_selected_file(self):
+        payload = b"planora-update"
+
+        class Response:
+            headers = {"Content-Length": str(len(payload))}
+
+            def __init__(self):
+                self.stream = io.BytesIO(payload)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self, size=-1):
+                return self.stream.read(size)
+
+        checker = UpdateChecker()
+        checker._update_info = {"download_url": "https://example.com/Planora-Windows.zip"}
+        progress = []
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "Planora-Windows.zip"
+            with patch("app.core.updater.urlopen", return_value=Response()):
+                downloaded = checker.download_update(
+                    destination,
+                    lambda current, total: progress.append((current, total)) or True,
+                )
+
+            self.assertEqual(downloaded.read_bytes(), payload)
+            self.assertEqual(progress[-1], (len(payload), len(payload)))
 
 
 class ThemeTests(unittest.TestCase):

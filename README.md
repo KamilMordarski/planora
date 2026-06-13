@@ -79,7 +79,8 @@ skopiowana do katalogu użytkownika. Dane ze starszego katalogu
 Aplikacja korzysta ze stałego adresu
 `https://raw.githubusercontent.com/KamilMordarski/planora/main/update.json`.
 Nie należy go zmieniać. Planora wyłącznie sprawdza wersję i, po potwierdzeniu
-użytkownika, otwiera link pobierania.
+użytkownika, pobiera bezpośrednio właściwy plik ZIP dla Windows lub macOS.
+Pobrana paczka nie zastępuje automatycznie uruchomionej aplikacji.
 
 Gotowa instrukcja konfiguracji aktualizacji przez GitHub znajduje się w
 [`UPDATE_SETUP.md`](UPDATE_SETUP.md). Plik można przygotować poleceniem:

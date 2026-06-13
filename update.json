@@ -1,10 +1,14 @@
 {
-  "latest_version": "1.5.1",
+  "latest_version": "1.5.2",
   "release_date": "2026-06-13",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/latest",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/latest/download/Planora-Windows.zip",
+  "download_urls": {
+    "windows": "https://github.com/KamilMordarski/planora/releases/latest/download/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/latest/download/Planora-macOS.zip"
+  },
   "notes": [
-    "Ustawiono bezpieczny, stały adres aktualizacji",
-    "Dodano odnośnik do strony autora",
-    "Uproszczono ustawienia aktualizacji"
+    "Dodano animowane logo startowe zsynchronizowane z dźwiękiem",
+    "Aktualizacje są teraz pobierane bezpośrednio w aplikacji",
+    "Dodano pasek postępu i możliwość anulowania pobierania"
   ]
 }

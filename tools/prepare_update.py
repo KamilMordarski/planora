@@ -21,7 +21,11 @@ def main():
     payload = {
         "latest_version": args.version,
         "release_date": date.today().isoformat(),
-        "download_url": f"https://github.com/{args.repo}/releases/latest",
+        "download_url": f"https://github.com/{args.repo}/releases/latest/download/Planora-Windows.zip",
+        "download_urls": {
+            "windows": f"https://github.com/{args.repo}/releases/latest/download/Planora-Windows.zip",
+            "macos": f"https://github.com/{args.repo}/releases/latest/download/Planora-macOS.zip",
+        },
         "notes": args.note or ["Nowa wersja Planory jest dostępna do pobrania."],
     }
     output = Path("update.json")
@@ -29,7 +33,7 @@ def main():
 
     raw_url = f"https://raw.githubusercontent.com/{args.repo}/{args.branch}/update.json"
     print(f"Zapisano: {output.resolve()}")
-    print(f"Adres do wklejenia w ustawieniach Planory:\n{raw_url}")
+    print(f"Stały adres aktualizacji Planory:\n{raw_url}")
 
 
 if __name__ == "__main__":

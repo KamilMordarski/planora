@@ -1,7 +1,7 @@
 # Aktualizacje Planory przez GitHub
 
 Planora nie podmienia swoich plików automatycznie. Pobiera mały plik `update.json`,
-porównuje numery wersji i po zgodzie użytkownika otwiera stronę najnowszego wydania.
+porównuje numery wersji i po zgodzie użytkownika pobiera bezpośrednio właściwy plik ZIP.
 
 ## Pierwsza konfiguracja
 
@@ -45,8 +45,12 @@ git push origin v1.6.0
 ```
 
 Workflow `.github/workflows/release.yml` zbuduje wydanie dla Windows i macOS oraz
-doda pliki ZIP do GitHub Releases. Link z `update.json` prowadzi do najnowszego
-wydania, więc użytkownik sam wybiera właściwy plik.
+doda pliki ZIP do GitHub Releases. Planora automatycznie wybierze i pobierze:
+
+- `Planora-Windows.zip` na Windows,
+- `Planora-macOS.zip` na macOS.
+
+Nie zmieniaj tych nazw w workflow bez równoczesnej zmiany adresów w `update.json`.
 
 ## Ważne
 

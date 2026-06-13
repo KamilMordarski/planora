@@ -66,7 +66,7 @@ class GuideDialog(QDialog):
         ),
         (
             "Bezpieczne aktualizacje",
-            "Aplikacja jedynie sprawdza plik update.json i otwiera stronę pobierania po Twoim potwierdzeniu. Nigdy nie podmienia plików automatycznie.",
+            "Po Twoim potwierdzeniu aplikacja pobiera właściwy plik ZIP bezpośrednio na komputer. Nigdy nie podmienia uruchomionych plików automatycznie.",
         ),
         (
             "Prywatność danych",
@@ -127,7 +127,7 @@ class GuideDialog(QDialog):
             ),
             (
                 "Aktualizacje online",
-                "Adres update.json ustawisz w zakładce „Aktualizacje” w ustawieniach. Szczegółowa instrukcja konfiguracji GitHub znajduje się w pliku UPDATE_SETUP.md.",
+                "Planora korzysta ze stałego adresu update.json. Po wykryciu nowej wersji pobiera właściwą paczkę dla Windows lub macOS bez otwierania strony GitHub.",
             ),
         ]
         return GuideDialog._cards_tab(cards)

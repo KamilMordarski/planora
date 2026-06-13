@@ -7,6 +7,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_DIR.parent
 ASSETS_DIR = PACKAGE_DIR / "assets"
 APP_ICON = ASSETS_DIR / "icons" / "app_icon.png"
+STARTUP_SOUND = ASSETS_DIR / "sounds" / "opening-glider.mp3"
 LEGACY_DATA_DIR = PROJECT_ROOT / "data"
 
 UPDATE_URL = "https://raw.githubusercontent.com/KamilMordarski/planora/main/update.json"

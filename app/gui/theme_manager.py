@@ -110,6 +110,23 @@ def build_stylesheet(settings: dict) -> str:
             font-family: "Segoe UI", "SF Pro Display", Arial;
             font-size: {px(13)}px;
         }}
+        QWidget#startupSplash {{
+            background-color: transparent;
+        }}
+        QFrame#splashCard {{
+            background-color: {theme.surface};
+            border: 1px solid {theme.border};
+            border-radius: 34px;
+        }}
+        QLabel#splashName {{
+            color: {theme.text};
+            font-size: {px(34)}px;
+            font-weight: 800;
+        }}
+        QLabel#splashSubtitle {{
+            color: {theme.muted};
+            font-size: {px(14)}px;
+        }}
         QToolTip {{
             background: {theme.surface};
             color: {theme.text};

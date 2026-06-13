@@ -1,15 +1,20 @@
 import copy
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, QUrl
-from PySide6.QtGui import QDesktopServices, QIcon
-from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QProgressDialog
 
 from app.config import APP_ICON, UPDATE_URL, USER_DATA_DIR
 from app.core.app_info import APP_NAME, APP_VERSION
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
-from app.core.updater import UpdateChecker, UpdateCheckError
+from app.core.updater import (
+    UpdateChecker,
+    UpdateCheckError,
+    UpdateDownloadCancelled,
+    UpdateDownloadError,
+)
 from app.gui.home_screen import HomeScreen
 from app.gui.guide_dialog import GuideDialog
 from app.gui.people_dialog import PeopleDialog
@@ -27,6 +32,7 @@ class MainWindow(QMainWindow):
         self.people = ProjectIO.load_people()
         self.settings = ProjectIO.load_settings()
         self.editor = None
+        self._startup_update_scheduled = False
 
         self.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
         self.resize(1360, 840)
@@ -56,7 +62,10 @@ class MainWindow(QMainWindow):
         self.ui_feedback = UiFeedback(self.settings, self)
         QApplication.instance().installEventFilter(self.ui_feedback)
 
-        if self.settings.get("check_updates_on_start"):
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self.settings.get("check_updates_on_start") and not self._startup_update_scheduled:
+            self._startup_update_scheduled = True
             QTimer.singleShot(500, lambda: self.check_updates(quiet_if_current=True))
 
     def _apply_style(self):
@@ -146,8 +155,54 @@ class MainWindow(QMainWindow):
         message.setIcon(QMessageBox.Information)
         message.setText(f"Dostępna jest wersja {info.get('latest_version')}.")
         message.setInformativeText(f"Data wydania: {info.get('release_date', 'brak')}\n\n{notes_text}")
-        download = message.addButton("Otwórz stronę pobierania", QMessageBox.AcceptRole)
+        download = message.addButton("Pobierz aktualizację", QMessageBox.AcceptRole)
         message.addButton(QMessageBox.Close)
         message.exec()
-        if message.clickedButton() is download and info.get("download_url"):
-            QDesktopServices.openUrl(QUrl(str(info["download_url"])))
+        if message.clickedButton() is download:
+            self.download_update(checker)
+
+    def download_update(self, checker: UpdateChecker):
+        default_path = Path.home() / "Downloads" / checker.suggested_filename()
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Zapisz aktualizację Planory",
+            str(default_path),
+            "Archiwum ZIP (*.zip);;Wszystkie pliki (*)",
+        )
+        if not path:
+            return
+
+        progress = QProgressDialog("Pobieranie aktualizacji...", "Anuluj", 0, 100, self)
+        progress.setWindowTitle("Aktualizacja Planory")
+        progress.setMinimumDuration(0)
+        progress.setAutoClose(False)
+        progress.setAutoReset(False)
+        progress.setValue(0)
+
+        def update_progress(downloaded: int, total: int) -> bool:
+            if total:
+                progress.setRange(0, 100)
+                progress.setValue(min(100, round(downloaded * 100 / total)))
+                progress.setLabelText(f"Pobieranie aktualizacji... {downloaded / 1024 / 1024:.1f} MB")
+            else:
+                progress.setRange(0, 0)
+                progress.setLabelText(f"Pobieranie aktualizacji... {downloaded / 1024 / 1024:.1f} MB")
+            QApplication.processEvents()
+            return not progress.wasCanceled()
+
+        try:
+            downloaded_path = checker.download_update(Path(path), update_progress)
+        except UpdateDownloadCancelled:
+            return
+        except UpdateDownloadError as exc:
+            QMessageBox.warning(self, "Aktualizacja Planory", str(exc))
+            return
+        finally:
+            progress.close()
+
+        QMessageBox.information(
+            self,
+            "Aktualizacja pobrana",
+            f"Zapisano aktualizację w:\n{downloaded_path}\n\n"
+            "Zamknij Planorę, rozpakuj pobrany plik i uruchom nową wersję.",
+        )
