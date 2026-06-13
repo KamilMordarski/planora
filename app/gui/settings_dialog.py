@@ -88,6 +88,22 @@ class SettingsDialog(QDialog):
         font_row.addWidget(self.font_scale)
         font_row.addWidget(self.font_value)
         font_layout.addRow("Skala tekstu i kontrolek:", font_row)
+
+        self.interface_density = QComboBox()
+        self.interface_density.addItem("Kompaktowa", "compact")
+        self.interface_density.addItem("Wygodna", "comfortable")
+        self.interface_density.addItem("Przestronna", "spacious")
+        density_index = self.interface_density.findData(settings.get("interface_density", "comfortable"))
+        self.interface_density.setCurrentIndex(max(0, density_index))
+
+        self.corner_style = QComboBox()
+        self.corner_style.addItem("Proste", "square")
+        self.corner_style.addItem("Subtelnie zaokrąglone", "soft")
+        self.corner_style.addItem("Zaokrąglone", "rounded")
+        corner_index = self.corner_style.findData(settings.get("corner_style", "rounded"))
+        self.corner_style.setCurrentIndex(max(0, corner_index))
+        font_layout.addRow("Gęstość interfejsu:", self.interface_density)
+        font_layout.addRow("Kształt kontrolek:", self.corner_style)
         layout.addWidget(font_group)
 
         note = QFrame()
@@ -112,10 +128,29 @@ class SettingsDialog(QDialog):
         group_layout = QVBoxLayout(group)
         self.animations = QCheckBox("Animuj przejścia pomiędzy ekranami")
         self.animations.setChecked(bool(settings.get("animations_enabled", True)))
+        self.startup_splash = QCheckBox("Pokazuj animowane logo przy uruchomieniu")
+        self.startup_splash.setChecked(bool(settings.get("startup_splash_enabled", True)))
         self.sounds = QCheckBox("Odtwarzaj subtelne dźwięki interfejsu")
         self.sounds.setChecked(bool(settings.get("sounds_enabled", True)))
+        self.hover_sounds = QCheckBox("Odtwarzaj dźwięk po najechaniu na przycisk")
+        self.hover_sounds.setChecked(bool(settings.get("hover_sounds_enabled", False)))
         group_layout.addWidget(self.animations)
+        group_layout.addWidget(self.startup_splash)
         group_layout.addWidget(self.sounds)
+        group_layout.addWidget(self.hover_sounds)
+
+        animation_row = QHBoxLayout()
+        self.animation_speed = QSlider(Qt.Horizontal)
+        self.animation_speed.setRange(50, 180)
+        self.animation_speed.setTickInterval(10)
+        self.animation_speed.setValue(int(settings.get("animation_speed", 100)))
+        self.animation_value = QLabel(f"{self.animation_speed.value()}%")
+        self.animation_speed.valueChanged.connect(lambda value: self.animation_value.setText(f"{value}%"))
+        animation_row.addWidget(self.animation_speed, 1)
+        animation_row.addWidget(self.animation_value)
+        group_layout.addWidget(QLabel("Szybkość animacji:"))
+        group_layout.addLayout(animation_row)
+
         sound_row = QHBoxLayout()
         self.sound_volume = QSlider(Qt.Horizontal)
         self.sound_volume.setRange(0, 100)
@@ -179,8 +214,13 @@ class SettingsDialog(QDialog):
             "theme": self.theme.currentData(),
             "accent_color": accent,
             "font_scale": self.font_scale.value(),
+            "interface_density": self.interface_density.currentData(),
+            "corner_style": self.corner_style.currentData(),
             "animations_enabled": self.animations.isChecked(),
+            "animation_speed": self.animation_speed.value(),
+            "startup_splash_enabled": self.startup_splash.isChecked(),
             "sounds_enabled": self.sounds.isChecked(),
+            "hover_sounds_enabled": self.hover_sounds.isChecked(),
             "sound_volume": self.sound_volume.value(),
             "update_url": UPDATE_URL,
             "check_updates_on_start": self.check_on_start.isChecked(),

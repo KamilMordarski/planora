@@ -213,6 +213,17 @@ class ThemeTests(unittest.TestCase):
         self.assertIn("#123456", stylesheet)
         self.assertIn("QPushButton", stylesheet)
 
+    def test_density_and_corner_settings_change_stylesheet(self):
+        stylesheet = build_stylesheet(
+            {
+                "theme": "ocean",
+                "font_scale": 100,
+                "interface_density": "compact",
+                "corner_style": "square",
+            }
+        )
+        self.assertIn("border-radius: 2px", stylesheet)
+
 
 class UiFeedbackTests(unittest.TestCase):
     def test_all_feedback_sounds_can_be_generated(self):
@@ -233,6 +244,7 @@ class TemplateRegistryTests(unittest.TestCase):
         groups = TemplateRegistry.get("field_service_groups").default_project["groups"]
         self.assertEqual(len(groups), 5)
         self.assertTrue(all(value["members"] == [] for value in groups))
+        self.assertEqual(TemplateRegistry.get("field_service_groups").default_project["congregation"], "")
 
     def test_public_talk_template_is_registered(self):
         template = TemplateRegistry.get("public_talk_watchtower")
@@ -310,6 +322,24 @@ class CleaningAttendantsConflictTests(unittest.TestCase):
 
 
 class ProjectIOTests(unittest.TestCase):
+    def test_people_json_import_merges_and_skips_duplicates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "people.json"
+            path.write_text(json.dumps({"people": ["Anna Nowak", "jan test", ""]}), encoding="utf-8")
+
+            people, added = ProjectIO.import_people(path, ["Jan Test"])
+
+        self.assertEqual(people, ["Jan Test", "Anna Nowak"])
+        self.assertEqual(added, 1)
+
+    def test_people_json_import_rejects_invalid_shape(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "people.json"
+            path.write_text(json.dumps({"names": ["Anna Nowak"]}), encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                ProjectIO.import_people(path)
+
     def test_legacy_project_gets_default_template_id(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "project.json"

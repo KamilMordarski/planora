@@ -1,5 +1,15 @@
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation
-from PySide6.QtWidgets import QGraphicsOpacityEffect, QStackedWidget
+from PySide6.QtWidgets import QApplication, QGraphicsOpacityEffect, QStackedWidget
+
+
+def animation_duration(base_duration: int) -> int:
+    app = QApplication.instance()
+    speed = app.property("animationSpeed") if app else 100
+    try:
+        speed = max(50, min(180, int(speed)))
+    except (TypeError, ValueError):
+        speed = 100
+    return max(70, round(base_duration * 100 / speed))
 
 
 class AnimatedStackedWidget(QStackedWidget):
@@ -21,7 +31,7 @@ class AnimatedStackedWidget(QStackedWidget):
         effect = QGraphicsOpacityEffect(widget)
         widget.setGraphicsEffect(effect)
         animation = QPropertyAnimation(effect, b"opacity", self)
-        animation.setDuration(300)
+        animation.setDuration(animation_duration(300))
         animation.setStartValue(0.12)
         animation.setEndValue(1.0)
         animation.setEasingCurve(QEasingCurve.OutCubic)

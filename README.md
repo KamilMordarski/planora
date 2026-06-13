@@ -24,15 +24,18 @@ specjalnych z tytułem, podtytułem i obrazem.
 Plan grup służby pozwala swobodnie dodawać, usuwać i porządkować grupy oraz
 ich członków. Grupowy i asystent są czytelnie, ale subtelnie wyróżnieni
 w eksporcie, a każda nowa osoba domyślnie otrzymuje rolę członka grupy.
+Nowy projekt nie zawiera domyślnej nazwy zboru.
 
 ## Personalizacja interfejsu
 
 W ustawieniach aplikacji można wybrać jeden z pięciu motywów, ustawić własny
-kolor akcentu, zmienić skalę tekstu oraz włączyć lub wyłączyć animacje i
-dźwięki. Przyciski, nawigacja, dodawanie, usuwanie, zapis i eksport mają
-własne subtelne efekty. Ustawienia interfejsu nie wpływają na wygląd eksportowanych plików.
+kolor akcentu, zmienić skalę i gęstość interfejsu, kształt kontrolek, szybkość
+animacji oraz zachowanie dźwięków i logo startowego. Przyciski, nawigacja,
+dodawanie, usuwanie, zapis i eksport mają własne subtelne efekty. Ustawienia
+interfejsu nie wpływają na wygląd eksportowanych plików.
 
-Poradnik dostępny z menu głównego opisuje cały proces tworzenia grafiku.
+Poradnik dostępny z menu głównego opisuje cały proces tworzenia grafiku,
+import biblioteki osób, pliki projektów, eksport, ustawienia i aktualizacje.
 
 Każdy edytor prowadzi przez kolejne, swobodnie przełączane kroki. Ostatni krok
 zawiera duży podgląd dokumentu z dopasowaniem strony oraz kontrolą powiększenia.
@@ -79,6 +82,9 @@ Biblioteka osób i ustawienia są przechowywane w katalogu danych użytkownika:
 Przy pierwszym uruchomieniu istniejąca biblioteka `data/people.json` zostanie
 skopiowana do katalogu użytkownika. Dane ze starszego katalogu
 `GeneratorGrafikow` są automatycznie przenoszone do Planory.
+
+Bibliotekę można uzupełnić przez import pliku JSON zawierającego tablicę nazwisk
+albo obiekt z polem `people`. Import łączy listy i pomija duplikaty.
 
 ## Aktualizacje
 

@@ -9,6 +9,7 @@ from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import QComboBox, QGraphicsOpacityEffect, QPushButton
 
 from app.config import USER_DATA_DIR
+from app.gui.animated_stack import animation_duration
 
 
 class UiFeedback(QObject):
@@ -135,7 +136,7 @@ class UiFeedback(QObject):
         effect = QGraphicsOpacityEffect(button)
         button.setGraphicsEffect(effect)
         animation = QPropertyAnimation(effect, b"opacity", self)
-        animation.setDuration(180)
+        animation.setDuration(animation_duration(180))
         animation.setStartValue(start_opacity)
         animation.setEndValue(1.0)
         animation.setEasingCurve(QEasingCurve.OutCubic)
@@ -157,7 +158,7 @@ class UiFeedback(QObject):
         if isinstance(watched, QPushButton) and watched.isEnabled():
             if event.type() == QEvent.Enter:
                 now = time.monotonic()
-                if now - self._last_hover_sound > 0.08:
+                if self.settings.get("hover_sounds_enabled", False) and now - self._last_hover_sound > 0.08:
                     self._last_hover_sound = now
                     self._play("hover")
                 self._animate_button(watched, 0.92)

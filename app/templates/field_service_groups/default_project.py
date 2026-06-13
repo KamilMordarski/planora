@@ -22,7 +22,7 @@ def group(name: str, members: list[dict] | None = None) -> dict:
 
 DEFAULT_PROJECT = {
     "template_id": "field_service_groups",
-    "congregation": "BOGUSZÓW - GORCE",
+    "congregation": "",
     "title": "GRUPY SŁUŻBY POLOWEJ",
     "groups": [group(f"GRUPA {index}") for index in range(1, 6)],
 }

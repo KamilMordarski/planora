@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.6.0",
+  "latest_version": "1.7.0",
   "release_date": "2026-06-13",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.6.0/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.7.0/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.6.0/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.6.0/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.7.0/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.7.0/Planora-macOS.zip"
   },
   "notes": [
-    "Dodano generator planu grup służby z edytowalną liczbą grup",
-    "Dodano role grupowego, asystenta i członka grupy",
-    "Rozszerzono dźwięki i animacje całej aplikacji"
+    "Usunięto domyślną nazwę zboru z planu grup służby",
+    "Dodano import listy osób z pliku JSON",
+    "Rozbudowano poradnik oraz ustawienia wyglądu i efektów"
   ]
 }

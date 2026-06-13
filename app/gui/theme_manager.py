@@ -99,9 +99,22 @@ def build_stylesheet(settings: dict) -> str:
     theme = THEMES.get(settings.get("theme"), THEMES["ocean"])
     accent = settings.get("accent_color") or theme.accent
     scale = max(80, min(140, int(settings.get("font_scale", 100)))) / 100
+    density = {
+        "compact": 0.78,
+        "comfortable": 1.0,
+        "spacious": 1.22,
+    }.get(settings.get("interface_density"), 1.0)
+    radius = {
+        "square": 2,
+        "soft": 6,
+        "rounded": 10,
+    }.get(settings.get("corner_style"), 10)
 
     def px(value):
         return max(10, round(value * scale))
+
+    def space(value):
+        return max(3, round(value * density))
 
     return f"""
         QMainWindow, QDialog, QWidget {{
@@ -141,8 +154,8 @@ def build_stylesheet(settings: dict) -> str:
             background: {theme.surface};
             color: {theme.text};
             border: 1px solid {theme.border};
-            border-radius: 9px;
-            padding: {px(8)}px {px(15)}px;
+            border-radius: {radius}px;
+            padding: {space(px(8))}px {space(px(15))}px;
             min-height: {px(20)}px;
             font-weight: 600;
         }}
@@ -193,10 +206,18 @@ def build_stylesheet(settings: dict) -> str:
             font-size: {px(14)}px;
             font-weight: 750;
         }}
+        QLabel#guideBadge {{
+            background-color: {theme.surface_alt};
+            color: {accent};
+            border: 1px solid {theme.border};
+            border-radius: {radius}px;
+            padding: {space(7)}px;
+            font-weight: 700;
+        }}
         QFrame#heroCard, QFrame#templateCard, QFrame#infoCard, QFrame#disclaimerCard {{
             background: {theme.surface};
             border: 1px solid {theme.border};
-            border-radius: 16px;
+            border-radius: {radius + 6}px;
         }}
         QFrame#disclaimerCard {{
             border-left: 4px solid {accent};
@@ -211,8 +232,8 @@ def build_stylesheet(settings: dict) -> str:
             selection-background-color: {accent};
             selection-color: {theme.accent_text};
             border: 1px solid {theme.border};
-            border-radius: 7px;
-            padding: {px(6)}px;
+            border-radius: {radius}px;
+            padding: {space(px(6))}px;
         }}
         QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QComboBox:focus,
         QListWidget:focus, QDateEdit:focus {{
@@ -221,8 +242,8 @@ def build_stylesheet(settings: dict) -> str:
         QListWidget::item {{
             background-color: transparent;
             color: {theme.text};
-            border-radius: 6px;
-            padding: {px(7)}px;
+            border-radius: {radius}px;
+            padding: {space(px(7))}px;
         }}
         QListWidget::item:hover {{
             background-color: {theme.surface_alt};
@@ -242,17 +263,17 @@ def build_stylesheet(settings: dict) -> str:
         QTabWidget::pane {{
             background: {theme.surface};
             border: 1px solid {theme.border};
-            border-radius: 10px;
+            border-radius: {radius}px;
             top: -1px;
         }}
         QTabBar::tab {{
             background: {theme.surface_alt};
             color: {theme.muted};
-            padding: {px(9)}px {px(14)}px;
+            padding: {space(px(9))}px {space(px(14))}px;
             border: 1px solid {theme.border};
             border-bottom: none;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
+            border-top-left-radius: {radius}px;
+            border-top-right-radius: {radius}px;
         }}
         QTabBar::tab:selected {{
             background: {theme.surface};
@@ -283,9 +304,9 @@ def build_stylesheet(settings: dict) -> str:
         QGroupBox {{
             background-color: {theme.surface};
             border: 1px solid {theme.border};
-            border-radius: 10px;
+            border-radius: {radius}px;
             margin-top: 14px;
-            padding: 16px 10px 10px 10px;
+            padding: {space(16)}px {space(10)}px {space(10)}px {space(10)}px;
             font-weight: 700;
         }}
         QGroupBox::title {{
@@ -299,12 +320,12 @@ def build_stylesheet(settings: dict) -> str:
         QFrame#editorToolbar, QWidget#editorToolbar {{
             background-color: {theme.surface};
             border: 1px solid {theme.border};
-            border-radius: 12px;
+            border-radius: {radius + 2}px;
         }}
         QFrame#wizardHeader, QFrame#wizardFooter {{
             background-color: {theme.surface};
             border: 1px solid {theme.border};
-            border-radius: 12px;
+            border-radius: {radius + 2}px;
         }}
         QLabel#documentPreviewPage {{
             background-color: #ffffff;
@@ -314,8 +335,8 @@ def build_stylesheet(settings: dict) -> str:
             background-color: transparent;
             color: {theme.muted};
             border: none;
-            border-radius: 8px;
-            padding: {px(9)}px {px(13)}px;
+            border-radius: {radius}px;
+            padding: {space(px(9))}px {space(px(13))}px;
         }}
         QPushButton#wizardStep:hover {{
             background-color: {theme.surface_alt};

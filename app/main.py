@@ -22,7 +22,7 @@ def main():
         app.setWindowIcon(QIcon(str(APP_ICON)))
 
     window = MainWindow()
-    if window.settings.get("animations_enabled", True):
+    if window.settings.get("animations_enabled", True) and window.settings.get("startup_splash_enabled", True):
         splash = StartupSplash(
             play_sound=bool(window.settings.get("sounds_enabled", True)),
             volume=int(window.settings.get("sound_volume", 35)),

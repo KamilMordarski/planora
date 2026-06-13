@@ -80,7 +80,9 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(500, lambda: self.check_updates(quiet_if_current=True))
 
     def _apply_style(self):
-        QApplication.instance().setStyleSheet(build_stylesheet(self.settings))
+        app = QApplication.instance()
+        app.setProperty("animationSpeed", self.settings.get("animation_speed", 100))
+        app.setStyleSheet(build_stylesheet(self.settings))
 
     def show_home(self):
         self.stack.setCurrentWidgetAnimated(self.home)

@@ -28,8 +28,13 @@ DEFAULT_SETTINGS = {
     "theme": "ocean",
     "accent_color": "",
     "font_scale": 100,
+    "interface_density": "comfortable",
+    "corner_style": "rounded",
     "animations_enabled": True,
+    "animation_speed": 100,
+    "startup_splash_enabled": True,
     "sounds_enabled": True,
+    "hover_sounds_enabled": False,
     "sound_volume": 35,
 }
 
@@ -101,6 +106,27 @@ class ProjectIO:
     @staticmethod
     def save_people(people: list[str]):
         ProjectIO._write_json(PEOPLE_FILE, people)
+
+    @staticmethod
+    def import_people(path: Path, current_people: list[str] | None = None) -> tuple[list[str], int]:
+        value = ProjectIO._read_json(path)
+        if isinstance(value, dict):
+            value = value.get("people")
+        if not isinstance(value, list):
+            raise ValueError(
+                'Lista osób musi być tablicą JSON albo obiektem z polem "people".'
+            )
+
+        people = [str(person).strip() for person in (current_people or []) if str(person).strip()]
+        known = {person.casefold() for person in people}
+        added = 0
+        for person in value:
+            name = str(person).strip()
+            if name and name.casefold() not in known:
+                people.append(name)
+                known.add(name.casefold())
+                added += 1
+        return people, added
 
     @staticmethod
     def load_settings() -> dict:

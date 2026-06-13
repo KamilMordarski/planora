@@ -1,14 +1,21 @@
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
+
+from app.config import USER_DATA_DIR
+from app.core.project_io import ProjectIO
 
 
 class PeopleDialog(QDialog):
@@ -30,6 +37,13 @@ class PeopleDialog(QDialog):
         self.search.setPlaceholderText("Szukaj osoby…")
         self.search.setClearButtonEnabled(True)
         layout.addWidget(self.search)
+
+        tools = QHBoxLayout()
+        import_json = QPushButton("Importuj listę JSON")
+        import_json.setToolTip("Dodaje nowe osoby z pliku JSON bez usuwania obecnej listy.")
+        tools.addWidget(import_json)
+        tools.addStretch()
+        layout.addLayout(tools)
 
         self.list_widget = QListWidget()
         self.list_widget.addItems(self.people)
@@ -58,12 +72,41 @@ class PeopleDialog(QDialog):
         layout.addWidget(buttons)
 
         self.search.textChanged.connect(self.filter_people)
+        import_json.clicked.connect(self.import_json)
         add.clicked.connect(self.add_person)
         edit.clicked.connect(self.edit_person)
         delete.clicked.connect(self.delete_person)
         self.list_widget.currentTextChanged.connect(self.input.setText)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
+        self.update_count()
+
+    def import_json(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Importuj listę osób",
+            str(USER_DATA_DIR),
+            "Lista osób JSON (*.json)",
+        )
+        if not path:
+            return
+        try:
+            self.people, added = ProjectIO.import_people(Path(path), self.people)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Nie można zaimportować listy", str(exc))
+            return
+        self.refresh_list()
+        QMessageBox.information(
+            self,
+            "Import zakończony",
+            f"Dodano nowych osób: {added}\nŁączna liczba osób: {len(self.people)}",
+        )
+
+    def refresh_list(self):
+        phrase = self.search.text()
+        self.list_widget.clear()
+        self.list_widget.addItems(self.people)
+        self.filter_people(phrase)
         self.update_count()
 
     def update_count(self):
