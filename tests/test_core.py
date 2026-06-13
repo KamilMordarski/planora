@@ -27,6 +27,7 @@ from app.templates.midweek_meeting.default_project import normal_meeting, progra
 from app.templates.midweek_meeting.renderer import numbered_program_title
 from app.gui.theme_manager import THEMES, build_stylesheet
 from app.gui.ui_feedback import UiFeedback
+from tools.update_download_catalog import update_catalog
 
 
 class UpdateCheckerTests(unittest.TestCase):
@@ -251,6 +252,22 @@ class UpdateInstallerTests(unittest.TestCase):
             self.assertEqual(exit_code, 1)
             self.assertEqual(target.read_bytes(), b"old-version")
             self.assertFalse(json.loads(result.read_text(encoding="utf-8"))["success"])
+
+
+class DownloadCatalogTests(unittest.TestCase):
+    def test_catalog_contains_latest_and_versioned_executable_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            downloads = Path(directory) / "downloads"
+            update_catalog("KamilMordarski/planora", "v1.7.3", downloads)
+            update_catalog("KamilMordarski/planora", "1.8.0", downloads)
+
+            latest = (downloads / "latest" / "README.md").read_text(encoding="utf-8")
+            version = (downloads / "1.7.3" / "README.md").read_text(encoding="utf-8")
+            root = (downloads / "README.md").read_text(encoding="utf-8")
+
+            self.assertIn("Planora-latest.exe", latest)
+            self.assertIn("Planora-1.7.3.exe", version)
+            self.assertLess(root.index("[1.8.0]"), root.index("[1.7.3]"))
 
 
 class ThemeTests(unittest.TestCase):

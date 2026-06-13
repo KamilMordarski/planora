@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -34,19 +35,63 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -v
 
+      - name: Resolve version number
+        id: version
+        shell: bash
+        run: echo "number=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - name: Build application
         run: pyinstaller --onefile --windowed --name Planora --icon app/assets/icons/app_icon.png --add-data "app/assets${{ runner.os == 'Windows' && ';' || ':' }}app/assets" main.py
 
       - name: Pack Windows application
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path dist/Planora.exe -DestinationPath "${{ matrix.artifact }}.zip"
+        run: |
+          Compress-Archive -Path dist/Planora.exe -DestinationPath "${{ matrix.artifact }}.zip"
+          Copy-Item dist/Planora.exe "Planora-latest.exe"
+          Copy-Item dist/Planora.exe "Planora-${{ steps.version.outputs.number }}.exe"
 
       - name: Pack macOS application
         if: runner.os == 'macOS'
         run: ditto -c -k --sequesterRsrc --keepParent dist/Planora.app "${{ matrix.artifact }}.zip"
 
-      - name: Upload release file
+      - name: Upload Windows release files
+        if: runner.os == 'Windows'
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.artifact }}.zip
+          overwrite_files: true
+          files: |
+            Planora-Windows.zip
+            Planora-latest.exe
+            Planora-${{ steps.version.outputs.number }}.exe
+
+      - name: Upload macOS release file
+        if: runner.os == 'macOS'
+        uses: softprops/action-gh-release@v2
+        with:
+          overwrite_files: true
+          files: Planora-macOS.zip
+
+  publish-download-catalog:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Update downloads catalog
+        run: python tools/update_download_catalog.py --repo "${{ github.repository }}" --version "${GITHUB_REF_NAME#v}"
+
+      - name: Publish downloads catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add downloads
+          git diff --cached --quiet || git commit -m "Update downloads catalog for ${GITHUB_REF_NAME#v}"
+          git push origin HEAD:main

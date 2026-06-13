@@ -6,6 +6,12 @@ zapisywania oraz eksportowania grafików do PDF i JPG.
 > Planora jest niezależnym, nieoficjalnym narzędziem. Nie jest oficjalną
 > aplikacją Świadków Jehowy ani żadnej powiązanej organizacji.
 
+## Pobieranie
+
+Gotowy plik EXE dla Windows i paczka dla macOS są dostępne w
+[`downloads/latest`](downloads/latest/). Starsze wersje znajdują się w
+[`downloads`](downloads/).
+
 Obecnie dostępne szablony:
 
 - **Wykład publiczny i Studium Strażnicy**
