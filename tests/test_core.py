@@ -128,6 +128,8 @@ class UpdateInstallerTests(unittest.TestCase):
 
         with (
             patch("app.core.update_installer.sys.platform", "win32"),
+            patch("app.core.update_installer.subprocess.CREATE_NEW_PROCESS_GROUP", 0x200, create=True),
+            patch("app.core.update_installer.subprocess.DETACHED_PROCESS", 0x8, create=True),
             patch("app.core.update_installer.subprocess.Popen", return_value=process) as popen,
         ):
             _launch_installed_app(target)
@@ -144,6 +146,8 @@ class UpdateInstallerTests(unittest.TestCase):
 
         with (
             patch("app.core.update_installer.sys.platform", "win32"),
+            patch("app.core.update_installer.subprocess.CREATE_NEW_PROCESS_GROUP", 0x200, create=True),
+            patch("app.core.update_installer.subprocess.DETACHED_PROCESS", 0x8, create=True),
             patch("app.core.update_installer.subprocess.Popen", return_value=process),
             self.assertRaisesRegex(OSError, "kod 1"),
         ):
