@@ -90,6 +90,11 @@ class GuideDialog(QDialog):
             "Wpisz własny nagłówek, ustaw liczbę i kolejność grup, potem wybierz osoby z biblioteki. "
             "Nowa osoba jest członkiem grupy; grupowy i asystent są wyróżniani w eksporcie.",
         ),
+        (
+            "Zbiórki do służby",
+            "Edytuj tytuł, okres, nazwy kolumn, notatkę i kolory dokumentu. Następnie dodawaj terminy, "
+            "godziny, miejsca oraz prowadzących. Każdą zbiórkę można duplikować i swobodnie przesuwać.",
+        ),
     ]
 
     FILES = [
@@ -180,7 +185,7 @@ class GuideDialog(QDialog):
         layout.addWidget(subtitle)
 
         facts = QHBoxLayout()
-        for text in ("4 generatory", "PDF i JPG", "Lokalne dane", "Aktualizacje online"):
+        for text in ("5 generatorów", "PDF i JPG", "Lokalne dane", "Aktualizacje online"):
             label = QLabel(text)
             label.setObjectName("guideBadge")
             label.setAlignment(Qt.AlignCenter)

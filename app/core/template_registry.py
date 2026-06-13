@@ -2,6 +2,7 @@ from app.templates.public_talk_watchtower.template import PublicTalkWatchtowerTe
 from app.templates.cleaning_attendants.template import CleaningAttendantsTemplate
 from app.templates.midweek_meeting.template import MidweekMeetingTemplate
 from app.templates.field_service_groups.template import FieldServiceGroupsTemplate
+from app.templates.service_meetings.template import ServiceMeetingsTemplate
 
 
 TEMPLATES = [
@@ -9,6 +10,7 @@ TEMPLATES = [
     CleaningAttendantsTemplate(),
     MidweekMeetingTemplate(),
     FieldServiceGroupsTemplate(),
+    ServiceMeetingsTemplate(),
 ]
 
 

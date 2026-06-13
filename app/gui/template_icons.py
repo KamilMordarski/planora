@@ -9,12 +9,14 @@ BACKGROUNDS = {
     "cleaning_attendants": QColor("#edf6f1"),
     "midweek_meeting": QColor("#fff3e2"),
     "field_service_groups": QColor("#f1edf8"),
+    "service_meetings": QColor("#edf3f6"),
 }
 ACCENTS = {
     "public_talk_watchtower": QColor("#3979b7"),
     "cleaning_attendants": QColor("#3f8061"),
     "midweek_meeting": QColor("#d18423"),
     "field_service_groups": QColor("#76619b"),
+    "service_meetings": QColor("#526f82"),
 }
 
 
@@ -41,6 +43,8 @@ def template_icon(template_id: str, size: int = 96) -> QPixmap:
         _midweek(painter, accent)
     elif template_id == "field_service_groups":
         _groups(painter, accent)
+    elif template_id == "service_meetings":
+        _service_meetings(painter, accent)
     else:
         _midweek(painter, accent)
     painter.end()
@@ -99,3 +103,21 @@ def _groups(painter: QPainter, accent: QColor):
     painter.drawArc(QRectF(35, 42, 26, 24), 0, 180 * 16)
     painter.drawArc(QRectF(20, 53, 22, 19), 0, 180 * 16)
     painter.drawArc(QRectF(54, 53, 22, 19), 0, 180 * 16)
+
+
+def _service_meetings(painter: QPainter, accent: QColor):
+    painter.setPen(QPen(INK, 3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+    painter.drawRoundedRect(QRectF(25, 24, 46, 49), 6, 6)
+    painter.drawLine(QPointF(25, 37), QPointF(71, 37))
+    painter.setBrush(accent)
+    painter.setPen(QPen(accent, 2))
+    painter.drawEllipse(QPointF(38, 51), 7, 7)
+    painter.setPen(QPen(PAPER, 2, Qt.SolidLine, Qt.RoundCap))
+    painter.drawLine(QPointF(38, 51), QPointF(38, 47))
+    painter.drawLine(QPointF(38, 51), QPointF(42, 53))
+    painter.setBrush(Qt.NoBrush)
+    painter.setPen(QPen(INK, 3, Qt.SolidLine, Qt.RoundCap))
+    painter.drawLine(QPointF(53, 48), QPointF(64, 48))
+    painter.drawLine(QPointF(53, 57), QPointF(64, 57))
+    painter.drawLine(QPointF(34, 18), QPointF(34, 29))
+    painter.drawLine(QPointF(62, 18), QPointF(62, 29))

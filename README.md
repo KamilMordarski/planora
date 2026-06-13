@@ -21,6 +21,7 @@ Obecnie dostępne szablony:
 - **Sprzątanie sali, nagłośnienie i porządkowi** z wykrywaniem kolizji obowiązków
 - **Plan zebrań w tygodniu** z edytowalnymi sekcjami programu i wydarzeniami specjalnymi
 - **Plan grup służby** z dowolną liczbą grup i rolami członków
+- **Zbiórki do służby** z edytowalnymi kolumnami, kolorami, terminami i prowadzącymi
 
 Szablon sprzątania i porządkowych porównuje zakresy tygodniowe z konkretnymi
 datami zebrań. Ostrzega, gdy ta sama osoba ma danego dnia więcej niż jeden

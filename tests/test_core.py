@@ -25,6 +25,7 @@ from app.templates.cleaning_attendants.default_project import attendant_row, wee
 from app.templates.field_service_groups.default_project import ROLE_MEMBER, group, member
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section
 from app.templates.midweek_meeting.renderer import numbered_program_title
+from app.templates.service_meetings.default_project import meeting_row
 from app.gui.theme_manager import THEMES, build_stylesheet
 from app.gui.ui_feedback import UiFeedback
 from tools.update_download_catalog import update_catalog
@@ -318,6 +319,7 @@ class TemplateRegistryTests(unittest.TestCase):
         self.assertEqual(TemplateRegistry.get("cleaning_attendants").default_project["weekly_assignments"], [])
         self.assertEqual(TemplateRegistry.get("cleaning_attendants").default_project["attendant_assignments"], [])
         self.assertEqual(TemplateRegistry.get("midweek_meeting").default_project["meetings"], [])
+        self.assertEqual(TemplateRegistry.get("service_meetings").default_project["meetings"], [])
         groups = TemplateRegistry.get("field_service_groups").default_project["groups"]
         self.assertEqual(len(groups), 5)
         self.assertTrue(all(value["members"] == [] for value in groups))
@@ -380,6 +382,27 @@ class TemplateRegistryTests(unittest.TestCase):
         self.assertIsNotNone(template)
         self.assertEqual(template.default_project["template_id"], template.id)
         self.assertEqual(member("Jan Test")["role"], ROLE_MEMBER)
+
+    def test_service_meetings_template_is_registered_and_fully_editable(self):
+        template = TemplateRegistry.get("service_meetings")
+        project = template.default_project
+        project["title"] = "Własny tytuł"
+        project["headers"]["place"] = "DOWOLNA KOLUMNA"
+        project["colors"]["header_fill"] = "#123456"
+        project["meetings"] = [meeting_row("Dowolna data", "18:00", "Dowolne miejsce", "Jan Test", "#abcdef")]
+
+        pages = template.renderer_class.render_pages(project)
+
+        self.assertIsNotNone(template)
+        self.assertEqual(project["meetings"][0]["date"], "Dowolna data")
+        self.assertEqual(len(pages), 1)
+
+    def test_service_meetings_renderer_paginates_long_plans(self):
+        template = TemplateRegistry.get("service_meetings")
+        project = template.default_project
+        project["meetings"] = [meeting_row(f"Termin {index}") for index in range(20)]
+
+        self.assertEqual(len(template.renderer_class.render_pages(project)), 2)
 
     def test_field_service_groups_renderer_paginates_groups_and_long_lists(self):
         template = TemplateRegistry.get("field_service_groups")
@@ -489,6 +512,18 @@ class ProjectIOTests(unittest.TestCase):
 
         self.assertEqual(project["template_id"], "field_service_groups")
         self.assertEqual(project["groups"][0]["members"][0]["role"], "leader")
+
+    def test_service_meetings_project_can_be_saved_and_loaded(self):
+        source = TemplateRegistry.get("service_meetings").default_project
+        source["meetings"].append(meeting_row("Wtorek", "17:15", "Sala", "Jan Test", "#dbe7ee"))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "service-meetings.json"
+            ProjectIO.save_project(path, source)
+
+            project = ProjectIO.load_project(path)
+
+        self.assertEqual(project["template_id"], "service_meetings")
+        self.assertEqual(project["meetings"][0]["place"], "Sala")
 
 
 if __name__ == "__main__":
