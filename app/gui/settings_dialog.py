@@ -156,7 +156,8 @@ class SettingsDialog(QDialog):
         layout.addWidget(group)
         warning = QLabel(
             "Adres aktualizacji jest ustawiony przez autora aplikacji. "
-            "Nie należy go zmieniać, ponieważ nieprawidłowy adres może zepsuć sprawdzanie aktualizacji."
+            "Nie należy go zmieniać, ponieważ nieprawidłowy adres może zepsuć sprawdzanie aktualizacji. "
+            "Po Twoim potwierdzeniu gotowa aplikacja może automatycznie zainstalować nową wersję i uruchomić się ponownie."
         )
         warning.setObjectName("helpText")
         warning.setWordWrap(True)

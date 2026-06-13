@@ -18,13 +18,15 @@ def main():
     parser.add_argument("--note", action="append", default=[], help="Notatka wydania; opcję można podać wiele razy")
     args = parser.parse_args()
 
+    release_tag = args.version if str(args.version).startswith("v") else f"v{args.version}"
+    release_url = f"https://github.com/{args.repo}/releases/download/{release_tag}"
     payload = {
         "latest_version": args.version,
         "release_date": date.today().isoformat(),
-        "download_url": f"https://github.com/{args.repo}/releases/latest/download/Planora-Windows.zip",
+        "download_url": f"{release_url}/Planora-Windows.zip",
         "download_urls": {
-            "windows": f"https://github.com/{args.repo}/releases/latest/download/Planora-Windows.zip",
-            "macos": f"https://github.com/{args.repo}/releases/latest/download/Planora-macOS.zip",
+            "windows": f"{release_url}/Planora-Windows.zip",
+            "macos": f"{release_url}/Planora-macOS.zip",
         },
         "notes": args.note or ["Nowa wersja Planory jest dostępna do pobrania."],
     }

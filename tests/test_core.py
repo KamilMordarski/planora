@@ -2,6 +2,7 @@ import json
 import io
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -9,6 +10,13 @@ from app.config import UPDATE_URL
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
+from app.core.update_installer import (
+    apply_update,
+    _replace_installation,
+    consume_update_result,
+    run_update_installer_from_args,
+    validate_update_archive,
+)
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
 from app.gui.theme_manager import THEMES, build_stylesheet
@@ -93,6 +101,107 @@ class UpdateCheckerTests(unittest.TestCase):
 
             self.assertEqual(downloaded.read_bytes(), payload)
             self.assertEqual(progress[-1], (len(payload), len(payload)))
+
+
+class UpdateInstallerTests(unittest.TestCase):
+    def test_windows_update_archive_contains_expected_application(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / "Planora-Windows.zip"
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr("Planora.exe", b"new-version")
+
+            validate_update_archive(archive, "windows")
+
+    def test_macos_update_archive_contains_expected_application(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / "Planora-macOS.zip"
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr("Planora.app/Contents/MacOS/Planora", b"new-version")
+
+            validate_update_archive(archive, "macos")
+
+    def test_installation_file_is_replaced_and_backup_removed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "Planora.exe"
+            payload = root / "new" / "Planora.exe"
+            payload.parent.mkdir()
+            target.write_bytes(b"old-version")
+            payload.write_bytes(b"new-version")
+
+            _replace_installation(payload, target)
+
+            self.assertEqual(target.read_bytes(), b"new-version")
+            self.assertFalse((root / "Planora.exe.previous").exists())
+
+    def test_installation_backup_can_be_kept_until_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "Planora.exe"
+            payload = root / "new" / "Planora.exe"
+            payload.parent.mkdir()
+            target.write_bytes(b"old-version")
+            payload.write_bytes(b"new-version")
+
+            backup = _replace_installation(payload, target, keep_backup=True)
+
+            self.assertEqual(target.read_bytes(), b"new-version")
+            self.assertEqual(backup.read_bytes(), b"old-version")
+
+    def test_complete_windows_update_cycle_replaces_application(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "Planora-Windows.zip"
+            target = root / "installed" / "Planora.exe"
+            target.parent.mkdir()
+            target.write_bytes(b"old-version")
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr("Planora.exe", b"new-version")
+
+            with patch("app.core.update_installer._wait_for_process_exit"):
+                apply_update(archive, target, parent_pid=123, platform="windows")
+
+            self.assertEqual(target.read_bytes(), b"new-version")
+
+    def test_update_result_is_consumed_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result_path = Path(directory) / "result.json"
+            result_path.write_text('{"success": true, "message": "ok"}', encoding="utf-8")
+
+            self.assertEqual(consume_update_result(result_path)["message"], "ok")
+            self.assertIsNone(consume_update_result(result_path))
+
+    def test_failed_restart_restores_previous_application(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "update.zip"
+            target = root / "Planora.exe"
+            backup = root / "Planora.exe.previous"
+            result = root / "result.json"
+            target.write_bytes(b"new-version")
+            backup.write_bytes(b"old-version")
+            arguments = [
+                "--apply-update",
+                str(archive),
+                "--target",
+                str(target),
+                "--parent-pid",
+                "123",
+                "--result-file",
+                str(result),
+                "--version",
+                "test",
+            ]
+
+            with (
+                patch("app.core.update_installer.apply_update", return_value=backup),
+                patch("app.core.update_installer._launch_installed_app", side_effect=[OSError("start failed"), None]),
+            ):
+                exit_code = run_update_installer_from_args(arguments)
+
+            self.assertEqual(exit_code, 1)
+            self.assertEqual(target.read_bytes(), b"old-version")
+            self.assertFalse(json.loads(result.read_text(encoding="utf-8"))["success"])
 
 
 class ThemeTests(unittest.TestCase):

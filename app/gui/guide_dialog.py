@@ -66,7 +66,7 @@ class GuideDialog(QDialog):
         ),
         (
             "Bezpieczne aktualizacje",
-            "Po Twoim potwierdzeniu aplikacja pobiera właściwy plik ZIP bezpośrednio na komputer. Nigdy nie podmienia uruchomionych plików automatycznie.",
+            "Po Twoim potwierdzeniu Planora pobiera właściwą paczkę, zamyka się, instaluje aktualizację i uruchamia ponownie. W razie błędu przywraca poprzednią wersję.",
         ),
         (
             "Prywatność danych",
@@ -127,7 +127,7 @@ class GuideDialog(QDialog):
             ),
             (
                 "Aktualizacje online",
-                "Planora korzysta ze stałego adresu update.json. Po wykryciu nowej wersji pobiera właściwą paczkę dla Windows lub macOS bez otwierania strony GitHub.",
+                "Planora korzysta ze stałego adresu update.json. Po wykryciu nowej wersji może ją pobrać, zainstalować i automatycznie uruchomić aplikację ponownie.",
             ),
         ]
         return GuideDialog._cards_tab(cards)

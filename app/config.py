@@ -44,3 +44,5 @@ USER_DATA_DIR = _user_data_dir()
 LEGACY_USER_DATA_DIR = _legacy_user_data_dir()
 PEOPLE_FILE = USER_DATA_DIR / "people.json"
 SETTINGS_FILE = USER_DATA_DIR / "settings.json"
+UPDATE_DIR = USER_DATA_DIR / "updates"
+UPDATE_RESULT_FILE = USER_DATA_DIR / "update-result.json"

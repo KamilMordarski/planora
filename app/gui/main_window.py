@@ -5,7 +5,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QProgressDialog
 
-from app.config import APP_ICON, UPDATE_URL, USER_DATA_DIR
+from app.config import APP_ICON, UPDATE_DIR, UPDATE_URL, USER_DATA_DIR
 from app.core.app_info import APP_NAME, APP_VERSION
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
@@ -14,6 +14,12 @@ from app.core.updater import (
     UpdateCheckError,
     UpdateDownloadCancelled,
     UpdateDownloadError,
+)
+from app.core.update_installer import (
+    UpdateInstallError,
+    consume_update_result,
+    is_install_supported,
+    launch_update_installer,
 )
 from app.gui.home_screen import HomeScreen
 from app.gui.guide_dialog import GuideDialog
@@ -33,6 +39,7 @@ class MainWindow(QMainWindow):
         self.settings = ProjectIO.load_settings()
         self.editor = None
         self._startup_update_scheduled = False
+        self._pending_update_result = consume_update_result()
 
         self.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
         self.resize(1360, 840)
@@ -64,6 +71,10 @@ class MainWindow(QMainWindow):
 
     def showEvent(self, event):
         super().showEvent(event)
+        if self._pending_update_result:
+            result = self._pending_update_result
+            self._pending_update_result = None
+            QTimer.singleShot(700, lambda: self._show_update_result(result))
         if self.settings.get("check_updates_on_start") and not self._startup_update_scheduled:
             self._startup_update_scheduled = True
             QTimer.singleShot(500, lambda: self.check_updates(quiet_if_current=True))
@@ -155,22 +166,36 @@ class MainWindow(QMainWindow):
         message.setIcon(QMessageBox.Information)
         message.setText(f"Dostępna jest wersja {info.get('latest_version')}.")
         message.setInformativeText(f"Data wydania: {info.get('release_date', 'brak')}\n\n{notes_text}")
-        download = message.addButton("Pobierz aktualizację", QMessageBox.AcceptRole)
+        install_supported = is_install_supported()
+        action_label = "Pobierz i zainstaluj" if install_supported else "Pobierz aktualizację"
+        if install_supported:
+            message.setInformativeText(
+                f"Data wydania: {info.get('release_date', 'brak')}\n\n{notes_text}\n\n"
+                "Planora zostanie zamknięta, zaktualizowana i uruchomiona ponownie. "
+                "Przed kontynuowaniem zapisz otwarty projekt."
+            )
+        download = message.addButton(action_label, QMessageBox.AcceptRole)
         message.addButton(QMessageBox.Close)
         message.exec()
         if message.clickedButton() is download:
             self.download_update(checker)
 
     def download_update(self, checker: UpdateChecker):
-        default_path = Path.home() / "Downloads" / checker.suggested_filename()
-        path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Zapisz aktualizację Planory",
-            str(default_path),
-            "Archiwum ZIP (*.zip);;Wszystkie pliki (*)",
-        )
-        if not path:
-            return
+        install_supported = is_install_supported()
+        if install_supported:
+            UPDATE_DIR.mkdir(parents=True, exist_ok=True)
+            path = UPDATE_DIR / checker.suggested_filename()
+        else:
+            default_path = Path.home() / "Downloads" / checker.suggested_filename()
+            selected_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Zapisz aktualizację Planory",
+                str(default_path),
+                "Archiwum ZIP (*.zip);;Wszystkie pliki (*)",
+            )
+            if not selected_path:
+                return
+            path = Path(selected_path)
 
         progress = QProgressDialog("Pobieranie aktualizacji...", "Anuluj", 0, 100, self)
         progress.setWindowTitle("Aktualizacja Planory")
@@ -191,7 +216,7 @@ class MainWindow(QMainWindow):
             return not progress.wasCanceled()
 
         try:
-            downloaded_path = checker.download_update(Path(path), update_progress)
+            downloaded_path = checker.download_update(path, update_progress)
         except UpdateDownloadCancelled:
             return
         except UpdateDownloadError as exc:
@@ -200,9 +225,24 @@ class MainWindow(QMainWindow):
         finally:
             progress.close()
 
-        QMessageBox.information(
-            self,
-            "Aktualizacja pobrana",
-            f"Zapisano aktualizację w:\n{downloaded_path}\n\n"
-            "Zamknij Planorę, rozpakuj pobrany plik i uruchom nową wersję.",
-        )
+        if install_supported:
+            info = checker.get_update_info() or {}
+            try:
+                launch_update_installer(downloaded_path, str(info.get("latest_version", "")))
+            except UpdateInstallError as exc:
+                QMessageBox.warning(self, "Aktualizacja Planory", str(exc))
+                return
+            QApplication.quit()
+        else:
+            QMessageBox.information(
+                self,
+                "Aktualizacja pobrana",
+                f"Zapisano aktualizację w:\n{downloaded_path}\n\n"
+                "Automatyczna instalacja jest dostępna w gotowej wersji Planory dla Windows i macOS.",
+            )
+
+    def _show_update_result(self, result: dict):
+        if result.get("success"):
+            QMessageBox.information(self, "Aktualizacja zakończona", str(result.get("message", "")))
+        else:
+            QMessageBox.warning(self, "Aktualizacja nieudana", str(result.get("message", "")))

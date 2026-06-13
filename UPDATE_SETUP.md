@@ -1,7 +1,8 @@
 # Aktualizacje Planory przez GitHub
 
-Planora nie podmienia swoich plików automatycznie. Pobiera mały plik `update.json`,
-porównuje numery wersji i po zgodzie użytkownika pobiera bezpośrednio właściwy plik ZIP.
+Planora pobiera mały plik `update.json`, porównuje numery wersji i po zgodzie
+użytkownika pobiera właściwy plik ZIP. Następnie zamyka aplikację, podmienia
+program i uruchamia nową wersję. Przy błędzie instalator przywraca poprzednią wersję.
 
 ## Pierwsza konfiguracja
 
@@ -51,6 +52,8 @@ doda pliki ZIP do GitHub Releases. Planora automatycznie wybierze i pobierze:
 - `Planora-macOS.zip` na macOS.
 
 Nie zmieniaj tych nazw w workflow bez równoczesnej zmiany adresów w `update.json`.
+Skrypt `tools/prepare_update.py` przypina adresy paczek do konkretnego tagu wersji,
+aby podczas budowania nowego wydania nie pobrać omyłkowo poprzedniej paczki.
 
 ## Ważne
 
