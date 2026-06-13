@@ -1,8 +1,10 @@
+import copy
 from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 
-from PySide6.QtCore import QDate
+from PySide6.QtCore import QDate, Qt
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
@@ -17,6 +19,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSplitter,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -28,6 +31,7 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.responsive import configure_form
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section, special_event
+from app.templates.midweek_meeting.renderer import numbered_program_title
 
 
 class MidweekMeetingEditor(QWidget):
@@ -53,6 +57,7 @@ class MidweekMeetingEditor(QWidget):
         self.section_index = -1
         self.item_index = -1
         self.person_fields: list[QComboBox] = []
+        self.shortcuts: list[QShortcut] = []
         self._build_ui(go_back, edit_people)
         self.refresh_meetings(0)
         self.select_meeting(0)
@@ -67,6 +72,13 @@ class MidweekMeetingEditor(QWidget):
         toolbar.setContentsMargins(12, 8, 12, 8)
         back = QPushButton("← Wróć do menu")
         people = QPushButton("Biblioteka osób")
+        previous_meeting = QPushButton("←")
+        previous_meeting.setToolTip("Poprzednie zebranie")
+        self.meeting_switch = QComboBox()
+        self.meeting_switch.setMinimumWidth(210)
+        self.meeting_switch.setToolTip("Przełącz edytowane zebranie bez wracania do pierwszego kroku")
+        next_meeting = QPushButton("→")
+        next_meeting.setToolTip("Następne zebranie")
         save = QPushButton("Zapisz projekt")
         save.setObjectName("primaryButton")
         save_as = QPushButton("Zapisz jako…")
@@ -76,6 +88,19 @@ class MidweekMeetingEditor(QWidget):
         toolbar.addWidget(save)
         toolbar.addWidget(save_as)
         root.addWidget(toolbar_frame, 0)
+
+        context_frame = QWidget()
+        context_frame.setObjectName("editorContextBar")
+        context = QHBoxLayout(context_frame)
+        context.setContentsMargins(12, 7, 12, 7)
+        context.addWidget(QLabel("Edytowane zebranie:"))
+        context.addWidget(previous_meeting)
+        context.addWidget(self.meeting_switch, 1)
+        context.addWidget(next_meeting)
+        self.meeting_position = QLabel("Brak zebrań")
+        self.meeting_position.setObjectName("helpText")
+        context.addWidget(self.meeting_position)
+        root.addWidget(context_frame, 0)
 
         self.wizard = EditorWizard(self.animations_enabled)
         root.addWidget(self.wizard, 1)
@@ -100,6 +125,8 @@ class MidweekMeetingEditor(QWidget):
         self.meeting_list = QListWidget()
         add_normal = QPushButton("+ Dodaj zebranie")
         add_special = QPushButton("+ Dodaj wydarzenie specjalne")
+        duplicate = QPushButton("Duplikuj wybrane (+7 dni)")
+        duplicate.setToolTip("Kopiuje całe zebranie wraz z programem i ustawia datę tydzień później.")
         delete = QPushButton("Usuń")
         delete.setObjectName("dangerButton")
         move = QHBoxLayout()
@@ -110,6 +137,7 @@ class MidweekMeetingEditor(QWidget):
         left_layout.addWidget(self.meeting_list)
         left_layout.addWidget(add_normal)
         left_layout.addWidget(add_special)
+        left_layout.addWidget(duplicate)
         left_layout.addWidget(delete)
         left_layout.addLayout(move)
         meetings_layout.addWidget(left, 1)
@@ -163,6 +191,7 @@ class MidweekMeetingEditor(QWidget):
         save_as.clicked.connect(self.save_project_as)
         add_normal.clicked.connect(self.add_normal)
         add_special.clicked.connect(self.add_special)
+        duplicate.clicked.connect(self.duplicate_meeting)
         delete.clicked.connect(self.delete_meeting)
         up.clicked.connect(lambda: self.move_meeting(-1))
         down.clicked.connect(lambda: self.move_meeting(1))
@@ -170,6 +199,9 @@ class MidweekMeetingEditor(QWidget):
         jpg.clicked.connect(lambda: self._export("jpg"))
         both.clicked.connect(lambda: self._export("both"))
         self.meeting_list.currentRowChanged.connect(self.select_meeting)
+        self.meeting_switch.currentIndexChanged.connect(self.select_meeting)
+        previous_meeting.clicked.connect(lambda: self.switch_meeting(-1))
+        next_meeting.clicked.connect(lambda: self.switch_meeting(1))
         self.meeting_list.itemDoubleClicked.connect(lambda _item: self.wizard.set_step(1))
         self.document_title.textChanged.connect(self.update_document)
         self.congregation.textChanged.connect(self.update_document)
@@ -260,53 +292,64 @@ class MidweekMeetingEditor(QWidget):
         return scroll
 
     def _build_program_tab(self):
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.addWidget(self._instruction(
-            "Pracuj od lewej do prawej: wybierz sekcję, potem punkt programu, a następnie edytuj jego dane."
+            "Wybierz sekcję i punkt po lewej, a szczegóły uzupełnij po prawej. "
+            "Zmiana zebrania jest zawsze dostępna w górnym pasku."
         ))
-        lists = QVBoxLayout()
+        self.program_context = QLabel()
+        self.program_context.setObjectName("sectionTitle")
+        layout.addWidget(self.program_context)
+        self.program_splitter = QSplitter(Qt.Horizontal)
+        navigation = QWidget()
+        lists = QVBoxLayout(navigation)
+        lists.setContentsMargins(0, 0, 0, 0)
 
-        section_group = QGroupBox("1. Wybierz sekcję")
+        section_group = QGroupBox("Sekcje programu")
         section_side = QVBoxLayout(section_group)
         self.section_list = QListWidget()
-        self.section_list.setMinimumHeight(125)
-        self.section_list.setMaximumHeight(190)
         section_buttons = QHBoxLayout()
         add_section = QPushButton("Dodaj sekcję")
         add_section.setObjectName("primaryButton")
+        add_standard = QPushButton("Dodaj standardowe sekcje")
+        add_standard.setToolTip("Dodaje brakujące sekcje: Skarby, Ulepszajmy swoją służbę i Chrześcijański tryb życia.")
         delete_section = QPushButton("Usuń sekcję")
         delete_section.setObjectName("dangerButton")
         section_buttons.addWidget(add_section)
         section_buttons.addWidget(delete_section)
         section_side.addWidget(self.section_list)
         section_side.addLayout(section_buttons)
+        section_side.addWidget(add_standard)
         lists.addWidget(section_group)
 
-        item_group = QGroupBox("2. Wybierz punkt programu")
+        item_group = QGroupBox("Punkty wybranej sekcji")
         item_side = QVBoxLayout(item_group)
         self.item_list = QListWidget()
-        self.item_list.setMinimumHeight(150)
-        self.item_list.setMaximumHeight(230)
         item_buttons = QGridLayout()
         add_item = QPushButton("Dodaj punkt")
         add_item.setObjectName("primaryButton")
+        duplicate_item = QPushButton("Duplikuj punkt")
+        duplicate_item.setToolTip("Kopiuje wybrany punkt wraz z uczestnikami i rolami.")
         delete_item = QPushButton("Usuń punkt")
         delete_item.setObjectName("dangerButton")
         item_up = QPushButton("Wyżej")
         item_down = QPushButton("Niżej")
         item_buttons.addWidget(add_item, 0, 0)
-        item_buttons.addWidget(delete_item, 0, 1)
-        item_buttons.addWidget(item_up, 1, 0)
-        item_buttons.addWidget(item_down, 1, 1)
+        item_buttons.addWidget(duplicate_item, 0, 1)
+        item_buttons.addWidget(delete_item, 1, 0)
+        item_buttons.addWidget(item_up, 2, 0)
+        item_buttons.addWidget(item_down, 2, 1)
         item_side.addWidget(self.item_list)
         item_side.addLayout(item_buttons)
         lists.addWidget(item_group)
-        layout.addLayout(lists)
+        self.program_splitter.addWidget(navigation)
 
-        section_details = QGroupBox("3. Ustawienia wybranej sekcji")
+        details_scroll = QScrollArea()
+        details_scroll.setWidgetResizable(True)
+        details = QWidget()
+        details_layout = QVBoxLayout(details)
+        section_details = QGroupBox("Ustawienia wybranej sekcji")
         section_form = configure_form(QFormLayout(section_details))
         self.section_title = QLineEdit()
         self.section_color = QComboBox()
@@ -315,14 +358,14 @@ class MidweekMeetingEditor(QWidget):
         self.section_color.addItem("Czerwony — Chrześcijański tryb życia", "#c90000")
         section_form.addRow("Nazwa sekcji:", self.section_title)
         section_form.addRow("Kolor sekcji:", self.section_color)
-        layout.addWidget(section_details)
+        details_layout.addWidget(section_details)
 
-        item_details = QGroupBox("4. Szczegóły wybranego punktu")
+        item_details = QGroupBox("Szczegóły wybranego punktu")
         item_form = configure_form(QFormLayout(item_details))
         self.item_time = QLineEdit()
         self.item_time.setPlaceholderText("np. 18:30")
         self.item_title = QLineEdit()
-        self.item_title.setPlaceholderText("np. 4. Rozpoczynanie rozmowy")
+        self.item_title.setPlaceholderText("np. Rozpoczynanie rozmowy — numer doda się automatycznie")
         self.item_person_1 = self._person_combo()
         self.item_role_1 = QLineEdit()
         self.item_role_1.setPlaceholderText("Opcjonalnie, np. Prowadzący:")
@@ -335,15 +378,24 @@ class MidweekMeetingEditor(QWidget):
         item_form.addRow("Opis roli 1:", self.item_role_1)
         item_form.addRow("Uczestnik 2:", self.item_person_2)
         item_form.addRow("Opis roli 2:", self.item_role_2)
-        layout.addWidget(item_details)
-        layout.addStretch()
-        scroll.setWidget(tab)
+        add_next_item = QPushButton("+ Dodaj kolejny punkt")
+        add_next_item.setObjectName("primaryButton")
+        item_form.addRow("", add_next_item)
+        details_layout.addWidget(item_details)
+        details_layout.addStretch()
+        details_scroll.setWidget(details)
+        self.program_splitter.addWidget(details_scroll)
+        self.program_splitter.setSizes([390, 900])
+        layout.addWidget(self.program_splitter, 1)
 
         self.section_list.currentRowChanged.connect(self.select_section)
         self.item_list.currentRowChanged.connect(self.select_item)
         add_section.clicked.connect(self.add_section)
+        add_standard.clicked.connect(self.add_standard_sections)
         delete_section.clicked.connect(self.delete_section)
         add_item.clicked.connect(self.add_item)
+        duplicate_item.clicked.connect(self.duplicate_item)
+        add_next_item.clicked.connect(self.add_item)
         delete_item.clicked.connect(self.delete_item)
         item_up.clicked.connect(lambda: self.move_item(-1))
         item_down.clicked.connect(lambda: self.move_item(1))
@@ -353,7 +405,25 @@ class MidweekMeetingEditor(QWidget):
             field.textChanged.connect(self.update_item)
         self.item_person_1.currentTextChanged.connect(self.update_item)
         self.item_person_2.currentTextChanged.connect(self.update_item)
-        return scroll
+
+        self._add_shortcut("Alt+Left", lambda: self.switch_meeting(-1))
+        self._add_shortcut("Alt+Right", lambda: self.switch_meeting(1))
+        self._add_shortcut("Ctrl+D", self.duplicate_meeting)
+        self._add_shortcut("Ctrl+Return", self.add_item)
+        return tab
+
+    def _add_shortcut(self, sequence, callback):
+        shortcut = QShortcut(QKeySequence(sequence), self)
+        shortcut.activated.connect(callback)
+        self.shortcuts.append(shortcut)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "program_splitter"):
+            orientation = Qt.Vertical if self.width() < 1000 else Qt.Horizontal
+            if self.program_splitter.orientation() != orientation:
+                self.program_splitter.setOrientation(orientation)
+                self.program_splitter.setSizes([360, 760])
 
     def _build_special_tab(self):
         tab = QWidget()
@@ -428,16 +498,26 @@ class MidweekMeetingEditor(QWidget):
 
     def refresh_meetings(self, selected=None):
         self.meeting_list.blockSignals(True)
+        self.meeting_switch.blockSignals(True)
         self.meeting_list.clear()
+        self.meeting_switch.clear()
         for meeting in self.project["meetings"]:
             if meeting.get("type") == "special":
                 detail = meeting.get("special_title") or "wydarzenie specjalne"
             else:
                 detail = meeting.get("bible_reading") or "zwykłe zebranie"
             self.meeting_list.addItem(f"{self._short_date(meeting.get('date', ''))}\n{detail}")
+            self.meeting_switch.addItem(f"{self._short_date(meeting.get('date', ''))} · {detail}")
         if selected is not None:
             self.meeting_list.setCurrentRow(selected)
+            self.meeting_switch.setCurrentIndex(selected)
         self.meeting_list.blockSignals(False)
+        self.meeting_switch.blockSignals(False)
+        count = len(self.project["meetings"])
+        if count and selected is not None and 0 <= selected < count:
+            self.meeting_position.setText(f"Zebranie {selected + 1} z {count}")
+        elif not count:
+            self.meeting_position.setText("Brak zebrań")
 
     def select_meeting(self, index):
         meetings = self.project["meetings"]
@@ -445,6 +525,13 @@ class MidweekMeetingEditor(QWidget):
             return
         self.meeting_index = index
         meeting = meetings[index]
+        self.meeting_list.blockSignals(True)
+        self.meeting_switch.blockSignals(True)
+        self.meeting_list.setCurrentRow(index)
+        self.meeting_switch.setCurrentIndex(index)
+        self.meeting_list.blockSignals(False)
+        self.meeting_switch.blockSignals(False)
+        self.meeting_position.setText(f"Zebranie {index + 1} z {len(meetings)}")
         fields = [
             self.meeting_type, self.meeting_date, self.bible_reading, self.chairman, self.opening_prayer,
             self.opening_song_time, self.opening_song, self.opening_comments_time, self.opening_comments,
@@ -473,6 +560,25 @@ class MidweekMeetingEditor(QWidget):
         self.content_stack.setCurrentWidget(self.special_widget if is_special else self.program_widget)
         self.refresh_sections(0)
         self.select_section(0)
+        self.refresh_program_context()
+
+    def switch_meeting(self, delta):
+        target = self.meeting_index + delta
+        if 0 <= target < len(self.project["meetings"]):
+            self.select_meeting(target)
+
+    def refresh_program_context(self):
+        meeting = self._current_meeting()
+        if not hasattr(self, "program_context"):
+            return
+        if not meeting:
+            self.program_context.setText("Najpierw dodaj zebranie.")
+            return
+        section_value = self._current_section()
+        section_text = section_value.get("title", "") if section_value else "bez wybranej sekcji"
+        self.program_context.setText(
+            f"Zebranie: {self._short_date(meeting.get('date', ''))}  •  Sekcja: {section_text}"
+        )
 
     def update_meeting(self, *_args):
         meeting = self._current_meeting()
@@ -496,6 +602,7 @@ class MidweekMeetingEditor(QWidget):
             meeting.setdefault("sections", [])
         self.content_stack.setCurrentWidget(self.special_widget if new_type == "special" else self.program_widget)
         self.refresh_meetings(self.meeting_index)
+        self.refresh_program_context()
         self.refresh_preview()
 
     def update_special(self, *_args):
@@ -540,6 +647,7 @@ class MidweekMeetingEditor(QWidget):
             field.blockSignals(False)
         self.refresh_items(0)
         self.select_item(0)
+        self.refresh_program_context()
 
     def update_section(self, *_args):
         value = self._current_section()
@@ -548,17 +656,25 @@ class MidweekMeetingEditor(QWidget):
         value["title"] = self.section_title.text()
         value["color"] = self.section_color.currentData()
         self.refresh_sections(self.section_index)
+        self.refresh_program_context()
         self.refresh_preview()
 
     def refresh_items(self, selected=None):
         value = self._current_section()
         self.item_list.blockSignals(True)
         self.item_list.clear()
-        for item in value.get("items", []) if value else []:
-            self.item_list.addItem(f"{item.get('time', '')} {item.get('title', '')}")
+        for index, item in enumerate(value.get("items", []) if value else []):
+            number = self._program_item_number(self.section_index, index)
+            title = numbered_program_title(number, item.get("title", ""))
+            self.item_list.addItem(f"{item.get('time', '')}  {title}".strip())
         if selected is not None:
             self.item_list.setCurrentRow(selected)
         self.item_list.blockSignals(False)
+
+    def _program_item_number(self, section_index, item_index):
+        meeting = self._current_meeting()
+        sections = meeting.get("sections", []) if meeting else []
+        return 1 + item_index + sum(len(value.get("items", [])) for value in sections[:section_index])
 
     def select_item(self, index):
         value = self._current_section()
@@ -600,10 +716,26 @@ class MidweekMeetingEditor(QWidget):
     def add_normal(self):
         self.project["meetings"].append(normal_meeting(QDate.currentDate().toString("yyyy-MM-dd")))
         self._select_last_meeting()
+        self.wizard.set_step(1)
 
     def add_special(self):
         self.project["meetings"].append(special_event(QDate.currentDate().toString("yyyy-MM-dd")))
         self._select_last_meeting()
+        self.wizard.set_step(1)
+
+    def duplicate_meeting(self):
+        meeting = self._current_meeting()
+        if not meeting:
+            return
+        duplicate = copy.deepcopy(meeting)
+        current_date = QDate.fromString(str(duplicate.get("date", "")), "yyyy-MM-dd")
+        if current_date.isValid():
+            duplicate["date"] = current_date.addDays(7).toString("yyyy-MM-dd")
+        target = self.meeting_index + 1
+        self.project["meetings"].insert(target, duplicate)
+        self.refresh_meetings(target)
+        self.select_meeting(target)
+        self.refresh_preview()
 
     def _select_last_meeting(self):
         self.meeting_index = len(self.project["meetings"]) - 1
@@ -638,6 +770,27 @@ class MidweekMeetingEditor(QWidget):
         self.section_index = len(meeting["sections"]) - 1
         self.refresh_sections(self.section_index)
         self.select_section(self.section_index)
+        self.section_title.setFocus()
+        self.section_title.selectAll()
+        self.refresh_preview()
+
+    def add_standard_sections(self):
+        meeting = self._current_meeting()
+        if not meeting or meeting.get("type") == "special":
+            return
+        sections = meeting.setdefault("sections", [])
+        presets = [
+            ("SKARBY ZE SŁOWA BOŻEGO", "#666666"),
+            ("ULEPSZAJMY SWOJĄ SŁUŻBĘ", "#e58b00"),
+            ("CHRZEŚCIJAŃSKI TRYB ŻYCIA", "#c90000"),
+        ]
+        known = {value.get("title", "").casefold() for value in sections}
+        for title, color in presets:
+            if title.casefold() not in known:
+                sections.append(section(title, color))
+        self.section_index = 0 if sections else -1
+        self.refresh_sections(self.section_index)
+        self.select_section(self.section_index)
         self.refresh_preview()
 
     def delete_section(self):
@@ -658,6 +811,8 @@ class MidweekMeetingEditor(QWidget):
         self.item_index = len(value["items"]) - 1
         self.refresh_items(self.item_index)
         self.select_item(self.item_index)
+        self.item_title.setFocus()
+        self.item_title.selectAll()
         self.refresh_preview()
 
     def delete_item(self):
@@ -669,6 +824,20 @@ class MidweekMeetingEditor(QWidget):
             self.refresh_items(self.item_index)
             self.select_item(self.item_index)
             self.refresh_preview()
+
+    def duplicate_item(self):
+        value = self._current_section()
+        item = self._current_item()
+        if value is None or item is None:
+            return
+        target = self.item_index + 1
+        value.setdefault("items", []).insert(target, copy.deepcopy(item))
+        self.item_index = target
+        self.refresh_items(target)
+        self.select_item(target)
+        self.item_time.setFocus()
+        self.item_time.selectAll()
+        self.refresh_preview()
 
     def move_item(self, delta):
         value = self._current_section()

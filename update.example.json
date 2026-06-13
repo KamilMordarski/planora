@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.7.0",
+  "latest_version": "1.7.1",
   "release_date": "2026-06-13",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.7.0/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.7.1/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.7.0/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.7.0/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.7.1/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.7.1/Planora-macOS.zip"
   },
   "notes": [
-    "Usunięto domyślną nazwę zboru z planu grup służby",
-    "Dodano import listy osób z pliku JSON",
-    "Rozbudowano poradnik oraz ustawienia wyglądu i efektów"
+    "Dodano automatyczne numerowanie punktów zebrań w tygodniu",
+    "Uproszczono edycję zebrań: szybkie przełączanie dni, duplikowanie i standardowe sekcje",
+    "Dodano osobne ikony generatorów oraz wersję i autora na ekranie startowym"
   ]
 }

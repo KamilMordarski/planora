@@ -1,10 +1,10 @@
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
 from app.gui.responsive import ResponsiveCardGrid
+from app.gui.template_icons import template_icon
 
 
 class ScheduleTypeScreen(QWidget):
@@ -43,8 +43,7 @@ class ScheduleTypeScreen(QWidget):
 
             icon = QLabel()
             icon.setAlignment(Qt.AlignCenter)
-            if template.icon.exists():
-                icon.setPixmap(QPixmap(str(template.icon)).scaled(82, 82, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setPixmap(template_icon(template.id, 92))
             card_layout.addWidget(icon)
 
             name = QLabel(template.name)

@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 from datetime import date
 from pathlib import Path
@@ -17,6 +18,7 @@ TIME_W = 155
 PERSON_W = 525
 BLACK = (25, 25, 25)
 GRAY = (90, 90, 90)
+MANUAL_NUMBER_PREFIX = re.compile(r"^\s*\d+\.\s*")
 
 
 def _find_font(names):
@@ -94,6 +96,12 @@ def _date_text(value):
     if not parsed:
         return str(value)
     return f"{POLISH_WEEKDAYS[parsed.weekday()]}, {parsed.day} {POLISH_MONTHS[parsed.month]} {parsed.year}"
+
+
+def numbered_program_title(number: int, title: str) -> str:
+    """Add the displayed program number without changing project data."""
+    clean_title = MANUAL_NUMBER_PREFIX.sub("", str(title or ""), count=1).strip()
+    return f"{number}. {clean_title}".rstrip()
 
 
 class MidweekMeetingRenderer:
@@ -196,6 +204,7 @@ class MidweekMeetingRenderer:
             draw, y, meeting.get("opening_comments_time", ""), meeting.get("opening_comments", "")
         )
 
+        item_number = 1
         for section in meeting.get("sections", []):
             color = cls._hex_color(section.get("color"))
             draw.rectangle((MARGIN_X, y, MARGIN_X + CONTENT_W - PERSON_W - 15, y + 54), fill=color)
@@ -206,12 +215,13 @@ class MidweekMeetingRenderer:
                     draw,
                     y,
                     item.get("time", ""),
-                    item.get("title", ""),
+                    numbered_program_title(item_number, item.get("title", "")),
                     item.get("participant_1", ""),
                     item.get("participant_2", ""),
                     item.get("role_1", ""),
                     item.get("role_2", ""),
                 )
+                item_number += 1
                 draw.line(
                     (MARGIN_X + TIME_W, y - 8, MARGIN_X + CONTENT_W, y - 8),
                     fill=(150, 150, 150),

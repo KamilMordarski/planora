@@ -80,7 +80,10 @@ class GuideDialog(QDialog):
         (
             "Plan zebrań w tygodniu",
             "Dodaj zebranie, sekcje i punkty programu. Możesz zmieniać kolory sekcji oraz dodać "
-            "wydarzenie specjalne z tytułem, podtytułem i obrazem.",
+            "wydarzenie specjalne z tytułem, podtytułem i obrazem. W podglądzie i eksporcie "
+            "punkty są automatycznie numerowane od pierwszego punktu po uwagach wstępnych. "
+            "Górny pasek przełącza dni bez wracania do listy, a duplikowanie zebrania ustawia "
+            "datę tydzień później. Standardowe sekcje można dodać jednym kliknięciem.",
         ),
         (
             "Plan grup służby",

@@ -15,7 +15,7 @@ from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import QFrame, QGraphicsOpacityEffect, QLabel, QVBoxLayout, QWidget
 
 from app.config import APP_ICON, STARTUP_SOUND
-from app.core.app_info import APP_NAME, APP_TAGLINE
+from app.core.app_info import APP_AUTHOR, APP_NAME, APP_TAGLINE, APP_VERSION
 
 
 class StartupSplash(QWidget):
@@ -25,7 +25,7 @@ class StartupSplash(QWidget):
     def __init__(self, play_sound: bool = True, volume: int = 35, parent=None):
         super().__init__(parent)
         self.play_sound = play_sound
-        self._base_panel_size = (360, 410)
+        self._base_panel_size = (380, 445)
         self._animation = None
 
         self.setObjectName("startupSplash")
@@ -51,9 +51,14 @@ class StartupSplash(QWidget):
         subtitle.setObjectName("splashSubtitle")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setWordWrap(True)
+        footer = QLabel(f"Wersja {APP_VERSION}  •  {APP_AUTHOR}")
+        footer.setObjectName("splashFooter")
+        footer.setAlignment(Qt.AlignCenter)
         panel_layout.addWidget(self.logo, 1)
         panel_layout.addWidget(name)
         panel_layout.addWidget(subtitle)
+        panel_layout.addSpacing(5)
+        panel_layout.addWidget(footer)
 
         self.opacity = QGraphicsOpacityEffect(self.panel)
         self.opacity.setOpacity(0.0)

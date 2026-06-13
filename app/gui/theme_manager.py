@@ -140,6 +140,10 @@ def build_stylesheet(settings: dict) -> str:
             color: {theme.muted};
             font-size: {px(14)}px;
         }}
+        QLabel#splashFooter {{
+            color: {theme.muted};
+            font-size: {px(11)}px;
+        }}
         QToolTip {{
             background: {theme.surface};
             color: {theme.text};
@@ -317,7 +321,7 @@ def build_stylesheet(settings: dict) -> str:
         QGroupBox QLabel, QGroupBox QCheckBox, QGroupBox QRadioButton {{
             background-color: transparent;
         }}
-        QFrame#editorToolbar, QWidget#editorToolbar {{
+        QFrame#editorToolbar, QWidget#editorToolbar, QWidget#editorContextBar {{
             background-color: {theme.surface};
             border: 1px solid {theme.border};
             border-radius: {radius + 2}px;

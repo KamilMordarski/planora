@@ -19,7 +19,10 @@ obowiązek, na przykład konsolę Zoom oraz służbę porządkowego.
 
 Szablon zebrań w tygodniu umożliwia dodawanie własnych sekcji i punktów,
 przypisywanie uczestników z biblioteki osób oraz umieszczanie wydarzeń
-specjalnych z tytułem, podtytułem i obrazem.
+specjalnych z tytułem, podtytułem i obrazem. Właściwe punkty programu są
+automatycznie numerowane od pierwszego punktu po uwagach wstępnych. Pasek
+szybkiego wyboru pozwala zmieniać edytowane zebranie z każdego kroku, a całe
+zebranie lub pojedynczy punkt można duplikować, aby ograniczyć powtarzalne wpisywanie.
 
 Plan grup służby pozwala swobodnie dodawać, usuwać i porządkować grupy oraz
 ich członków. Grupowy i asystent są czytelnie, ale subtelnie wyróżnieni

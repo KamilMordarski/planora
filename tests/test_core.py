@@ -20,6 +20,8 @@ from app.core.update_installer import (
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
 from app.templates.field_service_groups.default_project import ROLE_MEMBER, group, member
+from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section
+from app.templates.midweek_meeting.renderer import numbered_program_title
 from app.gui.theme_manager import THEMES, build_stylesheet
 from app.gui.ui_feedback import UiFeedback
 
@@ -266,6 +268,36 @@ class TemplateRegistryTests(unittest.TestCase):
         self.assertIsNotNone(template)
         self.assertEqual(template.default_project["template_id"], template.id)
         self.assertEqual(len(template.renderer_class.render_pages(template.default_project)), 1)
+
+    def test_midweek_program_titles_are_numbered_without_duplicate_manual_prefix(self):
+        self.assertEqual(numbered_program_title(1, "Rozpoczynanie rozmowy"), "1. Rozpoczynanie rozmowy")
+        self.assertEqual(numbered_program_title(2, "7. Nie daj się zwieść"), "2. Nie daj się zwieść")
+
+    def test_midweek_numbering_starts_after_opening_comments_and_crosses_sections(self):
+        template = TemplateRegistry.get("midweek_meeting")
+        project = template.default_project
+        meeting = normal_meeting("2026-06-17")
+        meeting["opening_song"] = "Pieśń początkowa"
+        meeting["opening_comments"] = "Uwagi wstępne"
+        meeting["sections"] = [
+            section("Sekcja 1", "#666666", [program_item("18:06", "Pierwszy punkt")]),
+            section("Sekcja 2", "#e58b00", [program_item("18:16", "Drugi punkt")]),
+        ]
+        meeting["closing_comments"] = "Uwagi końcowe"
+        project["meetings"] = [meeting]
+        titles = []
+
+        def capture(_draw, y, _time, title, *_args):
+            titles.append(title)
+            return y + 68
+
+        with patch.object(template.renderer_class, "_draw_standard_line", side_effect=capture):
+            template.renderer_class.render_pages(project)
+
+        self.assertEqual(
+            titles,
+            ["Pieśń początkowa", "Uwagi wstępne", "1. Pierwszy punkt", "2. Drugi punkt", "Uwagi końcowe", ""],
+        )
 
     def test_field_service_groups_template_is_registered_and_roles_default_to_member(self):
         template = TemplateRegistry.get("field_service_groups")
