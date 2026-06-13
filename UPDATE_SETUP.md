@@ -27,7 +27,17 @@ https://raw.githubusercontent.com/KamilMordarski/planora/main/update.json
 ## Publikowanie kolejnej wersji
 
 1. Zmień `APP_VERSION` i `LAST_UPDATE` w `app/core/app_info.py`.
-2. Przygotuj nowy plik aktualizacji:
+2. Wyślij kod nowej wersji do GitHub, ale pozostaw jeszcze poprzednią wersję
+   w publicznym pliku `update.json`.
+3. Utwórz i wyślij tag wersji:
+
+```powershell
+git tag v1.6.0
+git push origin v1.6.0
+```
+
+4. Poczekaj, aż workflow zbuduje i opublikuje obie paczki ZIP.
+5. Dopiero wtedy przygotuj nowy plik aktualizacji:
 
 ```powershell
 .venv\Scripts\python.exe tools\prepare_update.py `
@@ -37,13 +47,8 @@ https://raw.githubusercontent.com/KamilMordarski/planora/main/update.json
   --note "Opis drugiej zmiany"
 ```
 
-3. Wyślij zmiany do GitHub.
-4. Utwórz i wyślij tag wersji:
-
-```powershell
-git tag v1.6.0
-git push origin v1.6.0
-```
+6. Wyślij wygenerowany `update.json` do gałęzi `main`. Od tego momentu
+   użytkownicy zobaczą aktualizację.
 
 Workflow `.github/workflows/release.yml` zbuduje wydanie dla Windows i macOS oraz
 doda pliki ZIP do GitHub Releases. Planora automatycznie wybierze i pobierze:

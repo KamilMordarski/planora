@@ -112,7 +112,7 @@ class SettingsDialog(QDialog):
         group_layout = QVBoxLayout(group)
         self.animations = QCheckBox("Animuj przejścia pomiędzy ekranami")
         self.animations.setChecked(bool(settings.get("animations_enabled", True)))
-        self.sounds = QCheckBox("Odtwarzaj subtelne dźwięki kliknięć")
+        self.sounds = QCheckBox("Odtwarzaj subtelne dźwięki interfejsu")
         self.sounds.setChecked(bool(settings.get("sounds_enabled", True)))
         group_layout.addWidget(self.animations)
         group_layout.addWidget(self.sounds)

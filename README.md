@@ -11,6 +11,7 @@ Obecnie dostępne szablony:
 - **Wykład publiczny i Studium Strażnicy**
 - **Sprzątanie sali, nagłośnienie i porządkowi** z wykrywaniem kolizji obowiązków
 - **Plan zebrań w tygodniu** z edytowalnymi sekcjami programu i wydarzeniami specjalnymi
+- **Plan grup służby** z dowolną liczbą grup i rolami członków
 
 Szablon sprzątania i porządkowych porównuje zakresy tygodniowe z konkretnymi
 datami zebrań. Ostrzega, gdy ta sama osoba ma danego dnia więcej niż jeden
@@ -20,11 +21,16 @@ Szablon zebrań w tygodniu umożliwia dodawanie własnych sekcji i punktów,
 przypisywanie uczestników z biblioteki osób oraz umieszczanie wydarzeń
 specjalnych z tytułem, podtytułem i obrazem.
 
+Plan grup służby pozwala swobodnie dodawać, usuwać i porządkować grupy oraz
+ich członków. Grupowy i asystent są czytelnie, ale subtelnie wyróżnieni
+w eksporcie, a każda nowa osoba domyślnie otrzymuje rolę członka grupy.
+
 ## Personalizacja interfejsu
 
 W ustawieniach aplikacji można wybrać jeden z pięciu motywów, ustawić własny
 kolor akcentu, zmienić skalę tekstu oraz włączyć lub wyłączyć animacje i
-dźwięki. Ustawienia interfejsu nie wpływają na wygląd eksportowanych plików.
+dźwięki. Przyciski, nawigacja, dodawanie, usuwanie, zapis i eksport mają
+własne subtelne efekty. Ustawienia interfejsu nie wpływają na wygląd eksportowanych plików.
 
 Poradnik dostępny z menu głównego opisuje cały proces tworzenia grafiku.
 

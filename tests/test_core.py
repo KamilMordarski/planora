@@ -19,7 +19,9 @@ from app.core.update_installer import (
 )
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
+from app.templates.field_service_groups.default_project import ROLE_MEMBER, group, member
 from app.gui.theme_manager import THEMES, build_stylesheet
+from app.gui.ui_feedback import UiFeedback
 
 
 class UpdateCheckerTests(unittest.TestCase):
@@ -212,12 +214,25 @@ class ThemeTests(unittest.TestCase):
         self.assertIn("QPushButton", stylesheet)
 
 
+class UiFeedbackTests(unittest.TestCase):
+    def test_all_feedback_sounds_can_be_generated(self):
+        names = ("click", "hover", "navigate", "switch", "add", "remove", "open", "save", "export", "confirm")
+        with tempfile.TemporaryDirectory() as directory:
+            for name in names:
+                path = Path(directory) / f"{name}.wav"
+                UiFeedback._write_sound(path, name)
+                self.assertGreater(path.stat().st_size, 500)
+
+
 class TemplateRegistryTests(unittest.TestCase):
     def test_new_projects_start_without_schedule_entries(self):
         self.assertEqual(TemplateRegistry.get("public_talk_watchtower").default_project["weeks"], [])
         self.assertEqual(TemplateRegistry.get("cleaning_attendants").default_project["weekly_assignments"], [])
         self.assertEqual(TemplateRegistry.get("cleaning_attendants").default_project["attendant_assignments"], [])
         self.assertEqual(TemplateRegistry.get("midweek_meeting").default_project["meetings"], [])
+        groups = TemplateRegistry.get("field_service_groups").default_project["groups"]
+        self.assertEqual(len(groups), 5)
+        self.assertTrue(all(value["members"] == [] for value in groups))
 
     def test_public_talk_template_is_registered(self):
         template = TemplateRegistry.get("public_talk_watchtower")
@@ -239,6 +254,25 @@ class TemplateRegistryTests(unittest.TestCase):
         self.assertIsNotNone(template)
         self.assertEqual(template.default_project["template_id"], template.id)
         self.assertEqual(len(template.renderer_class.render_pages(template.default_project)), 1)
+
+    def test_field_service_groups_template_is_registered_and_roles_default_to_member(self):
+        template = TemplateRegistry.get("field_service_groups")
+
+        self.assertIsNotNone(template)
+        self.assertEqual(template.default_project["template_id"], template.id)
+        self.assertEqual(member("Jan Test")["role"], ROLE_MEMBER)
+
+    def test_field_service_groups_renderer_paginates_groups_and_long_lists(self):
+        template = TemplateRegistry.get("field_service_groups")
+        project = template.default_project
+        project["groups"] = [
+            group(f"GRUPA {index}", [member(f"Osoba {row}") for row in range(24 if index == 1 else 2)])
+            for index in range(1, 7)
+        ]
+
+        pages = template.renderer_class.render_pages(project)
+
+        self.assertEqual(len(pages), 3)
 
 
 class RendererTests(unittest.TestCase):
@@ -306,6 +340,18 @@ class ProjectIOTests(unittest.TestCase):
 
         self.assertEqual(project["template_id"], "midweek_meeting")
         self.assertEqual(len(project["meetings"]), 0)
+
+    def test_field_service_groups_project_can_be_saved_and_loaded(self):
+        source = TemplateRegistry.get("field_service_groups").default_project
+        source["groups"][0]["members"].append(member("Jan Test", "leader"))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "groups.json"
+            ProjectIO.save_project(path, source)
+
+            project = ProjectIO.load_project(path)
+
+        self.assertEqual(project["template_id"], "field_service_groups")
+        self.assertEqual(project["groups"][0]["members"][0]["role"], "leader")
 
 
 if __name__ == "__main__":

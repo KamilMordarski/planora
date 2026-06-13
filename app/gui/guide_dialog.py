@@ -57,6 +57,10 @@ class GuideDialog(QDialog):
             "Plan zebrań w tygodniu",
             "Dodaj zebranie, uzupełnij jego dane, a potem utwórz sekcje i punkty programu. Wydarzenie specjalne może zawierać tytuł, podtytuł i obraz.",
         ),
+        (
+            "Plan grup służby",
+            "Ustaw nagłówek, dodaj potrzebną liczbę grup, a następnie szybko wybieraj osoby z biblioteki. Każda nowa osoba jest członkiem grupy, dopóki nie przypiszesz jej roli grupowego lub asystenta.",
+        ),
     ]
 
     GOOD_PRACTICES = [
