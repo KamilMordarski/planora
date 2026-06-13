@@ -1,0 +1,52 @@
+name: Build Planora release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: Planora-Windows
+          - os: macos-latest
+            artifact: Planora-macOS
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Run tests
+        run: python -m unittest discover -v
+
+      - name: Build application
+        run: pyinstaller --onefile --windowed --name Planora --icon app/assets/icons/app_icon.png --add-data "app/assets${{ runner.os == 'Windows' && ';' || ':' }}app/assets" main.py
+
+      - name: Pack Windows application
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/Planora.exe -DestinationPath "${{ matrix.artifact }}.zip"
+
+      - name: Pack macOS application
+        if: runner.os == 'macOS'
+        run: ditto -c -k --sequesterRsrc --keepParent dist/Planora.app "${{ matrix.artifact }}.zip"
+
+      - name: Upload release file
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}.zip

@@ -76,6 +76,28 @@ skopiowana do katalogu użytkownika. Dane ze starszego katalogu
 
 ## Aktualizacje
 
-Adres pliku `update.json` można zmienić w ustawieniach. Aplikacja wyłącznie
-sprawdza wersję i, po potwierdzeniu użytkownika, otwiera link pobierania.
-Nie zalecam jednak zmiany bo wyłączy to możliwość aktualizacji.
+Aplikacja korzysta ze stałego adresu
+`https://raw.githubusercontent.com/KamilMordarski/planora/main/update.json`.
+Nie należy go zmieniać. Planora wyłącznie sprawdza wersję i, po potwierdzeniu
+użytkownika, otwiera link pobierania.
+
+Gotowa instrukcja konfiguracji aktualizacji przez GitHub znajduje się w
+[`UPDATE_SETUP.md`](UPDATE_SETUP.md). Plik można przygotować poleceniem:
+
+```bash
+python tools/prepare_update.py --repo KamilMordarski/planora --note "Opis wydania"
+```
+
+## Budowanie aplikacji
+
+Separator w `--add-data` to `;` na Windows i `:` na macOS:
+
+```bash
+pip install pyinstaller
+
+# Windows
+pyinstaller --onefile --windowed --name Planora --icon app/assets/icons/app_icon.png --add-data "app/assets;app/assets" main.py
+
+# macOS
+pyinstaller --onefile --windowed --name Planora --add-data "app/assets:app/assets" main.py
+```

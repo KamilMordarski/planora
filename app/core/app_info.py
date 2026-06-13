@@ -1,7 +1,8 @@
 APP_NAME = "Planora"
-APP_TAGLINE = "Rób plany w prosty sposób!"
+APP_TAGLINE = "Kreator przejrzystych grafików"
 APP_VERSION = "1.5.1"
 APP_AUTHOR = "Kamil Mordarski"
+APP_AUTHOR_URL = "https://www.kamilmordarski.pl"
 LAST_UPDATE = "2026-06-13"
 APP_DISCLAIMER = (
     "Planora jest niezależnym, nieoficjalnym narzędziem. "

@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from app.config import UPDATE_URL
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
@@ -13,6 +14,12 @@ from app.gui.theme_manager import THEMES, build_stylesheet
 
 
 class UpdateCheckerTests(unittest.TestCase):
+    def test_official_update_url_points_to_planora_repository(self):
+        self.assertEqual(
+            UPDATE_URL,
+            "https://raw.githubusercontent.com/KamilMordarski/planora/main/update.json",
+        )
+
     def test_compare_versions(self):
         checker = UpdateChecker(current_version="1.2.3")
 

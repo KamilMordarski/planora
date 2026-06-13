@@ -5,7 +5,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QBoxLayout, QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
 from app.config import APP_ICON
-from app.core.app_info import APP_AUTHOR, APP_DISCLAIMER, APP_NAME, APP_TAGLINE, APP_VERSION, LAST_UPDATE
+from app.core.app_info import APP_AUTHOR, APP_AUTHOR_URL, APP_DISCLAIMER, APP_NAME, APP_TAGLINE, APP_VERSION, LAST_UPDATE
 from app.gui.responsive import ResponsiveCardGrid
 
 
@@ -120,9 +120,14 @@ class HomeScreen(QWidget):
         root.addWidget(cards)
         root.addStretch()
 
-        footer = QLabel(f"Autor: {APP_AUTHOR}  •  Ostatnia aktualizacja: {LAST_UPDATE}")
+        footer = QLabel(
+            f'Autor: <a href="{APP_AUTHOR_URL}">{APP_AUTHOR}</a>'
+            f"  •  Ostatnia aktualizacja: {LAST_UPDATE}"
+        )
         footer.setObjectName("appInfo")
         footer.setAlignment(Qt.AlignCenter)
+        footer.setOpenExternalLinks(True)
+        footer.setTextInteractionFlags(Qt.TextBrowserInteraction)
         root.addWidget(footer)
 
     def resizeEvent(self, event):

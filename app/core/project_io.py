@@ -112,8 +112,7 @@ class ProjectIO:
         settings = dict(DEFAULT_SETTINGS)
         if isinstance(value, dict):
             settings.update(value)
-        if settings.get("update_url") == "https://twoja-strona.pl/update.json":
-            settings["update_url"] = UPDATE_URL
+        settings["update_url"] = UPDATE_URL
         ProjectIO.save_settings(settings)
         return settings
 

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.config import USER_DATA_DIR
+from app.config import UPDATE_URL, USER_DATA_DIR
 from app.gui.responsive import configure_form
 from app.gui.theme_manager import THEMES, theme_options
 from app.gui.ui_feedback import UiFeedback
@@ -144,8 +144,8 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(tab)
         group = QGroupBox("Zdalne aktualizacje")
         form = configure_form(QFormLayout(group))
-        self.update_url = QLineEdit(settings.get("update_url", ""))
-        self.update_url.setPlaceholderText("https://raw.githubusercontent.com/TWOJ_LOGIN/REPO/main/update.json")
+        self.update_url = QLineEdit(UPDATE_URL)
+        self.update_url.setReadOnly(True)
         self.check_on_start = QCheckBox("Sprawdzaj aktualizacje przy uruchomieniu")
         self.check_on_start.setChecked(bool(settings.get("check_updates_on_start", False)))
         data_dir = QLabel(str(USER_DATA_DIR))
@@ -154,19 +154,13 @@ class SettingsDialog(QDialog):
         form.addRow("", self.check_on_start)
         form.addRow("Katalog danych:", data_dir)
         layout.addWidget(group)
-        info = QFrame()
-        info.setObjectName("infoCard")
-        info_layout = QVBoxLayout(info)
-        info_title = QLabel("Najprościej przez GitHub")
-        info_title.setObjectName("sectionTitle")
-        info_text = QLabel(
-            "Umieść update.json w publicznym repozytorium, a tutaj wklej jego adres raw.githubusercontent.com. "
-            "Pełna instrukcja znajduje się w pliku UPDATE_SETUP.md."
+        warning = QLabel(
+            "Adres aktualizacji jest ustawiony przez autora aplikacji. "
+            "Nie należy go zmieniać, ponieważ nieprawidłowy adres może zepsuć sprawdzanie aktualizacji."
         )
-        info_text.setWordWrap(True)
-        info_layout.addWidget(info_title)
-        info_layout.addWidget(info_text)
-        layout.addWidget(info)
+        warning.setObjectName("helpText")
+        warning.setWordWrap(True)
+        layout.addWidget(warning)
         layout.addStretch()
         return tab
 
@@ -187,6 +181,6 @@ class SettingsDialog(QDialog):
             "animations_enabled": self.animations.isChecked(),
             "sounds_enabled": self.sounds.isChecked(),
             "sound_volume": self.sound_volume.value(),
-            "update_url": self.update_url.text().strip(),
+            "update_url": UPDATE_URL,
             "check_updates_on_start": self.check_on_start.isChecked(),
         }

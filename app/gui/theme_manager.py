@@ -315,6 +315,10 @@ def build_stylesheet(settings: dict) -> str:
             color: {theme.muted};
             background-color: transparent;
         }}
+        QLabel#appInfo a {{
+            color: {accent};
+            text-decoration: none;
+        }}
         QSplitter::handle {{
             background: {theme.border};
             width: 2px;

@@ -5,7 +5,7 @@ from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox
 
-from app.config import APP_ICON, USER_DATA_DIR
+from app.config import APP_ICON, UPDATE_URL, USER_DATA_DIR
 from app.core.app_info import APP_NAME, APP_VERSION
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
@@ -126,23 +126,7 @@ class MainWindow(QMainWindow):
         GuideDialog(self).exec()
 
     def check_updates(self, quiet_if_current: bool = False):
-        update_url = self.settings.get("update_url", "").strip()
-        if not update_url:
-            message = QMessageBox(self)
-            message.setWindowTitle("Aktualizacje nie są jeszcze skonfigurowane")
-            message.setIcon(QMessageBox.Information)
-            message.setText("W ustawieniach nie podano adresu update.json.")
-            message.setInformativeText(
-                "Najprościej umieścić update.json w publicznym repozytorium GitHub. "
-                "Instrukcja znajduje się w pliku UPDATE_SETUP.md."
-            )
-            configure = message.addButton("Otwórz ustawienia", QMessageBox.AcceptRole)
-            message.addButton(QMessageBox.Close)
-            message.exec()
-            if message.clickedButton() is configure:
-                self.open_settings()
-            return
-        checker = UpdateChecker(update_url)
+        checker = UpdateChecker(UPDATE_URL)
         try:
             available = checker.check_for_updates()
         except UpdateCheckError as exc:

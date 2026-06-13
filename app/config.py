@@ -9,7 +9,7 @@ ASSETS_DIR = PACKAGE_DIR / "assets"
 APP_ICON = ASSETS_DIR / "icons" / "app_icon.png"
 LEGACY_DATA_DIR = PROJECT_ROOT / "data"
 
-UPDATE_URL = os.environ.get("PLANORA_UPDATE_URL", "")
+UPDATE_URL = "https://raw.githubusercontent.com/KamilMordarski/planora/main/update.json"
 DATA_DIR_OVERRIDE = os.environ.get("PLANORA_DATA_DIR") or os.environ.get("GENERATOR_GRAFIKOW_DATA_DIR")
 
 

@@ -1,0 +1,7 @@
+.venv/
+.runtime-test/
+__pycache__/
+*.py[cod]
+dist/
+build/
+*.spec
