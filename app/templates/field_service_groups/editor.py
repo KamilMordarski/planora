@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QFormLayout,
+    QGridLayout,
     QGroupBox,
     QHeaderView,
     QHBoxLayout,
@@ -19,13 +20,14 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
+    QSizePolicy,
 )
 
 from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
-from app.gui.responsive import configure_form
+from app.gui.responsive import configure_editable_combo, configure_form
 from app.templates.field_service_groups.default_project import ROLE_LABELS, ROLE_MEMBER, group, member
 
 
@@ -50,6 +52,7 @@ class FieldServiceGroupsEditor(QWidget):
         self.animations_enabled = animations_enabled or (lambda: True)
         self.group_index = -1
         self._loading_members = False
+        self._compact_members = False
         self.person_fields: list[QComboBox] = []
         self._build_ui(go_back, edit_people)
         self.refresh_groups(0)
@@ -63,9 +66,12 @@ class FieldServiceGroupsEditor(QWidget):
         toolbar_frame.setObjectName("editorToolbar")
         toolbar = QHBoxLayout(toolbar_frame)
         toolbar.setContentsMargins(12, 8, 12, 8)
-        back = QPushButton("← Wróć do menu")
-        people_button = QPushButton("Biblioteka osób")
-        save = QPushButton("Zapisz projekt")
+        back = QPushButton("← Menu")
+        back.setToolTip("Wróć do menu głównego")
+        people_button = QPushButton("Osoby")
+        people_button.setToolTip("Otwórz bibliotekę osób")
+        save = QPushButton("Zapisz")
+        save.setToolTip("Zapisz projekt")
         save.setObjectName("primaryButton")
         save_as = QPushButton("Zapisz jako…")
         toolbar.addWidget(back)
@@ -96,15 +102,17 @@ class FieldServiceGroupsEditor(QWidget):
         group_layout = QVBoxLayout(group_box)
         group_layout.addWidget(self._help("Dodaj lub usuń grupy. Ich kolejność odpowiada kolejności kolumn w eksporcie."))
         self.group_list = QListWidget()
-        buttons = QHBoxLayout()
+        buttons = QGridLayout()
         add_group = QPushButton("+ Dodaj grupę")
         add_group.setObjectName("primaryButton")
         remove_group = QPushButton("Usuń grupę")
         remove_group.setObjectName("dangerButton")
         up = QPushButton("Wyżej")
         down = QPushButton("Niżej")
-        for button in (add_group, remove_group, up, down):
-            buttons.addWidget(button)
+        buttons.addWidget(add_group, 0, 0)
+        buttons.addWidget(remove_group, 0, 1)
+        buttons.addWidget(up, 1, 0)
+        buttons.addWidget(down, 1, 1)
         group_layout.addWidget(self.group_list, 1)
         group_layout.addLayout(buttons)
         groups_layout.addWidget(group_box, 1)
@@ -116,7 +124,8 @@ class FieldServiceGroupsEditor(QWidget):
             "Wybierz grupę, dodaj osoby z biblioteki i przypisz im role. Nowa osoba jest domyślnie członkiem grupy.",
         )
         self.members_splitter = QSplitter(Qt.Horizontal)
-        group_side = QGroupBox("Wybierz grupę")
+        self.group_side = QGroupBox("Wybierz grupę")
+        group_side = self.group_side
         group_side_layout = QVBoxLayout(group_side)
         self.member_group_list = QListWidget()
         group_side_layout.addWidget(self.member_group_list)
@@ -125,24 +134,36 @@ class FieldServiceGroupsEditor(QWidget):
         details = QGroupBox("Wybrana grupa")
         details_layout = QVBoxLayout(details)
         name_form = configure_form(QFormLayout())
+        self.member_group_picker = QComboBox()
+        self.member_group_picker.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.member_group_picker.setMinimumContentsLength(12)
         self.group_name = QLineEdit()
+        name_form.addRow("Edytowana grupa:", self.member_group_picker)
         name_form.addRow("Nazwa grupy:", self.group_name)
         details_layout.addLayout(name_form)
         details_layout.addWidget(self._help("Kliknij „Dodaj osobę”, wybierz nazwisko i ewentualnie zmień rolę."))
         self.member_table = QTableWidget(0, 2)
         self.member_table.setHorizontalHeaderLabels(["Osoba", "Rola"])
-        self.member_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.member_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.member_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
+        self.member_table.horizontalHeader().resizeSection(1, 230)
+        self.member_table.horizontalHeader().setMinimumSectionSize(130)
+        self.member_table.verticalHeader().setDefaultSectionSize(46)
+        self.member_table.verticalHeader().setMinimumSectionSize(42)
+        self.member_table.verticalHeader().setVisible(False)
         self.member_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.member_table.setAlternatingRowColors(True)
-        member_buttons = QHBoxLayout()
+        member_buttons = QGridLayout()
         add_member = QPushButton("+ Dodaj osobę")
         add_member.setObjectName("primaryButton")
         remove_member = QPushButton("Usuń osobę")
         remove_member.setObjectName("dangerButton")
         member_up = QPushButton("Wyżej")
         member_down = QPushButton("Niżej")
-        for button in (add_member, remove_member, member_up, member_down):
-            member_buttons.addWidget(button)
+        member_buttons.addWidget(add_member, 0, 0)
+        member_buttons.addWidget(remove_member, 0, 1)
+        member_buttons.addWidget(member_up, 1, 0)
+        member_buttons.addWidget(member_down, 1, 1)
         details_layout.addWidget(self.member_table, 1)
         details_layout.addLayout(member_buttons)
         self.members_splitter.addWidget(details)
@@ -179,6 +200,7 @@ class FieldServiceGroupsEditor(QWidget):
         self.group_list.currentRowChanged.connect(self.select_group)
         self.group_list.itemDoubleClicked.connect(lambda _item: self.wizard.set_step(1))
         self.member_group_list.currentRowChanged.connect(self.select_group)
+        self.member_group_picker.currentIndexChanged.connect(self.select_group)
         self.group_name.textChanged.connect(self.update_group_name)
         add_group.clicked.connect(self.add_group)
         remove_group.clicked.connect(self.remove_group)
@@ -194,10 +216,13 @@ class FieldServiceGroupsEditor(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        orientation = Qt.Vertical if self.width() < 980 else Qt.Horizontal
-        if self.members_splitter.orientation() != orientation:
-            self.members_splitter.setOrientation(orientation)
-            self.members_splitter.setSizes([300, 850])
+        compact = self.width() < 1180
+        if compact != self._compact_members:
+            self._compact_members = compact
+            self.group_side.setVisible(not compact)
+            self.members_splitter.setOrientation(Qt.Horizontal)
+            self.members_splitter.setSizes([0, 1000] if compact else [250, 850])
+        self.member_table.horizontalHeader().resizeSection(1, 190 if compact else 230)
 
     @staticmethod
     def _help(text):
@@ -225,6 +250,14 @@ class FieldServiceGroupsEditor(QWidget):
             if selected is not None:
                 widget.setCurrentRow(selected)
             widget.blockSignals(False)
+        self.member_group_picker.blockSignals(True)
+        self.member_group_picker.clear()
+        for value in self.project["groups"]:
+            count = len(value.get("members", []))
+            self.member_group_picker.addItem(f"{value.get('name', 'Grupa')} · {count} os.")
+        if selected is not None:
+            self.member_group_picker.setCurrentIndex(selected)
+        self.member_group_picker.blockSignals(False)
 
     def select_group(self, index):
         if not 0 <= index < len(self.project["groups"]):
@@ -235,10 +268,13 @@ class FieldServiceGroupsEditor(QWidget):
         self.group_index = index
         self.group_list.blockSignals(True)
         self.member_group_list.blockSignals(True)
+        self.member_group_picker.blockSignals(True)
         self.group_list.setCurrentRow(index)
         self.member_group_list.setCurrentRow(index)
+        self.member_group_picker.setCurrentIndex(index)
         self.group_list.blockSignals(False)
         self.member_group_list.blockSignals(False)
+        self.member_group_picker.blockSignals(False)
         self.group_name.blockSignals(True)
         self.group_name.setText(self.project["groups"][index].get("name", ""))
         self.group_name.blockSignals(False)
@@ -291,12 +327,13 @@ class FieldServiceGroupsEditor(QWidget):
     def _append_member_row(self, member_value):
         row = self.member_table.rowCount()
         self.member_table.insertRow(row)
-        person = QComboBox()
-        person.setEditable(True)
+        person = configure_editable_combo(QComboBox())
         person.addItem("")
         person.addItems(self.people)
         person.setCurrentText(member_value.get("name", ""))
         role = QComboBox()
+        role.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        role.setMinimumContentsLength(8)
         for key, label in ROLE_LABELS.items():
             role.addItem(label, key)
         role_index = role.findData(member_value.get("role", ROLE_MEMBER))

@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFormLayout, QGridLayout, QSizePolicy, QWidget
+from PySide6.QtWidgets import QComboBox, QFormLayout, QGridLayout, QSizePolicy, QWidget
 
 
 def configure_form(form: QFormLayout) -> QFormLayout:
@@ -10,6 +10,15 @@ def configure_form(form: QFormLayout) -> QFormLayout:
     form.setHorizontalSpacing(16)
     form.setVerticalSpacing(10)
     return form
+
+
+def configure_editable_combo(field: QComboBox, minimum_contents_length: int = 8) -> QComboBox:
+    """Keep editable selectors readable without letting long items stretch the whole editor."""
+    field.setEditable(True)
+    field.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+    field.setMinimumContentsLength(minimum_contents_length)
+    field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+    return field
 
 
 class ResponsiveCardGrid(QWidget):

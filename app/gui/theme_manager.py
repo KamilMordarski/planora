@@ -264,6 +264,20 @@ def build_stylesheet(settings: dict) -> str:
             selection-color: {theme.accent_text};
             outline: none;
         }}
+        QComboBox QLineEdit {{
+            background-color: transparent;
+            color: {theme.text};
+            selection-background-color: {accent};
+            selection-color: {theme.accent_text};
+            border: none;
+            border-radius: 0;
+            padding: 0 5px;
+            min-height: 0;
+        }}
+        QTableWidget QComboBox {{
+            margin: 3px;
+            min-height: {px(22)}px;
+        }}
         QTabWidget::pane {{
             background: {theme.surface};
             border: 1px solid {theme.border};

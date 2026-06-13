@@ -23,7 +23,7 @@ from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
-from app.gui.responsive import configure_form
+from app.gui.responsive import configure_editable_combo, configure_form
 
 
 class PublicTalkWatchtowerEditor(QWidget):
@@ -143,8 +143,7 @@ class PublicTalkWatchtowerEditor(QWidget):
             ("reader", "Lektor", True),
         ]:
             if use_combo:
-                field = QComboBox()
-                field.setEditable(True)
+                field = configure_editable_combo(QComboBox())
                 field.addItem("")
                 field.addItems(self.people)
                 self.combo_fields[key] = field

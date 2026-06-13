@@ -26,7 +26,7 @@ from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
-from app.gui.responsive import configure_form
+from app.gui.responsive import configure_editable_combo, configure_form
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
 
@@ -170,11 +170,17 @@ class CleaningAttendantsEditor(QWidget):
         if self.attendants_splitter.orientation() != orientation:
             self.attendants_splitter.setOrientation(orientation)
             self.attendants_splitter.setSizes([650, 350])
+        for splitter in (self.weekly_editor_splitter, self.attendant_editor_splitter):
+            if splitter.orientation() != orientation:
+                splitter.setOrientation(orientation)
+                splitter.setSizes([330, 650] if orientation == Qt.Vertical else [360, 760])
 
     def _build_weekly_tab(self):
         tab = QWidget()
         layout = QHBoxLayout(tab)
-        list_side = QVBoxLayout()
+        self.weekly_editor_splitter = QSplitter(Qt.Horizontal)
+        list_panel = QWidget()
+        list_side = QVBoxLayout(list_panel)
         list_side.addWidget(self._help_label("Wybierz tydzień, potem przypisz grupę i osoby."))
         self.weekly_list = QListWidget()
         add = QPushButton("+ Dodaj tydzień")
@@ -189,13 +195,14 @@ class CleaningAttendantsEditor(QWidget):
         list_side.addWidget(add)
         list_side.addWidget(delete)
         list_side.addLayout(move)
-        layout.addLayout(list_side, 1)
+        self.weekly_editor_splitter.addWidget(list_panel)
 
-        form = configure_form(QFormLayout())
+        form_panel = QWidget()
+        form = configure_form(QFormLayout(form_panel))
         self.start_date = self._date_edit()
         self.end_date = self._date_edit()
         self.group = QComboBox()
-        self.group.setEditable(True)
+        configure_editable_combo(self.group, 5)
         self.group.addItems(["I", "II", "III", "IV", "V"])
         self.cleaning_person = self._person_combo()
         self.console_person = self._person_combo()
@@ -208,7 +215,9 @@ class CleaningAttendantsEditor(QWidget):
         form.addRow("Konsola Zoom:", self.console_person)
         form.addRow("Mikrofon 1:", self.microphone_1)
         form.addRow("Mikrofon 2:", self.microphone_2)
-        layout.addLayout(form, 2)
+        self.weekly_editor_splitter.addWidget(form_panel)
+        self.weekly_editor_splitter.setSizes([360, 760])
+        layout.addWidget(self.weekly_editor_splitter)
 
         self.weekly_list.currentRowChanged.connect(self.select_weekly)
         add.clicked.connect(self.add_weekly)
@@ -224,7 +233,9 @@ class CleaningAttendantsEditor(QWidget):
     def _build_attendant_tab(self):
         tab = QWidget()
         layout = QHBoxLayout(tab)
-        list_side = QVBoxLayout()
+        self.attendant_editor_splitter = QSplitter(Qt.Horizontal)
+        list_panel = QWidget()
+        list_side = QVBoxLayout(list_panel)
         list_side.addWidget(self._help_label("Wybierz datę zebrania i przypisz porządkowych."))
         self.attendant_list = QListWidget()
         add = QPushButton("+ Dodaj datę zebrania")
@@ -239,16 +250,19 @@ class CleaningAttendantsEditor(QWidget):
         list_side.addWidget(add)
         list_side.addWidget(delete)
         list_side.addLayout(move)
-        layout.addLayout(list_side, 1)
+        self.attendant_editor_splitter.addWidget(list_panel)
 
-        form = configure_form(QFormLayout())
+        form_panel = QWidget()
+        form = configure_form(QFormLayout(form_panel))
         self.meeting_date = self._date_edit()
         self.lobby_attendant = self._person_combo()
         self.hall_attendant = self._person_combo()
         form.addRow("Data zebrania:", self.meeting_date)
         form.addRow("Porządkowy hol:", self.lobby_attendant)
         form.addRow("Porządkowy sala:", self.hall_attendant)
-        layout.addLayout(form, 2)
+        self.attendant_editor_splitter.addWidget(form_panel)
+        self.attendant_editor_splitter.setSizes([360, 760])
+        layout.addWidget(self.attendant_editor_splitter)
 
         self.attendant_list.currentRowChanged.connect(self.select_attendant)
         add.clicked.connect(self.add_attendant)
@@ -275,8 +289,7 @@ class CleaningAttendantsEditor(QWidget):
         return field
 
     def _person_combo(self):
-        field = QComboBox()
-        field.setEditable(True)
+        field = configure_editable_combo(QComboBox())
         field.addItem("")
         field.addItems(self.people)
         self.person_fields.append(field)

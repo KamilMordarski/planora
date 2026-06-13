@@ -27,7 +27,8 @@ zebranie lub pojedynczy punkt można duplikować, aby ograniczyć powtarzalne wp
 Plan grup służby pozwala swobodnie dodawać, usuwać i porządkować grupy oraz
 ich członków. Grupowy i asystent są czytelnie, ale subtelnie wyróżnieni
 w eksporcie, a każda nowa osoba domyślnie otrzymuje rolę członka grupy.
-Nowy projekt nie zawiera domyślnej nazwy zboru.
+Nowy projekt nie zawiera domyślnej nazwy zboru. Zakładka osób dopasowuje się
+do szerokości okna i przeznacza większość miejsca na czytelną edycję nazwisk.
 
 ## Personalizacja interfejsu
 

@@ -29,7 +29,7 @@ from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
-from app.gui.responsive import configure_form
+from app.gui.responsive import configure_editable_combo, configure_form
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section, special_event
 from app.templates.midweek_meeting.renderer import numbered_program_title
 
@@ -450,8 +450,7 @@ class MidweekMeetingEditor(QWidget):
         return tab
 
     def _person_combo(self):
-        field = QComboBox()
-        field.setEditable(True)
+        field = configure_editable_combo(QComboBox())
         field.addItem("")
         field.addItems(self.people)
         self.person_fields.append(field)

@@ -225,6 +225,7 @@ class ThemeTests(unittest.TestCase):
             }
         )
         self.assertIn("border-radius: 2px", stylesheet)
+        self.assertIn("QComboBox QLineEdit", stylesheet)
 
 
 class UiFeedbackTests(unittest.TestCase):
