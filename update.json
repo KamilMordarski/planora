@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.9.0",
+  "latest_version": "1.9.1",
   "release_date": "2026-06-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.9.0/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.9.1/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.9.0/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.9.0/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.9.1/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.9.1/Planora-macOS.zip"
   },
   "notes": [
-    "Dodano role i uprawnienia osób używane przez generatory",
-    "Dodano Asystenta planowania z równym przydziałem, automatycznymi datami i kontrolą kolizji",
-    "Dodano masową edycję terminów, autozapis, odzyskiwanie oraz eksport ICS i przydziałów osoby"
+    "Usunięto wszystkie domyślne i przykładowe osoby",
+    "Nowa biblioteka osób jest całkowicie pusta",
+    "Wyczyszczono przydziały osób w przykładowym projekcie"
   ]
 }
