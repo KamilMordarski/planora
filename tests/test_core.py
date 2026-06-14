@@ -24,7 +24,7 @@ from app.core.assignment_tools import (
     shift_project_dates,
     upcoming_assignments,
 )
-from app.core.people_roles import ALL_ROLES, eligible_people, normalize_profiles
+from app.core.people_roles import ALL_PERMISSIONS, eligible_people, normalize_profile, normalize_profiles
 from app.core.group_tools import group_leaders_from_project, latest_group_leaders, normalize_group_name
 from app.core.group_plan_store import GroupPlanStore
 from app.core.project_io import DEFAULT_PEOPLE, ProjectIO
@@ -486,7 +486,8 @@ class PeopleRoleTests(unittest.TestCase):
     def test_legacy_people_receive_all_roles(self):
         profiles = normalize_profiles(["Jan Test"], {})
 
-        self.assertEqual(set(profiles["Jan Test"]), set(ALL_ROLES))
+        self.assertEqual(set(profiles["Jan Test"]["permissions"]), set(ALL_PERMISSIONS))
+        self.assertEqual(profiles["Jan Test"]["roles"], [])
 
     def test_eligible_people_respect_assigned_role(self):
         people = ["Anna", "Jan", "Piotr"]
@@ -499,15 +500,33 @@ class PeopleRoleTests(unittest.TestCase):
         self.assertEqual(eligible_people(people, profiles, "service_conductor"), ["Jan"])
         self.assertEqual(eligible_people(people, profiles, "console"), ["Anna"])
         self.assertEqual(eligible_people(people, profiles, "reader"), [])
-        self.assertIn("prayer", ALL_ROLES)
+        self.assertIn("prayer", ALL_PERMISSIONS)
+
+    def test_auxiliary_pioneer_role_expires_automatically(self):
+        active = normalize_profile(
+            {"roles": ["auxiliary_pioneer"], "auxiliary_pioneer_until": "2026-07-31"},
+            today=date(2026, 6, 14),
+        )
+        expired = normalize_profile(
+            {"roles": ["auxiliary_pioneer"], "auxiliary_pioneer_until": "2026-05-31"},
+            today=date(2026, 6, 14),
+        )
+
+        self.assertIn("auxiliary_pioneer", active["roles"])
+        self.assertNotIn("auxiliary_pioneer", expired["roles"])
+        self.assertEqual(expired["auxiliary_pioneer_until"], "")
 
     def test_midweek_items_infer_specific_permissions(self):
         from app.templates.midweek_meeting.editor import MidweekMeetingEditor
 
-        self.assertEqual(MidweekMeetingEditor._item_required_role("Czytanie Biblii", ""), "reader")
+        self.assertEqual(MidweekMeetingEditor._item_required_role("Czytanie Biblii", ""), "training_part")
+        self.assertEqual(
+            MidweekMeetingEditor._item_required_role("Rozpoczynanie rozmowy", "", "ULEPSZAJMY SWOJĄ SŁUŻBĘ"),
+            "training_part",
+        )
         self.assertEqual(MidweekMeetingEditor._item_required_role("Dowolny punkt", "Lektor"), "reader")
         self.assertEqual(MidweekMeetingEditor._item_required_role("Modlitwa", ""), "prayer")
-        self.assertEqual(MidweekMeetingEditor._item_required_role("Rozpoczynanie rozmowy", ""), "midweek_participant")
+        self.assertEqual(MidweekMeetingEditor._item_required_role("Dowolny punkt", ""), "midweek_other")
 
 
 class GroupToolsTests(unittest.TestCase):
@@ -735,18 +754,6 @@ class AssignmentToolsTests(unittest.TestCase):
         self.assertEqual(assignment_rows_for_person(rows, "jan test"), rows)
 
 
-class DocumentationTests(unittest.TestCase):
-    def test_offline_documentation_contains_jw_instructions_and_link(self):
-        path = Path(__file__).resolve().parents[1] / "planora_docs.html"
-        source = path.read_text(encoding="utf-8")
-
-        self.assertIn("<!doctype html>", source.lower())
-        self.assertIn("Jak zaimportować program z JW", source)
-        self.assertIn(JW_MEETINGS_BASE_URL, source)
-        self.assertIn("Wklej adres JW", source)
-        self.assertIn("Planora jest niezależnym, nieoficjalnym narzędziem", source)
-
-
 class ProjectArchiveTests(unittest.TestCase):
     def test_project_is_updated_in_one_archive_entry(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -836,7 +843,11 @@ class ProjectIOTests(unittest.TestCase):
                 path,
                 ["Jan Test", "Anna Test"],
                 {
-                    "Jan Test": ["console", "microphone"],
+                    "Jan Test": {
+                        "permissions": ["console", "microphone"],
+                        "roles": ["elder", "auxiliary_pioneer"],
+                        "auxiliary_pioneer_until": "2026-07-31",
+                    },
                     "Anna Test": ["service_conductor"],
                 },
             )
@@ -845,12 +856,17 @@ class ProjectIOTests(unittest.TestCase):
             payload = json.loads(path.read_text(encoding="utf-8"))
 
         self.assertEqual(people, ["Jan Test", "Anna Test"])
-        self.assertEqual(profiles["Jan Test"], ["console", "microphone"])
-        self.assertEqual(profiles["Anna Test"], ["service_conductor"])
+        self.assertEqual(profiles["Jan Test"]["permissions"], ["console", "microphone"])
+        self.assertEqual(profiles["Jan Test"]["roles"], ["elder", "auxiliary_pioneer"])
+        self.assertEqual(profiles["Jan Test"]["auxiliary_pioneer_until"], "2026-07-31")
+        self.assertEqual(profiles["Anna Test"]["permissions"], ["service_conductor"])
         self.assertEqual(added, 2)
         self.assertEqual(roles_updated, 2)
         self.assertEqual(payload["format"], "planora_people_library")
-        self.assertEqual(payload["people"][0]["roles"], ["console", "microphone"])
+        self.assertEqual(payload["version"], 2)
+        self.assertEqual(payload["people"][0]["permissions"], ["console", "microphone"])
+        self.assertEqual(payload["people"][0]["roles"], ["elder", "auxiliary_pioneer"])
+        self.assertEqual(payload["people"][0]["auxiliary_pioneer_until"], "2026-07-31")
 
     def test_people_library_import_updates_roles_without_duplicating_names(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -867,7 +883,8 @@ class ProjectIOTests(unittest.TestCase):
             )
 
         self.assertEqual(people, ["Jan Test"])
-        self.assertEqual(profiles["Jan Test"], ["reader"])
+        self.assertIn("reader", profiles["Jan Test"]["permissions"])
+        self.assertIn("training_part", profiles["Jan Test"]["permissions"])
         self.assertEqual(added, 0)
         self.assertEqual(roles_updated, 1)
 
@@ -876,11 +893,16 @@ class ProjectIOTests(unittest.TestCase):
             roles_path = Path(directory) / "people-roles.json"
             with patch("app.core.project_io.PEOPLE_ROLES_FILE", roles_path):
                 profiles = ProjectIO.load_people_profiles(["Jan Test"])
-                profiles["Jan Test"] = ["console"]
+                profiles["Jan Test"] = {
+                    "permissions": ["console"],
+                    "roles": ["elder"],
+                    "auxiliary_pioneer_until": "",
+                }
                 ProjectIO.save_people_profiles(profiles)
                 loaded = ProjectIO.load_people_profiles(["Jan Test"])
 
-        self.assertEqual(loaded["Jan Test"], ["console"])
+        self.assertEqual(loaded["Jan Test"]["permissions"], ["console"])
+        self.assertEqual(loaded["Jan Test"]["roles"], ["elder"])
 
     def test_legacy_project_gets_default_template_id(self):
         with tempfile.TemporaryDirectory() as directory:

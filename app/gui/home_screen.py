@@ -118,7 +118,7 @@ class HomeScreen(QWidget):
         root.addWidget(section)
         cards = ResponsiveCardGrid(min_column_width=280, max_columns=3)
         items = [
-            ("Biblioteka osób i role", "Wspólna lista uczestników oraz ich uprawnienia.", edit_people),
+            ("Biblioteka osób i role", "Wspólna lista uczestników, ról i możliwych przydziałów.", edit_people),
             ("Asystent planowania", "Automatyczne daty, przydziały, masowa edycja i kalendarz.", open_planning_tools),
             (
                 "Centrum projektów",
@@ -165,3 +165,6 @@ class HomeScreen(QWidget):
         narrow = self.width() < 820
         self.hero_layout.setDirection(QBoxLayout.TopToBottom if narrow else QBoxLayout.LeftToRight)
         self.actions.setDirection(QBoxLayout.TopToBottom if self.width() < 600 else QBoxLayout.LeftToRight)
+        content = self.findChild(QScrollArea).widget()
+        margins = 16 if self.width() < 760 else 48
+        content.layout().setContentsMargins(margins, 24, margins, 24)

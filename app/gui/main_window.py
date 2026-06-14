@@ -10,7 +10,7 @@ from app.core.app_info import APP_NAME, APP_VERSION
 from app.core.group_tools import latest_group_leaders
 from app.core.assignment_tools import archive_assignments, global_assignment_collisions, upcoming_assignments
 from app.core.group_plan_store import GroupPlanStore
-from app.core.people_roles import ROLE_OPTIONS, eligible_people
+from app.core.people_roles import ASSIGNMENT_OPTIONS, eligible_people
 from app.core.project_archive import ProjectArchive
 from app.core.project_history import ProjectHistory
 from app.core.project_io import ProjectIO
@@ -58,7 +58,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
         self.resize(1360, 840)
-        self.setMinimumSize(760, 560)
+        self.setMinimumSize(680, 500)
         if APP_ICON.exists():
             self.setWindowIcon(QIcon(str(APP_ICON)))
 
@@ -222,7 +222,7 @@ class MainWindow(QMainWindow):
             combo.addItems(allowed)
             combo.setCurrentText(current)
             combo.setToolTip(
-                f"Lista podpowiada osoby z uprawnieniem: {ROLE_OPTIONS[role]}. "
+                f"Lista podpowiada osoby pasujące do przydziału: {ASSIGNMENT_OPTIONS[role]}. "
                 "W wyjątkowej sytuacji możesz wpisać inną osobę ręcznie."
             )
             combo.blockSignals(False)
@@ -247,7 +247,7 @@ class MainWindow(QMainWindow):
             self.editor.set_role_people(
                 {
                     role: eligible_people(self.people, self.people_profiles, role)
-                    for role in ROLE_OPTIONS
+                    for role in ASSIGNMENT_OPTIONS
                 }
             )
         elif template_id == "service_meetings":

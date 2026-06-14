@@ -97,7 +97,7 @@ class ProjectIO:
         ProjectIO._write_json(PEOPLE_FILE, people)
 
     @staticmethod
-    def load_people_profiles(people: list[str] | None = None) -> dict[str, list[str]]:
+    def load_people_profiles(people: list[str] | None = None) -> dict[str, dict]:
         people = list(people if people is not None else ProjectIO.load_people())
         try:
             value = ProjectIO._read_json(PEOPLE_ROLES_FILE)
@@ -108,7 +108,7 @@ class ProjectIO:
         return profiles
 
     @staticmethod
-    def save_people_profiles(profiles: dict[str, list[str]]):
+    def save_people_profiles(profiles: dict[str, dict]):
         ProjectIO._write_json(PEOPLE_ROLES_FILE, profiles)
 
     @staticmethod
@@ -120,8 +120,8 @@ class ProjectIO:
     def import_people_library(
         path: Path,
         current_people: list[str] | None = None,
-        current_profiles: dict[str, list[str]] | None = None,
-    ) -> tuple[list[str], dict[str, list[str]], int, int]:
+        current_profiles: dict[str, dict] | None = None,
+    ) -> tuple[list[str], dict[str, dict], int, int]:
         payload = ProjectIO._read_json(path)
         imported_profiles = {}
         value = payload
@@ -139,7 +139,7 @@ class ProjectIO:
                 name = str(person.get("name", "")).strip()
                 if name:
                     imported_names.append(name)
-                    imported_profiles[name] = person.get("roles", [])
+                    imported_profiles[name] = person
             else:
                 name = str(person).strip()
                 if name:
@@ -155,26 +155,26 @@ class ProjectIO:
                 added += 1
         profiles = normalize_profiles(people, current_profiles)
         roles_updated = 0
-        for imported_name, roles in imported_profiles.items():
+        for imported_name, profile in imported_profiles.items():
             existing_name = next((name for name in people if name.casefold() == str(imported_name).casefold()), "")
             if not existing_name:
                 continue
-            normalized = normalize_profiles([existing_name], {existing_name: roles})[existing_name]
+            normalized = normalize_profiles([existing_name], {existing_name: profile})[existing_name]
             if profiles.get(existing_name) != normalized:
                 roles_updated += 1
             profiles[existing_name] = normalized
         return people, profiles, added, roles_updated
 
     @staticmethod
-    def export_people_library(path: Path, people: list[str], profiles: dict[str, list[str]]):
+    def export_people_library(path: Path, people: list[str], profiles: dict[str, dict]):
         normalized = normalize_profiles(people, profiles)
         payload = {
             "format": "planora_people_library",
-            "version": 1,
+            "version": 2,
             "people": [
                 {
                     "name": person,
-                    "roles": normalized.get(person, []),
+                    **normalized.get(person, {}),
                 }
                 for person in people
             ],

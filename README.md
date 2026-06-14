@@ -55,8 +55,9 @@ interfejsu nie wpływają na wygląd eksportowanych plików.
 
 Poradnik dostępny z menu głównego opisuje cały proces tworzenia grafiku,
 import biblioteki osób, import programu z JW, pliki projektów, eksport,
-ustawienia i aktualizacje. Pełna dokumentacja offline znajduje się również
-w pojedynczym pliku [`planora_docs.html`](planora_docs.html).
+ustawienia i aktualizacje. Pełna dokumentacja jest rozwijana w osobnym
+repozytorium [`KamilMordarski/planora-docs`](https://github.com/KamilMordarski/planora-docs)
+i publikowana pod adresem [kamilmordarski.github.io/planora-docs](https://kamilmordarski.github.io/planora-docs/).
 
 Program zebrania w tygodniu można pobrać z JW. Otwórz
 [`wol.jw.org/pl/wol/meetings/r12/lp-p/`](https://wol.jw.org/pl/wol/meetings/r12/lp-p/),
@@ -74,16 +75,17 @@ kolejny termin bez przypadkowego zmieniania wcześniej wybranego wpisu.
 
 ## Asystent planowania i role
 
-Biblioteka osób przechowuje role i uprawnienia, między innymi prowadzenie zbiórek,
-obsługę konsoli, mikrofonów, służbę porządkową i udział w programie. Generatory
-podpowiadają kandydatów pasujących do danego zadania, a pola pozostają edytowalne
-w razie wyjątkowego przydziału.
+Biblioteka osób przechowuje osobno role zborowe oraz możliwe przydziały. Role
+obejmują starszego, sługę pomocniczego, pioniera specjalnego, stałego i
+pomocniczego. Dla pioniera pomocniczego można ustawić datę końcową, po której
+rola wygaśnie automatycznie. Możliwe przydziały sterują podpowiedziami w
+generatorach, a pola pozostają edytowalne w razie wyjątkowego przydziału.
 
 Nowa instalacja Planory zawsze rozpoczyna pracę z całkowicie pustą biblioteką
 osób. Aplikacja nie zawiera przykładowych ani domyślnych nazwisk.
 
 Bibliotekę osób można wyeksportować do jednego pliku JSON zawierającego nazwiska
-i przypisane uprawnienia. Ponowny import takiego pliku odtwarza role i pomija
+i przypisane role oraz możliwe przydziały. Ponowny import takiego pliku odtwarza profil i pomija
 duplikaty. Starsze pliki będące prostą listą nazwisk nadal są obsługiwane.
 
 Centralny Asystent planowania generuje wybrane dni tygodnia z zakresu dat,

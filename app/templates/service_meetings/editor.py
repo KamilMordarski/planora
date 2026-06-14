@@ -28,7 +28,7 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
 from app.templates.service_meetings.default_project import DEFAULT_PROJECT, meeting_row
 
 
@@ -65,21 +65,12 @@ class ServiceMeetingsEditor(QWidget):
     def _build_ui(self, go_back, edit_people):
         root = QVBoxLayout(self)
         root.setContentsMargins(18, 16, 18, 16)
-        toolbar_frame = QWidget()
-        toolbar_frame.setObjectName("editorToolbar")
-        toolbar = QHBoxLayout(toolbar_frame)
-        toolbar.setContentsMargins(12, 8, 12, 8)
         back = QPushButton("← Menu")
         people_button = QPushButton("Biblioteka osób")
         save = QPushButton("Zapisz projekt")
         save.setObjectName("primaryButton")
         save_as = QPushButton("Zapisz jako…")
-        toolbar.addWidget(back)
-        toolbar.addStretch()
-        toolbar.addWidget(people_button)
-        toolbar.addWidget(save)
-        toolbar.addWidget(save_as)
-        root.addWidget(toolbar_frame)
+        root.addWidget(editor_toolbar([back, people_button, save, save_as]))
 
         self.wizard = EditorWizard(self.animations_enabled)
         root.addWidget(self.wizard, 1)

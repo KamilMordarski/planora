@@ -29,7 +29,7 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
 
@@ -68,20 +68,12 @@ class CleaningAttendantsEditor(QWidget):
     def _build_ui(self, go_back: Callable, edit_people: Callable):
         root = QVBoxLayout(self)
         root.setContentsMargins(18, 16, 18, 16)
-        toolbar_frame = QWidget()
-        toolbar_frame.setObjectName("editorToolbar")
-        toolbar = QHBoxLayout(toolbar_frame)
         back = QPushButton("← Wróć do menu")
         people = QPushButton("Biblioteka osób")
         save = QPushButton("Zapisz projekt")
         save.setObjectName("primaryButton")
         save_as = QPushButton("Zapisz jako…")
-        toolbar.addWidget(back)
-        toolbar.addStretch()
-        toolbar.addWidget(people)
-        toolbar.addWidget(save)
-        toolbar.addWidget(save_as)
-        root.addWidget(toolbar_frame, 0)
+        root.addWidget(editor_toolbar([back, people, save, save_as]), 0)
 
         self.wizard = EditorWizard(self.animations_enabled)
         root.addWidget(self.wizard, 1)

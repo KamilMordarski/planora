@@ -93,7 +93,7 @@ class GuideDialog(QDialog):
         (
             "Import listy JSON",
             "Import dodaje nowe osoby do istniejącej biblioteki, nie usuwa obecnych wpisów i pomija duplikaty "
-            "bez względu na wielkość liter. Plik wyeksportowany przez Planorę odtwarza również uprawnienia.",
+            "bez względu na wielkość liter. Plik wyeksportowany przez Planorę odtwarza role i możliwe przydziały.",
         ),
         (
             "Eksport listy JSON",
@@ -112,9 +112,10 @@ class GuideDialog(QDialog):
             "je z biblioteki. Usunięcie nie zmienia już zapisanych projektów.",
         ),
         (
-            "Role i uprawnienia",
-            "Zaznacz osobę, a następnie jej role. Listy przydziałów podpowiadają wyłącznie pasujących kandydatów, "
-            "na przykład lektorów, prowadzących, konsolę, mikrofony, porządkowych, uczestników i modlitwy. "
+            "Role i możliwe przydziały",
+            "Role osoby obejmują starszego, sługę pomocniczego i rodzaje pionierów. Pionier pomocniczy może mieć "
+            "datę końcową i wtedy rola wygaśnie automatycznie. Osobno zaznacz możliwe przydziały, dzięki którym "
+            "listy podpowiadają lektorów, prowadzących, konsolę, mikrofony, porządkowych, uczestników i modlitwy. "
             "W wyjątkowej sytuacji możesz ręcznie wpisać inną osobę; taki przydział zostanie zachowany.",
         ),
     ]

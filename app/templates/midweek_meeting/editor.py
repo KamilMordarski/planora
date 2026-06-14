@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QDateEdit,
     QFileDialog,
     QFormLayout,
-    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QInputDialog,
@@ -28,12 +27,12 @@ from PySide6.QtWidgets import (
 
 from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
-from app.core.people_roles import ROLE_OPTIONS
+from app.core.people_roles import ASSIGNMENT_OPTIONS
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
 from app.core.wol_importer import (
     JW_MEETINGS_BASE_URL,
     WolImportError,
@@ -79,34 +78,26 @@ class MidweekMeetingEditor(QWidget):
     def _build_ui(self, go_back, edit_people):
         root = QVBoxLayout(self)
         root.setContentsMargins(18, 16, 18, 16)
-        toolbar_frame = QWidget()
-        toolbar_frame.setObjectName("editorToolbar")
-        toolbar = QHBoxLayout(toolbar_frame)
-        toolbar.setContentsMargins(12, 8, 12, 8)
         back = QPushButton("← Wróć do menu")
         people = QPushButton("Biblioteka osób")
         previous_meeting = QPushButton("←")
         previous_meeting.setToolTip("Poprzednie zebranie")
         self.meeting_switch = QComboBox()
-        self.meeting_switch.setMinimumWidth(210)
+        self.meeting_switch.setMinimumWidth(0)
         self.meeting_switch.setToolTip("Przełącz edytowane zebranie bez wracania do pierwszego kroku")
         next_meeting = QPushButton("→")
         next_meeting.setToolTip("Następne zebranie")
         save = QPushButton("Zapisz projekt")
         save.setObjectName("primaryButton")
         save_as = QPushButton("Zapisz jako…")
-        toolbar.addWidget(back)
-        toolbar.addStretch()
-        toolbar.addWidget(people)
-        toolbar.addWidget(save)
-        toolbar.addWidget(save_as)
-        root.addWidget(toolbar_frame, 0)
+        root.addWidget(editor_toolbar([back, people, save, save_as]), 0)
 
         context_frame = QWidget()
         context_frame.setObjectName("editorContextBar")
         context = QHBoxLayout(context_frame)
         context.setContentsMargins(12, 7, 12, 7)
-        context.addWidget(QLabel("Edytowane zebranie:"))
+        self.context_label = QLabel("Edytowane zebranie:")
+        context.addWidget(self.context_label)
         context.addWidget(previous_meeting)
         context.addWidget(self.meeting_switch, 1)
         context.addWidget(next_meeting)
@@ -331,7 +322,6 @@ class MidweekMeetingEditor(QWidget):
         section_group = QGroupBox("Sekcje programu")
         section_side = QVBoxLayout(section_group)
         self.section_list = QListWidget()
-        section_buttons = QGridLayout()
         add_section = QPushButton("Nowa sekcja")
         add_section.setObjectName("primaryButton")
         add_standard = QPushButton("Puste sekcje")
@@ -346,21 +336,19 @@ class MidweekMeetingEditor(QWidget):
         open_jw.setToolTip("Otwiera stronę, na której można wybrać tydzień i skopiować jego adres.")
         delete_section = QPushButton("Usuń sekcję")
         delete_section.setObjectName("dangerButton")
-        section_buttons.addWidget(add_section, 0, 0)
-        section_buttons.addWidget(delete_section, 0, 1)
-        section_buttons.addWidget(add_standard, 1, 0)
-        section_buttons.addWidget(add_template, 1, 1)
-        section_buttons.addWidget(import_current, 2, 0)
-        section_buttons.addWidget(import_url, 2, 1)
-        section_buttons.addWidget(open_jw, 3, 0, 1, 2)
         section_side.addWidget(self.section_list)
-        section_side.addLayout(section_buttons)
+        section_side.addWidget(
+            ResponsiveActionBar(
+                [add_section, delete_section, add_standard, add_template, import_current, import_url, open_jw],
+                130,
+                2,
+            )
+        )
         lists.addWidget(section_group)
 
         item_group = QGroupBox("Punkty wybranej sekcji")
         item_side = QVBoxLayout(item_group)
         self.item_list = QListWidget()
-        item_buttons = QGridLayout()
         add_item = QPushButton("Dodaj punkt")
         add_item.setObjectName("primaryButton")
         duplicate_item = QPushButton("Duplikuj punkt")
@@ -369,13 +357,8 @@ class MidweekMeetingEditor(QWidget):
         delete_item.setObjectName("dangerButton")
         item_up = QPushButton("Wyżej")
         item_down = QPushButton("Niżej")
-        item_buttons.addWidget(add_item, 0, 0)
-        item_buttons.addWidget(duplicate_item, 0, 1)
-        item_buttons.addWidget(delete_item, 1, 0)
-        item_buttons.addWidget(item_up, 2, 0)
-        item_buttons.addWidget(item_down, 2, 1)
         item_side.addWidget(self.item_list)
-        item_side.addLayout(item_buttons)
+        item_side.addWidget(ResponsiveActionBar([add_item, duplicate_item, delete_item, item_up, item_down], 130, 2))
         lists.addWidget(item_group)
         self.program_splitter.addWidget(navigation)
 
@@ -465,6 +448,10 @@ class MidweekMeetingEditor(QWidget):
             if self.program_splitter.orientation() != orientation:
                 self.program_splitter.setOrientation(orientation)
                 self.program_splitter.setSizes([360, 760])
+        if hasattr(self, "context_label"):
+            compact = self.width() < 820
+            self.context_label.setVisible(not compact)
+            self.meeting_position.setVisible(not compact)
 
     def _build_special_tab(self):
         tab = QWidget()
@@ -697,6 +684,7 @@ class MidweekMeetingEditor(QWidget):
         value["color"] = self.section_color.currentData()
         self.refresh_sections(self.section_index)
         self.refresh_program_context()
+        self.refresh_item_person_filters()
         self.refresh_preview()
 
     def refresh_items(self, selected=None):
@@ -1077,21 +1065,26 @@ class MidweekMeetingEditor(QWidget):
         self.refresh_item_person_filters()
 
     @staticmethod
-    def _item_required_role(title: str, role_text: str) -> str:
-        source = str(role_text or title).casefold()
+    def _item_required_role(title: str, role_text: str, section_title: str = "") -> str:
+        source = f"{role_text} {title}".casefold()
+        section_source = str(section_title).casefold()
         if "modlitw" in source:
             return "prayer"
-        if "lektor" in source or "czytanie biblii" in source:
+        if "czytanie biblii" in source or "ulepszajmy" in section_source:
+            return "training_part"
+        if "lektor" in source:
             return "reader"
         if "przewodnicz" in source:
             return "chairman"
-        return "midweek_participant"
+        return "midweek_other"
 
     def _populate_item_person_fields(self, participant_1="", participant_2=""):
         title = self.item_title.text()
+        section_value = self._current_section() or {}
+        section_title = section_value.get("title", "")
         roles = (
-            self._item_required_role(title, self.item_role_1.text()),
-            self._item_required_role(title, self.item_role_2.text()),
+            self._item_required_role(title, self.item_role_1.text(), section_title),
+            self._item_required_role(title, self.item_role_2.text(), section_title),
         )
         for field, role, current in zip(
             (self.item_person_1, self.item_person_2),
@@ -1104,7 +1097,7 @@ class MidweekMeetingEditor(QWidget):
             field.addItems(self.role_people.get(role, self.people))
             field.setCurrentText(current)
             field.setToolTip(
-                f"Lista podpowiada osoby z uprawnieniem: {ROLE_OPTIONS[role]}. "
+                f"Lista podpowiada osoby pasujące do przydziału: {ASSIGNMENT_OPTIONS[role]}. "
                 "Możesz też wpisać inną osobę ręcznie."
             )
 

@@ -6,7 +6,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QFormLayout,
-    QGridLayout,
     QGroupBox,
     QHeaderView,
     QHBoxLayout,
@@ -29,7 +28,7 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
 from app.templates.field_service_groups.default_project import ROLE_LABELS, ROLE_MEMBER, group, member
 
 
@@ -66,10 +65,6 @@ class FieldServiceGroupsEditor(QWidget):
     def _build_ui(self, go_back, edit_people):
         root = QVBoxLayout(self)
         root.setContentsMargins(18, 16, 18, 16)
-        toolbar_frame = QWidget()
-        toolbar_frame.setObjectName("editorToolbar")
-        toolbar = QHBoxLayout(toolbar_frame)
-        toolbar.setContentsMargins(12, 8, 12, 8)
         back = QPushButton("← Menu")
         back.setToolTip("Wróć do menu głównego")
         people_button = QPushButton("Osoby")
@@ -78,12 +73,7 @@ class FieldServiceGroupsEditor(QWidget):
         save.setToolTip("Zapisz projekt")
         save.setObjectName("primaryButton")
         save_as = QPushButton("Zapisz jako…")
-        toolbar.addWidget(back)
-        toolbar.addStretch()
-        toolbar.addWidget(people_button)
-        toolbar.addWidget(save)
-        toolbar.addWidget(save_as)
-        root.addWidget(toolbar_frame)
+        root.addWidget(editor_toolbar([back, people_button, save, save_as]))
 
         self.wizard = EditorWizard(self.animations_enabled)
         root.addWidget(self.wizard, 1)
@@ -106,19 +96,14 @@ class FieldServiceGroupsEditor(QWidget):
         group_layout = QVBoxLayout(group_box)
         group_layout.addWidget(self._help("Dodaj lub usuń grupy. Ich kolejność odpowiada kolejności kolumn w eksporcie."))
         self.group_list = QListWidget()
-        buttons = QGridLayout()
         add_group = QPushButton("+ Dodaj grupę")
         add_group.setObjectName("primaryButton")
         remove_group = QPushButton("Usuń grupę")
         remove_group.setObjectName("dangerButton")
         up = QPushButton("Wyżej")
         down = QPushButton("Niżej")
-        buttons.addWidget(add_group, 0, 0)
-        buttons.addWidget(remove_group, 0, 1)
-        buttons.addWidget(up, 1, 0)
-        buttons.addWidget(down, 1, 1)
         group_layout.addWidget(self.group_list, 1)
-        group_layout.addLayout(buttons)
+        group_layout.addWidget(ResponsiveActionBar([add_group, remove_group, up, down], 120, 2))
         groups_layout.addWidget(group_box, 1)
 
         members_page = QWidget()
@@ -157,19 +142,14 @@ class FieldServiceGroupsEditor(QWidget):
         self.member_table.verticalHeader().setVisible(False)
         self.member_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.member_table.setAlternatingRowColors(True)
-        member_buttons = QGridLayout()
         add_member = QPushButton("+ Dodaj osobę")
         add_member.setObjectName("primaryButton")
         remove_member = QPushButton("Usuń osobę")
         remove_member.setObjectName("dangerButton")
         member_up = QPushButton("Wyżej")
         member_down = QPushButton("Niżej")
-        member_buttons.addWidget(add_member, 0, 0)
-        member_buttons.addWidget(remove_member, 0, 1)
-        member_buttons.addWidget(member_up, 1, 0)
-        member_buttons.addWidget(member_down, 1, 1)
         details_layout.addWidget(self.member_table, 1)
-        details_layout.addLayout(member_buttons)
+        details_layout.addWidget(ResponsiveActionBar([add_member, remove_member, member_up, member_down], 120, 2))
         self.members_splitter.addWidget(details)
         self.members_splitter.setSizes([280, 900])
         members_layout.addWidget(self.members_splitter, 1)
