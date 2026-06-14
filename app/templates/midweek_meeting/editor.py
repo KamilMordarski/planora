@@ -1090,11 +1090,14 @@ class MidweekMeetingEditor(QWidget):
             (participant_1, participant_2),
         ):
             field.clear()
-            field.setEditable(False)
+            field.setEditable(True)
             field.addItem("")
             field.addItems(self.role_people.get(role, self.people))
             field.setCurrentText(current)
-            field.setToolTip(f"Lista zawiera wyłącznie osoby z uprawnieniem: {ROLE_OPTIONS[role]}.")
+            field.setToolTip(
+                f"Lista podpowiada osoby z uprawnieniem: {ROLE_OPTIONS[role]}. "
+                "Możesz też wpisać inną osobę ręcznie."
+            )
 
     def refresh_item_person_filters(self):
         fields = (self.item_person_1, self.item_person_2)

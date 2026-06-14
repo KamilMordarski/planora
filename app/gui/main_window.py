@@ -215,18 +215,17 @@ class MainWindow(QMainWindow):
                 return
             current = combo.currentText()
             allowed = eligible_people(self.people, self.people_profiles, role)
-            matched = next((person for person in allowed if person.casefold() == current.casefold()), "")
-            invalid_assignment = bool(current and not matched)
             combo.blockSignals(True)
-            combo.setEditable(False)
+            combo.setEditable(True)
             combo.clear()
             combo.addItem("")
             combo.addItems(allowed)
-            combo.setCurrentText(matched)
-            combo.setToolTip(f"Lista zawiera wyłącznie osoby z uprawnieniem: {ROLE_OPTIONS[role]}.")
+            combo.setCurrentText(current)
+            combo.setToolTip(
+                f"Lista podpowiada osoby z uprawnieniem: {ROLE_OPTIONS[role]}. "
+                "W wyjątkowej sytuacji możesz wpisać inną osobę ręcznie."
+            )
             combo.blockSignals(False)
-            if invalid_assignment:
-                combo.currentTextChanged.emit("")
 
         if template_id == "cleaning_attendants":
             apply(self.editor.cleaning_person, "cleaning")

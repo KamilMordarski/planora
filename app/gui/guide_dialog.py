@@ -77,9 +77,9 @@ class GuideDialog(QDialog):
         ),
         (
             "Role i uprawnienia",
-            "Zaznacz osobę, a następnie jej role. Listy przydziałów pokazują wyłącznie pasujących kandydatów "
-            "i nie pozwalają wybrać osoby bez wymaganego uprawnienia. Dotyczy to między innymi lektorów, "
-            "prowadzących, konsoli, mikrofonów, porządkowych, uczestników zebrań oraz modlitw.",
+            "Zaznacz osobę, a następnie jej role. Listy przydziałów podpowiadają wyłącznie pasujących kandydatów, "
+            "na przykład lektorów, prowadzących, konsolę, mikrofony, porządkowych, uczestników i modlitwy. "
+            "W wyjątkowej sytuacji możesz ręcznie wpisać inną osobę; taki przydział zostanie zachowany.",
         ),
     ]
 
