@@ -139,7 +139,8 @@ class GuideDialog(QDialog):
         (
             "Plan grup służby",
             "Wpisz własny nagłówek, ustaw liczbę i kolejność grup, potem wybierz osoby z biblioteki. "
-            "Nowa osoba jest członkiem grupy; grupowy i asystent są wyróżniani w eksporcie.",
+            "Nowa osoba jest członkiem grupy; grupowy i asystent są wyróżniani w eksporcie. Pierwszy utworzony plan "
+            "grup pozostaje na stałe, a każda zmiana jest automatycznie zapisywana bez używania przycisku „Zapisz”.",
         ),
         (
             "Zbiórki do służby",
@@ -172,7 +173,8 @@ class GuideDialog(QDialog):
         (
             "Lokalne archiwum projektów",
             "Każdy edytowany projekt jest również automatycznie aktualizowany w lokalnym archiwum Planory. "
-            "Archiwum zasila centralny kalendarz i statystyki, nie zastępuje własnych plików JSON i jest usuwane po 90 dniach.",
+            "Archiwum zasila centralny kalendarz i statystyki, nie zastępuje własnych plików JSON i jest usuwane po 90 dniach. "
+            "Plan grup służby jest wyjątkiem: ma osobny trwały zapis i nigdy nie jest automatycznie usuwany.",
         ),
         (
             "Kontrola przed eksportem",

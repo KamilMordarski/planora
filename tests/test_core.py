@@ -23,6 +23,7 @@ from app.core.assignment_tools import (
 )
 from app.core.people_roles import ALL_ROLES, eligible_people, normalize_profiles
 from app.core.group_tools import group_leaders_from_project, latest_group_leaders, normalize_group_name
+from app.core.group_plan_store import GroupPlanStore
 from app.core.project_io import DEFAULT_PEOPLE, ProjectIO
 from app.core.project_archive import ARCHIVE_ID_KEY, ProjectArchive
 from app.core.project_history import ProjectHistory
@@ -521,6 +522,52 @@ class GroupToolsTests(unittest.TestCase):
 
         self.assertEqual(leaders["północ"], "Jan Test")
         self.assertEqual(names, ["Północ"])
+
+
+class GroupPlanStoreTests(unittest.TestCase):
+    def test_group_plan_is_saved_and_loaded_from_permanent_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = GroupPlanStore(Path(directory) / "field-service-groups.json")
+            project = TemplateRegistry.get("field_service_groups").default_project
+            project["congregation"] = "Testowy zbór"
+            store.save(project)
+            project["congregation"] = "Zmienione tylko w pamięci"
+
+            loaded = store.load()
+
+        self.assertEqual(loaded["congregation"], "Testowy zbór")
+
+    def test_latest_archived_group_plan_is_migrated_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = GroupPlanStore(Path(directory) / "field-service-groups.json")
+            older = TemplateRegistry.get("field_service_groups").default_project
+            older["congregation"] = "Starszy"
+            latest = TemplateRegistry.get("field_service_groups").default_project
+            latest["congregation"] = "Najnowszy"
+
+            migrated = store.migrate_from_archive([{"project": latest}, {"project": older}])
+            migrated_again = store.migrate_from_archive([{"project": older}])
+            loaded = store.load()
+
+        self.assertTrue(migrated)
+        self.assertFalse(migrated_again)
+        self.assertEqual(loaded["congregation"], "Najnowszy")
+
+    def test_permanent_group_plan_is_not_affected_by_archive_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = GroupPlanStore(root / "field-service-groups.json")
+            archive = ProjectArchive(root / "archive", retention_days=1)
+            project = TemplateRegistry.get("field_service_groups").default_project
+            store.save(project)
+            entry = archive.save(project)
+            entry["updated_at"] = datetime(2026, 1, 1, tzinfo=UTC).isoformat()
+            ProjectIO._write_json(root / "archive" / f"{entry['archive_id']}.json", entry)
+
+            archive.cleanup(datetime(2026, 6, 14, tzinfo=UTC))
+            permanent = store.load()
+
+        self.assertIsNotNone(permanent)
 
 
 class AssignmentToolsTests(unittest.TestCase):

@@ -155,7 +155,7 @@ class ProjectCenterDialog(QDialog):
         self.summary.setText(
             f"Planora przechowuje lokalnie {len(self.entries)} ostatnio edytowanych projektów i "
             f"{len(self.assignments)} przydziałów. Rozpoznane daty w kalendarzu: {dated}. "
-            f"Archiwum jest automatycznie usuwane po {RETENTION_DAYS} dniach."
+            f"Archiwum pozostałych projektów jest usuwane po {RETENTION_DAYS} dniach; plan grup służby pozostaje na stałe."
         )
         self._mark_calendar_dates()
         self._refresh_calendar_rows()

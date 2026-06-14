@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBo
 from app.config import APP_ICON, AUTOSAVE_FILE, UPDATE_DIR, UPDATE_URL, USER_DATA_DIR
 from app.core.app_info import APP_NAME, APP_VERSION
 from app.core.group_tools import latest_group_leaders
+from app.core.group_plan_store import GroupPlanStore
 from app.core.people_roles import ROLE_OPTIONS, eligible_people
 from app.core.project_archive import ProjectArchive
 from app.core.project_history import ProjectHistory
@@ -42,6 +43,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         ProjectIO.ensure_user_data()
         self.project_archive = ProjectArchive()
+        self.group_plan_store = GroupPlanStore()
+        self.group_plan_store.migrate_from_archive(self.project_archive.load_entries())
         self.project_archive.cleanup()
         self.project_history = ProjectHistory()
         self.people = ProjectIO.load_people()
@@ -121,7 +124,8 @@ class MainWindow(QMainWindow):
     def create_project(self, template_id: str):
         template = TemplateRegistry.get(template_id)
         if template:
-            self.open_editor(template, copy.deepcopy(template.default_project))
+            project = self.group_plan_store.load() if template_id == "field_service_groups" else None
+            self.open_editor(template, copy.deepcopy(project or template.default_project))
 
     def open_project(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -167,8 +171,14 @@ class MainWindow(QMainWindow):
         )
         self.stack.addWidget(self.editor)
         self._apply_role_filters(template.id)
+        if template.id == "field_service_groups":
+            self.group_plan_store.save(self.editor.project)
+            self.editor.project_changed.connect(self.save_permanent_group_plan)
         if template.id == "cleaning_attendants":
-            leaders, group_names = latest_group_leaders(self.project_archive.load_entries())
+            group_project = self.group_plan_store.load()
+            leaders, group_names = latest_group_leaders(
+                [{"project": group_project}] if group_project else self.project_archive.load_entries()
+            )
             self.editor.set_group_leaders(leaders, group_names)
         self.stack.setCurrentWidgetAnimated(self.editor)
         self._sync_history_actions()
@@ -324,6 +334,17 @@ class MainWindow(QMainWindow):
         if project:
             try:
                 self.project_archive.save(project)
+                if project.get("template_id") == "field_service_groups":
+                    self.group_plan_store.save(project)
+            except OSError:
+                pass
+
+    def save_permanent_group_plan(self):
+        project = self.current_project()
+        if project and project.get("template_id") == "field_service_groups":
+            try:
+                self.group_plan_store.save(project)
+                self.project_archive.save(project)
             except OSError:
                 pass
 
@@ -333,6 +354,8 @@ class MainWindow(QMainWindow):
             try:
                 ProjectIO.save_project(AUTOSAVE_FILE, project)
                 self.project_archive.save(project)
+                if project.get("template_id") == "field_service_groups":
+                    self.group_plan_store.save(project)
                 self.project_archive.cleanup()
             except OSError:
                 pass

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -33,6 +33,8 @@ from app.templates.field_service_groups.default_project import ROLE_LABELS, ROLE
 
 
 class FieldServiceGroupsEditor(QWidget):
+    project_changed = Signal()
+
     def __init__(
         self,
         project: dict,
@@ -89,7 +91,7 @@ class FieldServiceGroupsEditor(QWidget):
         groups_layout = page_layout(
             groups_page,
             "Dokument i grupy",
-            "Edytuj nagłówki dokumentu, dodawaj dowolną liczbę grup i ustawiaj ich kolejność.",
+            "Edytuj nagłówki dokumentu, dodawaj dowolną liczbę grup i ustawiaj ich kolejność. Każda zmiana zapisuje się automatycznie.",
         )
         document = QGroupBox("Nagłówek dokumentu")
         form = configure_form(QFormLayout(document))
@@ -240,6 +242,7 @@ class FieldServiceGroupsEditor(QWidget):
         self.project["congregation"] = self.congregation.text()
         self.project["title"] = self.title.text()
         self.refresh_preview()
+        self.project_changed.emit()
 
     def refresh_groups(self, selected=None):
         for widget in (self.group_list, self.member_group_list):
@@ -288,6 +291,7 @@ class FieldServiceGroupsEditor(QWidget):
         value["name"] = self.group_name.text()
         self.refresh_groups(self.group_index)
         self.refresh_preview()
+        self.project_changed.emit()
 
     def add_group(self):
         next_number = len(self.project["groups"]) + 1
@@ -296,6 +300,7 @@ class FieldServiceGroupsEditor(QWidget):
         self.refresh_groups(self.group_index)
         self.select_group(self.group_index)
         self.refresh_preview()
+        self.project_changed.emit()
 
     def remove_group(self):
         groups = self.project["groups"]
@@ -305,6 +310,7 @@ class FieldServiceGroupsEditor(QWidget):
             self.refresh_groups(self.group_index)
             self.select_group(self.group_index)
             self.refresh_preview()
+            self.project_changed.emit()
 
     def move_group(self, delta):
         groups = self.project["groups"]
@@ -315,6 +321,7 @@ class FieldServiceGroupsEditor(QWidget):
             self.refresh_groups(target)
             self.select_group(target)
             self.refresh_preview()
+            self.project_changed.emit()
 
     def _load_members(self):
         self._loading_members = True
@@ -361,6 +368,7 @@ class FieldServiceGroupsEditor(QWidget):
         value["members"] = members
         self.refresh_groups(self.group_index)
         self.refresh_preview()
+        self.project_changed.emit()
 
     def add_member(self):
         value = self._current_group()
@@ -379,6 +387,7 @@ class FieldServiceGroupsEditor(QWidget):
         person.showPopup()
         self.refresh_groups(self.group_index)
         self.refresh_preview()
+        self.project_changed.emit()
 
     def remove_member(self):
         value = self._current_group()
@@ -389,6 +398,7 @@ class FieldServiceGroupsEditor(QWidget):
             self.member_table.setCurrentCell(min(row, self.member_table.rowCount() - 1), 0)
             self.refresh_groups(self.group_index)
             self.refresh_preview()
+            self.project_changed.emit()
 
     def move_member(self, delta):
         value = self._current_group()
@@ -400,6 +410,7 @@ class FieldServiceGroupsEditor(QWidget):
             self._load_members()
             self.member_table.setCurrentCell(target, 0)
             self.refresh_preview()
+            self.project_changed.emit()
 
     def refresh_preview(self):
         try:

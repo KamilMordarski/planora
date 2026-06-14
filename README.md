@@ -41,6 +41,9 @@ ich członków. Grupowy i asystent są czytelnie, ale subtelnie wyróżnieni
 w eksporcie, a każda nowa osoba domyślnie otrzymuje rolę członka grupy.
 Nowy projekt nie zawiera domyślnej nazwy zboru. Zakładka osób dopasowuje się
 do szerokości okna i przeznacza większość miejsca na czytelną edycję nazwisk.
+Po pierwszym utworzeniu plan grup jest przechowywany na stałe w danych Planory.
+Każda zmiana grupy, osoby lub roli zapisuje się automatycznie, a ponowne
+otwarcie generatora zawsze przywraca ten sam aktualny plan.
 
 ## Personalizacja interfejsu
 
@@ -133,6 +136,8 @@ Biblioteka osób i ustawienia są przechowywane w katalogu danych użytkownika:
 
 Automatyczne archiwum projektów znajduje się w podkatalogu `project-archive`.
 Nie zastępuje ono własnych plików JSON i jest utrzymywane wyłącznie przez 90 dni.
+Plan grup służby ma dodatkowo trwały plik `field-service-groups.json`, który
+nie podlega automatycznemu usuwaniu po 90 dniach.
 
 Przy pierwszym uruchomieniu istniejąca biblioteka `data/people.json` zostanie
 skopiowana do katalogu użytkownika. Dane ze starszego katalogu
