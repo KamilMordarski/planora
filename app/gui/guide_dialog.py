@@ -1,10 +1,12 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QScrollArea,
     QTabWidget,
     QVBoxLayout,
@@ -12,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.app_info import APP_DISCLAIMER, APP_NAME
+from app.core.wol_importer import JW_MEETINGS_BASE_URL
 
 
 class GuideDialog(QDialog):
@@ -45,6 +48,39 @@ class GuideDialog(QDialog):
             "6. Zapisz i eksportuj",
             "Zapis projektu tworzy edytowalny plik JSON. Możesz od razu użyć przycisku „Drukuj”, "
             "wyeksportować PDF do późniejszego druku albo JPG do łatwego wysyłania gotowego planu.",
+        ),
+    ]
+
+    JW_IMPORT = [
+        (
+            "1. Otwórz stronę spotkań JW",
+            "Kliknij przycisk poniżej. Otworzy się strona wol.jw.org/pl/wol/meetings/r12/lp-p/, "
+            "na której wybierzesz interesujący Cię tydzień.",
+        ),
+        (
+            "2. Wybierz tydzień",
+            "Na stronie JW przejdź do tygodnia, który chcesz dodać. Pełny adres powinien kończyć się "
+            "rokiem i numerem tygodnia, na przykład /2026/24.",
+        ),
+        (
+            "3. Skopiuj pełny adres",
+            "Kliknij pasek adresu przeglądarki i skopiuj cały link do wybranego tygodnia. "
+            "Nie kopiuj adresu pojedynczego artykułu ani samego fragmentu strony.",
+        ),
+        (
+            "4. Wklej adres w Planorze",
+            "Otwórz generator „Plan zebrań w tygodniu”, przejdź do kroku „Program” i kliknij "
+            "„Wklej adres JW…”. Wklej skopiowany link i zatwierdź.",
+        ),
+        (
+            "5. Uzupełnij przydziały",
+            "Planora utworzy nowe zwykłe zebranie z datą środy oraz pobranymi sekcjami i punktami. "
+            "Nazwiska pozostają puste, dzięki czemu możesz przypisać osoby z własnej biblioteki.",
+        ),
+        (
+            "Bieżący tydzień",
+            "Jeżeli potrzebujesz programu na obecny tydzień, użyj przycisku „Bieżący tydzień z JW”. "
+            "Nie trzeba wtedy kopiować żadnego adresu.",
         ),
     ]
 
@@ -137,7 +173,7 @@ class GuideDialog(QDialog):
             "punkty są automatycznie numerowane od pierwszego punktu po uwagach wstępnych. "
             "Górny pasek przełącza dni bez wracania do listy, a duplikowanie zebrania ustawia "
             "datę tydzień później. Możesz wstawić pełny lokalny szablon punktów albo pobrać program "
-            "bieżącego lub wskazanego tygodnia z WOL. Import od razu tworzy nowe zwykłe zebranie z datą środy "
+            "bieżącego lub wskazanego tygodnia z JW. Import od razu tworzy nowe zwykłe zebranie z datą środy "
             "wybranego tygodnia; importowane przydziały osób pozostają puste.",
         ),
         (
@@ -230,6 +266,7 @@ class GuideDialog(QDialog):
 
         tabs = QTabWidget()
         tabs.addTab(self._cards_tab(self.QUICK_START, "Najkrótsza droga od pustego projektu do eksportu."), "Start")
+        tabs.addTab(self._jw_tab(), "Import z JW")
         tabs.addTab(self._cards_tab(self.PEOPLE, "Jedna lista nazwisk dla całej aplikacji."), "Lista osób")
         tabs.addTab(self._cards_tab(self.PLANNING, "Szybsze przygotowanie wielu terminów i przydziałów."), "Planowanie")
         tabs.addTab(self._cards_tab(self.GENERATORS, "Każdy generator prowadzi przez własne kroki."), "Generatory")
@@ -251,14 +288,14 @@ class GuideDialog(QDialog):
         layout = QVBoxLayout(hero)
         title = QLabel(f"Poznaj {APP_NAME}")
         title.setObjectName("screenTitle")
-        subtitle = QLabel("Przejrzysty przewodnik po projektach, osobach, eksporcie i ustawieniach.")
+        subtitle = QLabel("Przejrzysty przewodnik po projektach, imporcie z JW, osobach, eksporcie i ustawieniach.")
         subtitle.setObjectName("screenSubtitle")
         subtitle.setWordWrap(True)
         layout.addWidget(title)
         layout.addWidget(subtitle)
 
         facts = QHBoxLayout()
-        for text in ("5 generatorów", "Role i asystent", "PDF, JPG i ICS", "Lokalne dane"):
+        for text in ("5 generatorów", "Import z JW", "PDF, JPG i ICS", "Lokalne dane"):
             label = QLabel(text)
             label.setObjectName("guideBadge")
             label.setAlignment(Qt.AlignCenter)
@@ -281,6 +318,42 @@ class GuideDialog(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setWidget(content)
         return scroll
+
+    def _jw_tab(self) -> QScrollArea:
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        intro = QLabel(
+            "Pobierz program zebrania ze strony JW w kilka chwil. Planora korzysta z publicznej strony "
+            "spotkań pod adresem wol.jw.org i nie zapisuje danych logowania."
+        )
+        intro.setObjectName("screenSubtitle")
+        intro.setWordWrap(True)
+        content_layout.addWidget(intro)
+
+        open_page = QPushButton("Otwórz stronę spotkań JW")
+        open_page.setObjectName("primaryButton")
+        open_page.setToolTip(JW_MEETINGS_BASE_URL)
+        open_page.clicked.connect(self.open_jw_meetings_page)
+        content_layout.addWidget(open_page)
+
+        address = QLabel(JW_MEETINGS_BASE_URL)
+        address.setObjectName("helpText")
+        address.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        address.setWordWrap(True)
+        content_layout.addWidget(address)
+
+        for heading, text in self.JW_IMPORT:
+            content_layout.addWidget(self._card(heading, text))
+        content_layout.addStretch()
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(content)
+        return scroll
+
+    @staticmethod
+    def open_jw_meetings_page():
+        QDesktopServices.openUrl(QUrl(JW_MEETINGS_BASE_URL))
 
     @staticmethod
     def _card(heading: str, text: str) -> QFrame:

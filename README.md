@@ -54,7 +54,14 @@ dodawanie, usuwanie, zapis i eksport mają własne subtelne efekty. Ustawienia
 interfejsu nie wpływają na wygląd eksportowanych plików.
 
 Poradnik dostępny z menu głównego opisuje cały proces tworzenia grafiku,
-import biblioteki osób, pliki projektów, eksport, ustawienia i aktualizacje.
+import biblioteki osób, import programu z JW, pliki projektów, eksport,
+ustawienia i aktualizacje. Pełna dokumentacja offline znajduje się również
+w pojedynczym pliku [`planora_docs.html`](planora_docs.html).
+
+Program zebrania w tygodniu można pobrać z JW. Otwórz
+[`wol.jw.org/pl/wol/meetings/r12/lp-p/`](https://wol.jw.org/pl/wol/meetings/r12/lp-p/),
+wybierz tydzień, skopiuj pełny adres z paska przeglądarki, a następnie w kroku
+**Program** użyj przycisku **Wklej adres JW…**.
 
 Każdy edytor prowadzi przez kolejne, swobodnie przełączane kroki. Ostatni krok
 zawiera duży podgląd dokumentu z dopasowaniem strony oraz kontrolą powiększenia.

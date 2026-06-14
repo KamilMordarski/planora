@@ -34,6 +34,7 @@ from app.core.project_validation import validate_project
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
 from app.core.wol_importer import (
+    JW_MEETINGS_BASE_URL,
     append_imported_meeting,
     current_week_url,
     meeting_date_from_url,
@@ -676,6 +677,7 @@ class AssignmentToolsTests(unittest.TestCase):
         preset = standard_program_sections()
 
         self.assertEqual(current_week_url(date(2026, 6, 14)).split("/")[-2:], ["2026", "24"])
+        self.assertEqual(JW_MEETINGS_BASE_URL, "https://wol.jw.org/pl/wol/meetings/r12/lp-p/")
         self.assertEqual(meeting_date_from_url(current_week_url(date(2026, 6, 14))), "2026-06-10")
         self.assertEqual(parsed["bible_reading"], "JEREMIASZA 4-6")
         self.assertEqual(parsed["sections"][0]["items"][0]["title"], "Pierwszy punkt (10 min)")
@@ -731,6 +733,18 @@ class AssignmentToolsTests(unittest.TestCase):
         self.assertEqual(rows[0]["date"], "2026-06-14")
         self.assertEqual(rows[0]["project_title"], "Czerwiec")
         self.assertEqual(assignment_rows_for_person(rows, "jan test"), rows)
+
+
+class DocumentationTests(unittest.TestCase):
+    def test_offline_documentation_contains_jw_instructions_and_link(self):
+        path = Path(__file__).resolve().parents[1] / "planora_docs.html"
+        source = path.read_text(encoding="utf-8")
+
+        self.assertIn("<!doctype html>", source.lower())
+        self.assertIn("Jak zaimportować program z JW", source)
+        self.assertIn(JW_MEETINGS_BASE_URL, source)
+        self.assertIn("Wklej adres JW", source)
+        self.assertIn("Planora jest niezależnym, nieoficjalnym narzędziem", source)
 
 
 class ProjectArchiveTests(unittest.TestCase):

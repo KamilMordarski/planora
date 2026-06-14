@@ -7,7 +7,8 @@ from urllib.request import Request, urlopen
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section
 
 
-MEETINGS_URL = "https://wol.jw.org/pl/wol/meetings/r12/lp-p/{year}/{week}"
+JW_MEETINGS_BASE_URL = "https://wol.jw.org/pl/wol/meetings/r12/lp-p/"
+MEETINGS_URL = JW_MEETINGS_BASE_URL + "{year}/{week}"
 SECTION_PRESETS = {
     "SKARBY ZE SŁOWA BOŻEGO": "#666666",
     "ULEPSZAJMY SWOJĄ SŁUŻBĘ": "#e58b00",
@@ -63,7 +64,7 @@ def _resolve_program_page(source: str, base_url: str) -> tuple[str, str]:
         return source, base_url
     candidates = re.findall(r'href="([^"]*/wol/d/r12/lp-p/\d+[^"]*)"', source)
     if not candidates:
-        raise WolImportError("Nie znaleziono programu „Życie i służba” na stronie wybranego tygodnia.")
+        raise WolImportError("Nie znaleziono programu „Życie i służba” na stronie wybranego tygodnia JW.")
     return _download(urljoin(base_url, candidates[0]))
 
 

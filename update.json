@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.12.3",
+  "latest_version": "1.12.4",
   "release_date": "2026-06-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.12.3/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.12.4/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.12.3/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.12.3/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.12.4/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.12.4/Planora-macOS.zip"
   },
   "notes": [
-    "Listy przydziałów nadal podpowiadają osoby według właściwych uprawnień",
-    "Przywrócono możliwość ręcznego wpisania innej osoby w wyjątkowej sytuacji",
-    "Ręczne i wcześniej zapisane przydziały nie są usuwane podczas filtrowania"
+    "Dodano samodzielną dokumentację aplikacji w pliku planora_docs.html",
+    "Rozbudowano poradnik o instrukcję wklejania linku z JW",
+    "Dodano przyciski otwierające stronę spotkań JW i ujednolicono nazwy importu"
   ]
 }

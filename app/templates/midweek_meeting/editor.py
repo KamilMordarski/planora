@@ -3,8 +3,8 @@ from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 
-from PySide6.QtCore import QDate, Qt
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import QDate, Qt, QUrl
+from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
@@ -35,6 +35,7 @@ from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
 from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
 from app.core.wol_importer import (
+    JW_MEETINGS_BASE_URL,
     WolImportError,
     append_imported_meeting,
     current_week_url,
@@ -337,10 +338,12 @@ class MidweekMeetingEditor(QWidget):
         add_standard.setToolTip("Dodaje brakujące sekcje: Skarby, Ulepszajmy swoją służbę i Chrześcijański tryb życia.")
         add_template = QPushButton("Szablon punktów")
         add_template.setToolTip("Wstawia standardowe sekcje wraz z najczęściej używanymi punktami.")
-        import_current = QPushButton("Bieżący tydzień z WOL")
-        import_current.setToolTip("Tworzy nowe zebranie z datą, nazwami i czasami punktów z oficjalnej strony WOL.")
-        import_url = QPushButton("Adres WOL…")
-        import_url.setToolTip("Tworzy nowe zebranie z programu wskazanego tygodnia WOL.")
+        import_current = QPushButton("Bieżący tydzień z JW")
+        import_current.setToolTip("Tworzy nowe zebranie z datą, nazwami i czasami punktów ze strony JW.")
+        import_url = QPushButton("Wklej adres JW…")
+        import_url.setToolTip("Tworzy nowe zebranie z programu wskazanego tygodnia JW.")
+        open_jw = QPushButton("Otwórz stronę spotkań JW")
+        open_jw.setToolTip("Otwiera stronę, na której można wybrać tydzień i skopiować jego adres.")
         delete_section = QPushButton("Usuń sekcję")
         delete_section.setObjectName("dangerButton")
         section_buttons.addWidget(add_section, 0, 0)
@@ -349,6 +352,7 @@ class MidweekMeetingEditor(QWidget):
         section_buttons.addWidget(add_template, 1, 1)
         section_buttons.addWidget(import_current, 2, 0)
         section_buttons.addWidget(import_url, 2, 1)
+        section_buttons.addWidget(open_jw, 3, 0, 1, 2)
         section_side.addWidget(self.section_list)
         section_side.addLayout(section_buttons)
         lists.addWidget(section_group)
@@ -425,6 +429,7 @@ class MidweekMeetingEditor(QWidget):
         add_template.clicked.connect(self.apply_standard_program)
         import_current.clicked.connect(self.import_current_wol_program)
         import_url.clicked.connect(self.import_wol_program_from_url)
+        open_jw.clicked.connect(self.open_jw_meetings_page)
         delete_section.clicked.connect(self.delete_section)
         add_item.clicked.connect(self.add_item)
         duplicate_item.clicked.connect(self.duplicate_item)
@@ -936,12 +941,16 @@ class MidweekMeetingEditor(QWidget):
     def import_wol_program_from_url(self):
         url, accepted = QInputDialog.getText(
             self,
-            "Import programu z WOL",
-            "Adres strony tygodnia lub programu:",
+            "Import programu z JW",
+            "Wklej pełny adres wybranego tygodnia ze strony JW:",
             text=current_week_url(),
         )
         if accepted and url.strip():
             self._import_wol_program(url.strip())
+
+    @staticmethod
+    def open_jw_meetings_page():
+        QDesktopServices.openUrl(QUrl(JW_MEETINGS_BASE_URL))
 
     def _import_wol_program(self, url):
         try:
