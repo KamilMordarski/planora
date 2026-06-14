@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QFormLayout, QGridLayout, QSizePolicy, QWidget
+from PySide6.QtWidgets import QComboBox, QFormLayout, QGridLayout, QPushButton, QSizePolicy, QWidget
 
 
 def configure_form(form: QFormLayout) -> QFormLayout:
@@ -47,5 +47,36 @@ class ResponsiveCardGrid(QWidget):
         for index, card in enumerate(self.cards):
             self.grid.removeWidget(card)
             self.grid.addWidget(card, index // columns, index % columns)
+        for column in range(self.max_columns):
+            self.grid.setColumnStretch(column, 1 if column < columns else 0)
+
+
+class ResponsiveActionBar(QWidget):
+    """A compact button row that wraps into a grid on narrow screens."""
+
+    def __init__(self, buttons: list[QPushButton], min_button_width: int = 145, max_columns: int = 5, parent=None):
+        super().__init__(parent)
+        self.buttons = buttons
+        self.min_button_width = min_button_width
+        self.max_columns = max_columns
+        self.grid = QGridLayout(self)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setHorizontalSpacing(6)
+        self.grid.setVerticalSpacing(6)
+        for button in buttons:
+            button.setMinimumWidth(0)
+            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self._reflow()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._reflow()
+
+    def _reflow(self):
+        available = max(1, self.width())
+        columns = max(1, min(self.max_columns, available // self.min_button_width))
+        for index, button in enumerate(self.buttons):
+            self.grid.removeWidget(button)
+            self.grid.addWidget(button, index // columns, index % columns)
         for column in range(self.max_columns):
             self.grid.setColumnStretch(column, 1 if column < columns else 0)

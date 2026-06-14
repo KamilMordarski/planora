@@ -36,7 +36,7 @@ from app.core.assignment_tools import (
 )
 from app.core.people_roles import eligible_people
 from app.core.template_registry import TemplateRegistry
-from app.gui.responsive import configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_form
 
 
 class PlanningToolsDialog(QDialog):
@@ -156,14 +156,11 @@ class PlanningToolsDialog(QDialog):
         self.bulk_meetings = QListWidget()
         self.bulk_meetings.setMinimumHeight(150)
         current_layout.addWidget(self.bulk_meetings)
-        selection_row = QHBoxLayout()
         select_all = QPushButton("Zaznacz wszystkie terminy")
         select_none = QPushButton("Wyczyść zaznaczenie")
         select_all.clicked.connect(lambda: self._set_bulk_checks(Qt.Checked))
         select_none.clicked.connect(lambda: self._set_bulk_checks(Qt.Unchecked))
-        selection_row.addWidget(select_all)
-        selection_row.addWidget(select_none)
-        current_layout.addLayout(selection_row)
+        current_layout.addWidget(ResponsiveActionBar([select_all, select_none], 170, 2))
 
         shift_form = configure_form(QFormLayout())
         self.shift_days = QSpinBox()

@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.12.0",
+  "latest_version": "1.12.1",
   "release_date": "2026-06-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.12.0/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.12.1/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.12.0/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.12.0/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.12.1/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.12.1/Planora-macOS.zip"
   },
   "notes": [
-    "Dodano bezpośrednie drukowanie oraz drukowanie zbiorcze wielu projektów",
-    "Dodano panel nadchodzących obowiązków, globalne kolizje i wiadomości dla osób",
-    "Dodano szablon punktów zebrań w tygodniu oraz import bieżącego programu z WOL"
+    "Zmniejszono przyciski i uporządkowano zestawy akcji we wszystkich menu",
+    "Przyciski automatycznie układają się w responsywne siatki na mniejszych ekranach",
+    "Import WOL od razu tworzy nowe zebranie z datą środy wybranego tygodnia"
   ]
 }

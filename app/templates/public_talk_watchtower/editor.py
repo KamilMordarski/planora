@@ -25,7 +25,7 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import configure_editable_combo, configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
 
 
 class PublicTalkWatchtowerEditor(QWidget):
@@ -104,15 +104,9 @@ class PublicTalkWatchtowerEditor(QWidget):
         add.setObjectName("primaryButton")
         delete = QPushButton("Usuń tydzień")
         delete.setObjectName("dangerButton")
-        move_row = QHBoxLayout()
         up = QPushButton("Przenieś wyżej")
         down = QPushButton("Przenieś niżej")
-        move_row.addWidget(up)
-        move_row.addWidget(down)
-        left_layout.addWidget(new_form)
-        left_layout.addWidget(add)
-        left_layout.addWidget(delete)
-        left_layout.addLayout(move_row)
+        left_layout.addWidget(ResponsiveActionBar([new_form, add, delete, up, down], 135, 2))
         weeks_layout.addWidget(weeks_group, 1)
 
         data_page = QWidget()
@@ -174,13 +168,10 @@ class PublicTalkWatchtowerEditor(QWidget):
         special_layout.addWidget(special_help)
         special_layout.addWidget(self.special_text)
         form.addWidget(special_group)
-        form_actions = QHBoxLayout()
         new_form_from_data = QPushButton("Wyczyść i przygotuj nowy formularz")
         add_from_data = QPushButton("Dodaj jako nowy tydzień z formularza")
         add_from_data.setObjectName("primaryButton")
-        form_actions.addWidget(new_form_from_data)
-        form_actions.addWidget(add_from_data)
-        form.addLayout(form_actions)
+        form.addWidget(ResponsiveActionBar([new_form_from_data, add_from_data], 190, 2))
         form.addStretch()
         editor_scroll.setWidget(editor)
         data_layout.addWidget(editor_scroll, 1)
@@ -193,15 +184,12 @@ class PublicTalkWatchtowerEditor(QWidget):
         )
         self.preview = DocumentPreview()
         preview_layout.addWidget(self.preview, 1)
-        export_row = QHBoxLayout()
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
         print_button = QPushButton("Drukuj")
         both.setObjectName("primaryButton")
-        for button in (print_button, pdf, jpg, both):
-            export_row.addWidget(button)
-        preview_layout.addLayout(export_row)
+        preview_layout.addWidget(ResponsiveActionBar([print_button, pdf, jpg, both], 130, 4))
 
         self.wizard.add_step("Tygodnie", "tytuł dokumentu i wybór tygodnia", weeks_page)
         self.wizard.add_step("Dane", "osoby, tematy i rodzaj tygodnia", data_page)

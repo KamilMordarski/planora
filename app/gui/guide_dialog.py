@@ -136,7 +136,8 @@ class GuideDialog(QDialog):
             "punkty są automatycznie numerowane od pierwszego punktu po uwagach wstępnych. "
             "Górny pasek przełącza dni bez wracania do listy, a duplikowanie zebrania ustawia "
             "datę tydzień później. Możesz wstawić pełny lokalny szablon punktów albo pobrać program "
-            "bieżącego lub wskazanego tygodnia z WOL; importowane przydziały osób pozostają puste.",
+            "bieżącego lub wskazanego tygodnia z WOL. Import od razu tworzy nowe zwykłe zebranie z datą środy "
+            "wybranego tygodnia; importowane przydziały osób pozostają puste.",
         ),
         (
             "Plan grup służby",

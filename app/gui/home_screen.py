@@ -65,9 +65,9 @@ class HomeScreen(QWidget):
         actions = self.actions
         create = QPushButton("Utwórz nowy grafik")
         create.setObjectName("primaryButton")
-        create.setMinimumHeight(46)
+        create.setMinimumHeight(36)
         open_button = QPushButton("Otwórz projekt")
-        open_button.setMinimumHeight(46)
+        open_button.setMinimumHeight(36)
         create.clicked.connect(create_schedule)
         open_button.clicked.connect(open_project)
         actions.addWidget(create)

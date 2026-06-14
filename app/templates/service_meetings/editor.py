@@ -28,7 +28,7 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import configure_editable_combo, configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
 from app.templates.service_meetings.default_project import DEFAULT_PROJECT, meeting_row
 
 
@@ -165,18 +165,11 @@ class ServiceMeetingsEditor(QWidget):
         duplicate = QPushButton("Duplikuj zbiórkę")
         remove = QPushButton("Usuń zbiórkę")
         remove.setObjectName("dangerButton")
-        move_row = QHBoxLayout()
         up = QPushButton("Wyżej")
         down = QPushButton("Niżej")
-        move_row.addWidget(up)
-        move_row.addWidget(down)
         list_layout.addWidget(help_label)
         list_layout.addWidget(self.meeting_list, 1)
-        list_layout.addWidget(new_form)
-        list_layout.addWidget(add)
-        list_layout.addWidget(duplicate)
-        list_layout.addWidget(remove)
-        list_layout.addLayout(move_row)
+        list_layout.addWidget(ResponsiveActionBar([new_form, add, duplicate, remove, up, down], 135, 2))
         self.meeting_splitter.addWidget(list_panel)
 
         detail_panel = QGroupBox("Wybrana zbiórka")
@@ -212,16 +205,13 @@ class ServiceMeetingsEditor(QWidget):
             "Sprawdź gotowy plan w stonowanej kolorystyce, a następnie wyeksportuj PDF lub JPG.",
         )
         self.preview = DocumentPreview()
-        export_row = QHBoxLayout()
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
         print_button = QPushButton("Drukuj")
         both.setObjectName("primaryButton")
-        for button in (print_button, pdf, jpg, both):
-            export_row.addWidget(button)
         preview_layout.addWidget(self.preview, 1)
-        preview_layout.addLayout(export_row)
+        preview_layout.addWidget(ResponsiveActionBar([print_button, pdf, jpg, both], 130, 4))
 
         self.wizard.add_step("Dokument", "tytuły, kolumny i kolorystyka", settings_page)
         self.wizard.add_step("Zbiórki", "terminy, miejsca i prowadzący", meetings_page)

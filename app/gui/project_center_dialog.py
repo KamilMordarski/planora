@@ -40,6 +40,7 @@ from app.core.assignment_tools import (
 from app.core.project_archive import ProjectArchive, RETENTION_DAYS
 from app.core.template_registry import TemplateRegistry
 from app.gui.printing import print_pages
+from app.gui.responsive import ResponsiveActionBar
 
 
 def _table(headers: tuple[str, ...]) -> QTableWidget:
@@ -189,14 +190,11 @@ class ProjectCenterDialog(QDialog):
         export_calendar.clicked.connect(self._export_person_calendar)
         copy_message.clicked.connect(self._copy_person_message)
         send_email.clicked.connect(self._email_person_message)
-        row.addWidget(export_text)
-        row.addWidget(export_calendar)
-        row.addWidget(copy_message)
-        row.addWidget(send_email)
         self.person_summary = QLabel()
         self.person_summary.setObjectName("helpText")
         self.person_table = _table(("Data", "Projekt", "Obowiązek", "Szczegóły"))
         layout.addLayout(row)
+        layout.addWidget(ResponsiveActionBar([export_text, export_calendar, copy_message, send_email], 140, 4))
         layout.addWidget(self.person_summary)
         layout.addWidget(self.person_table, 1)
         return tab
@@ -210,7 +208,6 @@ class ProjectCenterDialog(QDialog):
         )
         info.setObjectName("helpText")
         info.setWordWrap(True)
-        actions = QHBoxLayout()
         select_all = QPushButton("Zaznacz wszystko")
         select_none = QPushButton("Odznacz wszystko")
         print_selected = QPushButton("Drukuj zaznaczone")
@@ -218,13 +215,9 @@ class ProjectCenterDialog(QDialog):
         select_all.clicked.connect(lambda: self._set_all_print_checks(Qt.Checked))
         select_none.clicked.connect(lambda: self._set_all_print_checks(Qt.Unchecked))
         print_selected.clicked.connect(self._print_selected_projects)
-        actions.addWidget(select_all)
-        actions.addWidget(select_none)
-        actions.addStretch()
-        actions.addWidget(print_selected)
         self.batch_print_table = _table(("Drukuj", "Projekt", "Szablon", "Ostatnia zmiana"))
         layout.addWidget(info)
-        layout.addLayout(actions)
+        layout.addWidget(ResponsiveActionBar([select_all, select_none, print_selected], 150, 3))
         layout.addWidget(self.batch_print_table, 1)
         return tab
 

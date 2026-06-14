@@ -29,7 +29,7 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import configure_editable_combo, configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
 from app.templates.field_service_groups.default_project import ROLE_LABELS, ROLE_MEMBER, group, member
 
 
@@ -181,16 +181,13 @@ class FieldServiceGroupsEditor(QWidget):
             "Sprawdź stonowany, czytelny plan, a następnie wyeksportuj go do PDF lub JPG.",
         )
         self.preview = DocumentPreview()
-        export_row = QHBoxLayout()
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
         print_button = QPushButton("Drukuj")
         both.setObjectName("primaryButton")
-        for button in (print_button, pdf, jpg, both):
-            export_row.addWidget(button)
         preview_layout.addWidget(self.preview, 1)
-        preview_layout.addLayout(export_row)
+        preview_layout.addWidget(ResponsiveActionBar([print_button, pdf, jpg, both], 130, 4))
 
         self.wizard.add_step("Grupy", "nagłówek i liczba grup", groups_page)
         self.wizard.add_step("Osoby", "członkowie grup oraz role", members_page)

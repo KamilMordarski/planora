@@ -159,8 +159,8 @@ def build_stylesheet(settings: dict) -> str:
             color: {theme.text};
             border: 1px solid {theme.border};
             border-radius: {radius}px;
-            padding: {space(px(8))}px {space(px(15))}px;
-            min-height: {px(20)}px;
+            padding: {space(px(5))}px {space(px(10))}px;
+            min-height: {px(16)}px;
             font-weight: 600;
         }}
         QPushButton:hover {{
@@ -169,8 +169,8 @@ def build_stylesheet(settings: dict) -> str:
         }}
         QPushButton:pressed {{
             background: {theme.border};
-            padding-top: {px(9)}px;
-            padding-bottom: {px(7)}px;
+            padding-top: {px(6)}px;
+            padding-bottom: {px(4)}px;
         }}
         QPushButton:disabled {{
             color: {theme.muted};
@@ -287,7 +287,7 @@ def build_stylesheet(settings: dict) -> str:
         QTabBar::tab {{
             background: {theme.surface_alt};
             color: {theme.muted};
-            padding: {space(px(9))}px {space(px(14))}px;
+            padding: {space(px(6))}px {space(px(10))}px;
             border: 1px solid {theme.border};
             border-bottom: none;
             border-top-left-radius: {radius}px;
@@ -324,7 +324,7 @@ def build_stylesheet(settings: dict) -> str:
             border: 1px solid {theme.border};
             border-radius: {radius}px;
             margin-top: 14px;
-            padding: {space(16)}px {space(10)}px {space(10)}px {space(10)}px;
+            padding: {space(13)}px {space(8)}px {space(8)}px {space(8)}px;
             font-weight: 700;
         }}
         QGroupBox::title {{
@@ -354,7 +354,7 @@ def build_stylesheet(settings: dict) -> str:
             color: {theme.muted};
             border: none;
             border-radius: {radius}px;
-            padding: {space(px(9))}px {space(px(13))}px;
+            padding: {space(px(6))}px {space(px(9))}px;
         }}
         QPushButton#wizardStep:hover {{
             background-color: {theme.surface_alt};

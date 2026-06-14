@@ -17,13 +17,13 @@ class EditorWizard(QWidget):
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(12)
+        root.setSpacing(8)
 
         self.header = QFrame()
         self.header.setObjectName("wizardHeader")
         self.header_layout = QHBoxLayout(self.header)
-        self.header_layout.setContentsMargins(14, 10, 14, 10)
-        self.header_layout.setSpacing(8)
+        self.header_layout.setContentsMargins(10, 6, 10, 6)
+        self.header_layout.setSpacing(5)
         root.addWidget(self.header, 0)
 
         self.stack = AnimatedStackedWidget(self._animations_enabled)
@@ -32,7 +32,7 @@ class EditorWizard(QWidget):
         footer = QFrame()
         footer.setObjectName("wizardFooter")
         footer_layout = QHBoxLayout(footer)
-        footer_layout.setContentsMargins(14, 9, 14, 9)
+        footer_layout.setContentsMargins(10, 6, 10, 6)
         self.step_hint = QLabel()
         self.step_hint.setObjectName("helpText")
         self.back_button = QPushButton("← Poprzedni krok")
@@ -103,8 +103,8 @@ class EditorWizard(QWidget):
 
 def page_layout(widget: QWidget, title: str, subtitle: str) -> QVBoxLayout:
     layout = QVBoxLayout(widget)
-    layout.setContentsMargins(18, 12, 18, 12)
-    layout.setSpacing(12)
+    layout.setContentsMargins(14, 8, 14, 8)
+    layout.setSpacing(8)
     heading = QLabel(title)
     heading.setObjectName("screenTitle")
     description = QLabel(subtitle)

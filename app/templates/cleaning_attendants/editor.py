@@ -29,7 +29,7 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import configure_editable_combo, configure_form
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
 
@@ -139,16 +139,13 @@ class CleaningAttendantsEditor(QWidget):
             "Sprawdź cały dokument w dużym podglądzie, a następnie wybierz format eksportu.",
         )
         self.preview = DocumentPreview()
-        export_row = QHBoxLayout()
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
         print_button = QPushButton("Drukuj")
         both.setObjectName("primaryButton")
-        for button in (print_button, pdf, jpg, both):
-            export_row.addWidget(button)
         preview_layout.addWidget(self.preview, 1)
-        preview_layout.addLayout(export_row)
+        preview_layout.addWidget(ResponsiveActionBar([print_button, pdf, jpg, both], 130, 4))
 
         self.wizard.add_step("Ustawienia", "tytuły dokumentu", settings_page)
         self.wizard.add_step("Sprzątanie", "tygodnie i obsługa nagłośnienia", weekly_page)
@@ -196,16 +193,10 @@ class CleaningAttendantsEditor(QWidget):
         add.setToolTip("Dodaje tydzień wraz z aktualnie wpisanymi datami, grupą i osobami.")
         delete = QPushButton("Usuń tydzień")
         delete.setObjectName("dangerButton")
-        move = QHBoxLayout()
         up = QPushButton("Wyżej")
         down = QPushButton("Niżej")
-        move.addWidget(up)
-        move.addWidget(down)
         list_side.addWidget(self.weekly_list)
-        list_side.addWidget(new_form)
-        list_side.addWidget(add)
-        list_side.addWidget(delete)
-        list_side.addLayout(move)
+        list_side.addWidget(ResponsiveActionBar([new_form, add, delete, up, down], 125, 2))
         self.weekly_editor_splitter.addWidget(list_panel)
 
         form_panel = QWidget()
@@ -258,16 +249,10 @@ class CleaningAttendantsEditor(QWidget):
         add.setToolTip("Dodaje datę zebrania wraz z aktualnie wybranymi porządkowymi.")
         delete = QPushButton("Usuń datę")
         delete.setObjectName("dangerButton")
-        move = QHBoxLayout()
         up = QPushButton("Wyżej")
         down = QPushButton("Niżej")
-        move.addWidget(up)
-        move.addWidget(down)
         list_side.addWidget(self.attendant_list)
-        list_side.addWidget(new_form)
-        list_side.addWidget(add)
-        list_side.addWidget(delete)
-        list_side.addLayout(move)
+        list_side.addWidget(ResponsiveActionBar([new_form, add, delete, up, down], 125, 2))
         self.attendant_editor_splitter.addWidget(list_panel)
 
         form_panel = QWidget()

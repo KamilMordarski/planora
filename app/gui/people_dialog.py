@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from app.config import USER_DATA_DIR
 from app.core.people_roles import ALL_ROLES, ROLE_OPTIONS, normalize_profiles
 from app.core.project_io import ProjectIO
+from app.gui.responsive import ResponsiveActionBar
 
 
 class PeopleDialog(QDialog):
@@ -50,15 +51,11 @@ class PeopleDialog(QDialog):
         self.search.setClearButtonEnabled(True)
         people_layout.addWidget(self.search)
 
-        tools = QHBoxLayout()
         import_json = QPushButton("Importuj listę JSON")
         import_json.setToolTip("Dodaje osoby i odtwarza ich uprawnienia z pliku JSON bez usuwania obecnej listy.")
         export_json = QPushButton("Eksportuj listę JSON")
         export_json.setToolTip("Zapisuje nazwiska i wszystkie przypisane uprawnienia w jednym pliku JSON.")
-        tools.addWidget(import_json)
-        tools.addWidget(export_json)
-        tools.addStretch()
-        people_layout.addLayout(tools)
+        people_layout.addWidget(ResponsiveActionBar([import_json, export_json], 150, 2))
 
         self.list_widget = QListWidget()
         self.list_widget.addItems(self.people)
@@ -67,15 +64,12 @@ class PeopleDialog(QDialog):
         self.input = QLineEdit()
         self.input.setPlaceholderText("Imię i nazwisko")
         people_layout.addWidget(self.input)
-        row = QHBoxLayout()
         add = QPushButton("Dodaj osobę")
         add.setObjectName("primaryButton")
         edit = QPushButton("Zmień")
         delete = QPushButton("Usuń")
         delete.setObjectName("dangerButton")
-        for widget in (add, edit, delete):
-            row.addWidget(widget)
-        people_layout.addLayout(row)
+        people_layout.addWidget(ResponsiveActionBar([add, edit, delete], 100, 3))
 
         count = QLabel()
         count.setObjectName("screenSubtitle")
@@ -93,12 +87,9 @@ class PeopleDialog(QDialog):
         roles_help.setObjectName("helpText")
         roles_help.setWordWrap(True)
         roles_layout.addWidget(roles_help)
-        role_actions = QHBoxLayout()
         all_roles = QPushButton("Zaznacz wszystkie")
         no_roles = QPushButton("Wyczyść")
-        role_actions.addWidget(all_roles)
-        role_actions.addWidget(no_roles)
-        roles_layout.addLayout(role_actions)
+        roles_layout.addWidget(ResponsiveActionBar([all_roles, no_roles], 130, 2))
         roles_scroll = QScrollArea()
         roles_scroll.setWidgetResizable(True)
         roles_content = QWidget()

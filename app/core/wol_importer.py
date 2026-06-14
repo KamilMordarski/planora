@@ -4,7 +4,7 @@ from datetime import date
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
-from app.templates.midweek_meeting.default_project import program_item, section
+from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section
 
 
 MEETINGS_URL = "https://wol.jw.org/pl/wol/meetings/r12/lp-p/{year}/{week}"
@@ -23,6 +23,18 @@ def current_week_url(today: date | None = None) -> str:
     value = today or date.today()
     iso = value.isocalendar()
     return MEETINGS_URL.format(year=iso.year, week=iso.week)
+
+
+def meeting_date_from_url(url: str, today: date | None = None) -> str:
+    match = re.search(r"/(\d{4})/(\d{1,2})(?:[/?#]|$)", str(url))
+    if match:
+        try:
+            return date.fromisocalendar(int(match.group(1)), int(match.group(2)), 3).isoformat()
+        except ValueError:
+            pass
+    value = today or date.today()
+    iso = value.isocalendar()
+    return date.fromisocalendar(iso.year, iso.week, 3).isoformat()
 
 
 def _download(url: str) -> tuple[str, str]:
@@ -92,11 +104,21 @@ def parse_wol_program(source: str) -> dict:
 
 
 def fetch_wol_program(url: str | None = None) -> dict:
-    source, resolved_url = _download(url or current_week_url())
+    requested_url = url or current_week_url()
+    source, resolved_url = _download(requested_url)
     source, resolved_url = _resolve_program_page(source, resolved_url)
     result = parse_wol_program(source)
     result["source_url"] = resolved_url
+    result["meeting_date"] = meeting_date_from_url(requested_url)
     return result
+
+
+def append_imported_meeting(project: dict, imported: dict) -> dict:
+    meeting = normal_meeting(imported.get("meeting_date", ""))
+    meeting["bible_reading"] = imported.get("bible_reading", "")
+    meeting["sections"] = imported.get("sections", [])
+    project.setdefault("meetings", []).append(meeting)
+    return meeting
 
 
 def standard_program_sections() -> list[dict]:

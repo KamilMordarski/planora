@@ -33,7 +33,13 @@ from app.core.project_history import ProjectHistory
 from app.core.project_validation import validate_project
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
-from app.core.wol_importer import current_week_url, parse_wol_program, standard_program_sections
+from app.core.wol_importer import (
+    append_imported_meeting,
+    current_week_url,
+    meeting_date_from_url,
+    parse_wol_program,
+    standard_program_sections,
+)
 from app.core.update_installer import (
     apply_update,
     _independent_process_environment,
@@ -660,9 +666,18 @@ class AssignmentToolsTests(unittest.TestCase):
         preset = standard_program_sections()
 
         self.assertEqual(current_week_url(date(2026, 6, 14)).split("/")[-2:], ["2026", "24"])
+        self.assertEqual(meeting_date_from_url(current_week_url(date(2026, 6, 14))), "2026-06-10")
         self.assertEqual(parsed["bible_reading"], "JEREMIASZA 4-6")
         self.assertEqual(parsed["sections"][0]["items"][0]["title"], "Pierwszy punkt (10 min)")
         self.assertEqual(len(preset), 3)
+
+        project = TemplateRegistry.get("midweek_meeting").default_project
+        append_imported_meeting(
+            project,
+            {"meeting_date": "2026-06-10", "bible_reading": parsed["bible_reading"], "sections": parsed["sections"]},
+        )
+        self.assertEqual(project["meetings"][0]["date"], "2026-06-10")
+        self.assertEqual(len(project["meetings"][0]["sections"]), 3)
 
     def test_dates_can_be_shifted_in_bulk(self):
         project = TemplateRegistry.get("cleaning_attendants").default_project

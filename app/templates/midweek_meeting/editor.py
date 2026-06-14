@@ -32,8 +32,14 @@ from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
-from app.gui.responsive import configure_editable_combo, configure_form
-from app.core.wol_importer import WolImportError, current_week_url, fetch_wol_program, standard_program_sections
+from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form
+from app.core.wol_importer import (
+    WolImportError,
+    append_imported_meeting,
+    current_week_url,
+    fetch_wol_program,
+    standard_program_sections,
+)
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section, special_event
 from app.templates.midweek_meeting.renderer import numbered_program_title
 
@@ -139,18 +145,12 @@ class MidweekMeetingEditor(QWidget):
         duplicate.setToolTip("Kopiuje całe zebranie wraz z programem i ustawia datę tydzień później.")
         delete = QPushButton("Usuń")
         delete.setObjectName("dangerButton")
-        move = QHBoxLayout()
         up = QPushButton("Przenieś wyżej")
         down = QPushButton("Przenieś niżej")
-        move.addWidget(up)
-        move.addWidget(down)
         left_layout.addWidget(self.meeting_list)
-        left_layout.addWidget(new_form)
-        left_layout.addWidget(add_normal)
-        left_layout.addWidget(add_special)
-        left_layout.addWidget(duplicate)
-        left_layout.addWidget(delete)
-        left_layout.addLayout(move)
+        left_layout.addWidget(
+            ResponsiveActionBar([new_form, add_normal, add_special, duplicate, delete, up, down], 145, 2)
+        )
         meetings_layout.addWidget(left, 1)
 
         details_page = QWidget()
@@ -181,16 +181,13 @@ class MidweekMeetingEditor(QWidget):
             "Sprawdź cały plan w dużym podglądzie, a następnie wybierz format eksportu.",
         )
         self.preview = DocumentPreview()
-        export_row = QHBoxLayout()
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
         print_button = QPushButton("Drukuj")
         both.setObjectName("primaryButton")
-        for button in (print_button, pdf, jpg, both):
-            export_row.addWidget(button)
         preview_layout.addWidget(self.preview, 1)
-        preview_layout.addLayout(export_row)
+        preview_layout.addWidget(ResponsiveActionBar([print_button, pdf, jpg, both], 130, 4))
 
         self.wizard.add_step("Zebrania", "dokument i wybór zebrania", meetings_page)
         self.wizard.add_step("Dane", "podstawowe dane wybranego zebrania", details_page)
@@ -331,27 +328,27 @@ class MidweekMeetingEditor(QWidget):
         section_group = QGroupBox("Sekcje programu")
         section_side = QVBoxLayout(section_group)
         self.section_list = QListWidget()
-        section_buttons = QHBoxLayout()
-        add_section = QPushButton("Dodaj sekcję")
+        section_buttons = QGridLayout()
+        add_section = QPushButton("Nowa sekcja")
         add_section.setObjectName("primaryButton")
-        add_standard = QPushButton("Dodaj standardowe sekcje")
+        add_standard = QPushButton("Puste sekcje")
         add_standard.setToolTip("Dodaje brakujące sekcje: Skarby, Ulepszajmy swoją służbę i Chrześcijański tryb życia.")
-        add_template = QPushButton("Wstaw szablon punktów")
+        add_template = QPushButton("Szablon punktów")
         add_template.setToolTip("Wstawia standardowe sekcje wraz z najczęściej używanymi punktami.")
-        import_current = QPushButton("Pobierz bieżący tydzień z WOL")
-        import_current.setToolTip("Pobiera nazwy i czasy punktów z oficjalnej strony WOL. Przydziały osób pozostają puste.")
-        import_url = QPushButton("Importuj z adresu WOL…")
-        import_url.setToolTip("Pozwala pobrać program z adresu konkretnego tygodnia WOL.")
+        import_current = QPushButton("Bieżący tydzień z WOL")
+        import_current.setToolTip("Tworzy nowe zebranie z datą, nazwami i czasami punktów z oficjalnej strony WOL.")
+        import_url = QPushButton("Adres WOL…")
+        import_url.setToolTip("Tworzy nowe zebranie z programu wskazanego tygodnia WOL.")
         delete_section = QPushButton("Usuń sekcję")
         delete_section.setObjectName("dangerButton")
-        section_buttons.addWidget(add_section)
-        section_buttons.addWidget(delete_section)
+        section_buttons.addWidget(add_section, 0, 0)
+        section_buttons.addWidget(delete_section, 0, 1)
+        section_buttons.addWidget(add_standard, 1, 0)
+        section_buttons.addWidget(add_template, 1, 1)
+        section_buttons.addWidget(import_current, 2, 0)
+        section_buttons.addWidget(import_url, 2, 1)
         section_side.addWidget(self.section_list)
         section_side.addLayout(section_buttons)
-        section_side.addWidget(add_standard)
-        section_side.addWidget(add_template)
-        section_side.addWidget(import_current)
-        section_side.addWidget(import_url)
         lists.addWidget(section_group)
 
         item_group = QGroupBox("Punkty wybranej sekcji")
@@ -949,12 +946,15 @@ class MidweekMeetingEditor(QWidget):
                 f"{exc}\n\nMożesz nadal użyć lokalnego przycisku „Wstaw szablon punktów”.",
             )
             return
-        if self._replace_program_sections(imported["sections"], imported.get("bible_reading", "")):
-            QMessageBox.information(
-                self,
-                "Program pobrany",
-                "Pobrano nazwy punktów i czasy trwania. Przydziały osób pozostały puste.",
-            )
+        append_imported_meeting(self.project, copy.deepcopy(imported))
+        self._select_last_meeting()
+        self.wizard.set_step(2)
+        QMessageBox.information(
+            self,
+            "Program pobrany",
+            f"Dodano nowe zebranie z datą {imported['meeting_date']}. "
+            "Pobrano nazwy punktów i czasy trwania; przydziały osób pozostały puste.",
+        )
 
     def _replace_program_sections(self, sections, bible_reading):
         meeting = self._current_meeting()

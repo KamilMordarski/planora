@@ -37,7 +37,7 @@ class ScheduleTypeScreen(QWidget):
         for index, template in enumerate(templates):
             card = QFrame()
             card.setObjectName("templateCard")
-            card.setMinimumHeight(300)
+            card.setMinimumHeight(250)
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(24, 22, 24, 22)
 
@@ -61,7 +61,7 @@ class ScheduleTypeScreen(QWidget):
 
             choose = QPushButton("Utwórz grafik")
             choose.setObjectName("primaryButton")
-            choose.setMinimumHeight(42)
+            choose.setMinimumHeight(34)
             choose.clicked.connect(lambda checked=False, template_id=template.id: choose_template(template_id))
             card_layout.addWidget(choose)
             cards.add_card(card)
