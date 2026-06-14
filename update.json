@@ -1,15 +1,15 @@
 {
-  "latest_version": "1.13.0",
-  "release_date": "2026-06-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.0/Planora-Windows.zip",
+  "latest_version": "1.13.1",
+  "release_date": "2026-06-15",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.1/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.0/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.0/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.1/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.1/Planora-macOS.zip"
   },
   "notes": [
-    "Rozdzielono role zborowe od możliwych przydziałów w Bibliotece osób",
-    "Dodano role pionierów oraz automatyczne wygasanie pioniera pomocniczego",
-    "Poprawiono skalowanie przycisków i układ aplikacji w trybie okienkowym",
-    "Zmieniono filtrowanie punktów zebrania w tygodniu na punkty ćwiczebne i pozostałe punkty"
+    "Oddzielono kopie awaryjne od zapisanych projektów i analiz",
+    "Dodano wybór projektów przed otwarciem Asystenta i Centrum projektów",
+    "Dodano wyróżnianie ról oraz filtry w Bibliotece osób",
+    "Poprawiono wiarygodność kolizji, statystyk i podsumowań"
   ]
 }

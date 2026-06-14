@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.config import USER_DATA_DIR
+from app.config import PROJECTS_DIR
 from app.core.group_tools import normalize_group_name
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
@@ -578,7 +578,7 @@ class CleaningAttendantsEditor(QWidget):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Zapisz projekt",
-            str(USER_DATA_DIR / "sprzatanie-i-porzadkowi.json"),
+            str(PROJECTS_DIR / "sprzatanie-i-porzadkowi.json"),
             "Projekt JSON (*.json)",
         )
         if path:

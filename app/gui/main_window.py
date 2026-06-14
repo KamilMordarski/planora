@@ -5,10 +5,9 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QProgressDialog
 
-from app.config import APP_ICON, AUTOSAVE_FILE, UPDATE_DIR, UPDATE_URL, USER_DATA_DIR
+from app.config import APP_ICON, AUTOSAVE_FILE, PROJECTS_DIR, UPDATE_DIR, UPDATE_URL
 from app.core.app_info import APP_NAME, APP_VERSION
 from app.core.group_tools import latest_group_leaders
-from app.core.assignment_tools import archive_assignments, global_assignment_collisions, upcoming_assignments
 from app.core.group_plan_store import GroupPlanStore
 from app.core.people_roles import ASSIGNMENT_OPTIONS, eligible_people
 from app.core.project_archive import ProjectArchive
@@ -32,6 +31,7 @@ from app.gui.guide_dialog import GuideDialog
 from app.gui.people_dialog import PeopleDialog
 from app.gui.planning_tools_dialog import PlanningToolsDialog
 from app.gui.project_center_dialog import ProjectCenterDialog
+from app.gui.project_selection_dialog import ProjectSelectionDialog
 from app.gui.schedule_type_screen import ScheduleTypeScreen
 from app.gui.settings_dialog import SettingsDialog
 from app.gui.animated_stack import AnimatedStackedWidget
@@ -43,10 +43,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         ProjectIO.ensure_user_data()
-        self.project_archive = ProjectArchive()
         self.group_plan_store = GroupPlanStore()
-        self.group_plan_store.migrate_from_archive(self.project_archive.load_entries())
-        self.project_archive.cleanup()
+        self.group_plan_store.migrate_from_archive(ProjectArchive().load_entries())
         self.project_history = ProjectHistory()
         self.people = ProjectIO.load_people()
         self.people_profiles = ProjectIO.load_people_profiles(self.people)
@@ -120,15 +118,10 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, self._sync_history_actions)
 
     def refresh_home_summary(self):
-        entries = self.project_archive.load_entries()
-        assignments = archive_assignments(entries)
-        upcoming = upcoming_assignments(assignments, days=14)
-        collisions = global_assignment_collisions(assignments)
-        text = f"Najbliższe 14 dni: {len(upcoming)} obowiązków. Globalne kolizje: {len(collisions)}."
-        if upcoming:
-            first = upcoming[0]
-            text += f" Najbliższy: {first['date']} — {first['person']}, {first['role']}."
-        self.home.set_duty_summary(text)
+        self.home.set_duty_summary(
+            "Otwórz Centrum projektów i wybierz zapisane grafiki, które mają zostać sprawdzone. "
+            "Kopie awaryjne nie są uwzględniane w podsumowaniu."
+        )
 
     def show_schedule_types(self):
         self.stack.setCurrentWidgetAnimated(self.schedule_types)
@@ -144,7 +137,7 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Otwórz projekt",
-            str(USER_DATA_DIR),
+            str(PROJECTS_DIR),
             "Projekt JSON (*.json)",
         )
         if not path:
@@ -154,7 +147,6 @@ class MainWindow(QMainWindow):
             template = TemplateRegistry.for_project(project)
             if not template:
                 raise ValueError(f"Brak szablonu o ID: {project.get('template_id')}")
-            self.project_archive.ensure_identity(project, Path(path))
             self.open_editor(template, project, Path(path))
         except ValueError as exc:
             QMessageBox.warning(self, "Nie można otworzyć projektu", str(exc))
@@ -164,10 +156,6 @@ class MainWindow(QMainWindow):
         if self.editor is not None:
             self.stack.removeWidget(self.editor)
             self.editor.deleteLater()
-        try:
-            self.project_archive.save(project)
-        except OSError:
-            pass
         if reset_history:
             self.project_history.reset(project)
         self.editor = template.editor_class(
@@ -187,7 +175,7 @@ class MainWindow(QMainWindow):
         if template.id == "cleaning_attendants":
             group_project = self.group_plan_store.load()
             leaders, group_names = latest_group_leaders(
-                [{"project": group_project}] if group_project else self.project_archive.load_entries()
+                [{"project": group_project}] if group_project else []
             )
             self.editor.set_group_leaders(leaders, group_names)
         self.stack.setCurrentWidgetAnimated(self.editor)
@@ -264,32 +252,44 @@ class MainWindow(QMainWindow):
         GuideDialog(self).exec()
 
     def open_planning_tools(self):
+        entries = self.select_analysis_projects("użycia w Asystencie planowania")
+        if entries is None:
+            return
         PlanningToolsDialog(
             self.people,
             self.people_profiles,
             self.current_project,
             self.open_generated_project,
             self.refresh_editor_after_tools,
-            self.project_archive.load_entries,
+            entries,
             self,
         ).exec()
 
     def open_project_center(self):
-        self.archive_current_project()
+        entries = self.select_analysis_projects("otwarcia Centrum projektów")
+        if entries is None:
+            return
         ProjectCenterDialog(
-            self.project_archive,
+            entries,
             self.people,
             self.open_generated_project,
             self,
         ).exec()
 
+    def select_analysis_projects(self, purpose: str) -> list[dict] | None:
+        path = self.editor.project_path if self.editor is not None else None
+        dialog = ProjectSelectionDialog(purpose, self.current_project(), path, self)
+        if dialog.exec() != ProjectSelectionDialog.Accepted:
+            return None
+        return dialog.selected_entries()
+
     def current_project(self):
         return self.editor.project if self.editor is not None else None
 
-    def open_generated_project(self, project):
+    def open_generated_project(self, project, path=None):
         template = TemplateRegistry.for_project(project)
         if template:
-            self.open_editor(template, project)
+            self.open_editor(template, project, Path(path) if path else None)
 
     def refresh_editor_after_tools(self):
         if self.editor is None:
@@ -351,11 +351,9 @@ class MainWindow(QMainWindow):
 
     def archive_current_project(self):
         project = self.current_project()
-        if project:
+        if project and project.get("template_id") == "field_service_groups":
             try:
-                self.project_archive.save(project)
-                if project.get("template_id") == "field_service_groups":
-                    self.group_plan_store.save(project)
+                self.group_plan_store.save(project)
             except OSError:
                 pass
 
@@ -364,7 +362,6 @@ class MainWindow(QMainWindow):
         if project and project.get("template_id") == "field_service_groups":
             try:
                 self.group_plan_store.save(project)
-                self.project_archive.save(project)
             except OSError:
                 pass
 
@@ -373,10 +370,8 @@ class MainWindow(QMainWindow):
         if project:
             try:
                 ProjectIO.save_project(AUTOSAVE_FILE, project)
-                self.project_archive.save(project)
                 if project.get("template_id") == "field_service_groups":
                     self.group_plan_store.save(project)
-                self.project_archive.cleanup()
             except OSError:
                 pass
 

@@ -47,7 +47,7 @@ class PlanningToolsDialog(QDialog):
         self.current_project = current_project
         self.create_project = create_project
         self.project_changed = project_changed
-        self.archived_projects = archived_projects
+        self.archived_projects = list(archived_projects or [])
         self.setWindowTitle("Asystent i narzędzia planowania")
         self.resize(900, 720)
 
@@ -55,7 +55,8 @@ class PlanningToolsDialog(QDialog):
         title = QLabel("Asystent układania grafików")
         title.setObjectName("screenTitle")
         subtitle = QLabel(
-            "Generuj terminy, przydzielaj osoby zgodnie z rolami, edytuj wiele dat i eksportuj obowiązki do kalendarza."
+            "Generuj terminy, przydzielaj osoby zgodnie z rolami i unikaj kolizji z wybranymi projektami. "
+            f"Projekty wybrane do kontroli: {len(self.archived_projects)}."
         )
         subtitle.setObjectName("screenSubtitle")
         subtitle.setWordWrap(True)
@@ -261,11 +262,9 @@ class PlanningToolsDialog(QDialog):
         dates = self._selected_dates(self.assistant_start, self.assistant_end, self.assistant_weekdays)
         project = TemplateRegistry.get("service_meetings").default_project
         blocked = defaultdict(set)
-        for entry in self.archived_projects() if callable(self.archived_projects) else []:
+        for entry in self.archived_projects:
             for date_value, people in assigned_people_by_date(entry.get("project")).items():
                 blocked[date_value].update(people)
-        for date_value, people in assigned_people_by_date(self._project()).items():
-            blocked[date_value].update(people)
         project["meetings"] = build_service_meetings_plan(
             project,
             dates,

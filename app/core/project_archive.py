@@ -73,17 +73,27 @@ class ProjectArchive:
             project[ARCHIVE_ID_KEY] = archive_id
         return archive_id
 
-    def save(self, project: dict) -> dict:
-        archive_id = self.ensure_identity(project)
+    @classmethod
+    def entry_for_project(cls, project: dict, source_path: Path | None = None) -> dict:
+        project_copy = copy.deepcopy(project)
+        if source_path:
+            project_copy.pop(ARCHIVE_ID_KEY, None)
+        archive_id = cls.ensure_identity(project_copy, source_path)
         template = TemplateRegistry.for_project(project)
-        entry = {
+        return {
             "archive_id": archive_id,
             "template_id": project.get("template_id", ""),
             "template_name": template.name if template else project.get("template_id", ""),
             "title": project_display_title(project),
             "updated_at": _utc_now().isoformat(),
-            "project": copy.deepcopy(project),
+            "source_path": str(source_path) if source_path else "",
+            "project": project_copy,
         }
+
+    def save(self, project: dict, source_path: Path | None = None) -> dict:
+        entry = self.entry_for_project(project, source_path)
+        archive_id = entry["archive_id"]
+        project[ARCHIVE_ID_KEY] = archive_id
         ProjectIO._write_json(self.directory / f"{archive_id}.json", entry)
         return entry
 

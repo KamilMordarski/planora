@@ -3,6 +3,7 @@ from pathlib import Path
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDateEdit,
     QDialog,
     QDialogButtonBox,
@@ -13,6 +14,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QListWidgetItem,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -62,6 +64,21 @@ class PeopleDialog(QDialog):
         self.search.setClearButtonEnabled(True)
         people_layout.addWidget(self.search)
 
+        filters = QVBoxLayout()
+        self.role_filter = QComboBox()
+        self.role_filter.addItem("Wszystkie role", "")
+        for role, label in PERSON_ROLE_OPTIONS.items():
+            self.role_filter.addItem(label, role)
+        self.permission_filter = QComboBox()
+        self.permission_filter.addItem("Wszystkie możliwe przydziały", "")
+        for permission, label in ASSIGNMENT_OPTIONS.items():
+            self.permission_filter.addItem(label, permission)
+        filters.addWidget(QLabel("Filtr roli:"))
+        filters.addWidget(self.role_filter)
+        filters.addWidget(QLabel("Filtr możliwego przydziału:"))
+        filters.addWidget(self.permission_filter)
+        people_layout.addLayout(filters)
+
         import_json = QPushButton("Importuj listę JSON")
         import_json.setToolTip("Dodaje osoby oraz odtwarza ich role i możliwe przydziały bez usuwania obecnej listy.")
         export_json = QPushButton("Eksportuj listę JSON")
@@ -69,7 +86,7 @@ class PeopleDialog(QDialog):
         people_layout.addWidget(ResponsiveActionBar([import_json, export_json], 150, 2))
 
         self.list_widget = QListWidget()
-        self.list_widget.addItems(self.people)
+        self.list_widget.setSpacing(3)
         people_layout.addWidget(self.list_widget)
 
         self.input = QLineEdit()
@@ -141,17 +158,19 @@ class PeopleDialog(QDialog):
         layout.addWidget(buttons)
 
         self.search.textChanged.connect(self.filter_people)
+        self.role_filter.currentIndexChanged.connect(self.filter_people)
+        self.permission_filter.currentIndexChanged.connect(self.filter_people)
         import_json.clicked.connect(self.import_json)
         export_json.clicked.connect(self.export_json)
         add.clicked.connect(self.add_person)
         edit.clicked.connect(self.edit_person)
         delete.clicked.connect(self.delete_person)
-        self.list_widget.currentTextChanged.connect(self.select_person)
+        self.list_widget.currentItemChanged.connect(self.select_person)
         all_permissions.clicked.connect(lambda: self.set_selected_permissions(ALL_PERMISSIONS))
         no_permissions.clicked.connect(lambda: self.set_selected_permissions(()))
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
-        self.update_count()
+        self.refresh_list()
         if self.people:
             self.list_widget.setCurrentRow(0)
 
@@ -212,52 +231,99 @@ class PeopleDialog(QDialog):
         )
 
     def refresh_list(self):
-        phrase = self.search.text()
+        current_name = self._item_name(self.list_widget.currentItem())
         self.list_widget.clear()
-        self.list_widget.addItems(self.people)
-        self.filter_people(phrase)
-        self.update_count()
+        for person in self.people:
+            self.list_widget.addItem(self._person_item(person))
+        self.filter_people()
+        if current_name:
+            for index in range(self.list_widget.count()):
+                if self._item_name(self.list_widget.item(index)) == current_name:
+                    self.list_widget.setCurrentRow(index)
+                    break
+
+    def _person_item(self, name: str) -> QListWidgetItem:
+        profile = normalize_profile(self.profiles.get(name))
+        labels = [PERSON_ROLE_OPTIONS[role] for role in profile["roles"] if role in PERSON_ROLE_OPTIONS]
+        text = name if not labels else f"{name}\n  Role: {' · '.join(labels)}"
+        item = QListWidgetItem(text)
+        item.setData(Qt.UserRole, name)
+        if labels:
+            font = item.font()
+            font.setBold(True)
+            item.setFont(font)
+            item.setToolTip("Role: " + ", ".join(labels))
+        else:
+            item.setToolTip("Brak przypisanych ról")
+        return item
+
+    @staticmethod
+    def _item_name(item) -> str:
+        return str(item.data(Qt.UserRole)) if item else ""
 
     def update_count(self):
-        self.count.setText(f"Liczba osób: {len(self.people)}")
+        visible = sum(not self.list_widget.item(index).isHidden() for index in range(self.list_widget.count()))
+        self.count.setText(f"Wyświetlono: {visible} z {len(self.people)}")
 
-    def filter_people(self, text):
-        phrase = text.casefold().strip()
+    def filter_people(self, *_args):
+        phrase = self.search.text().casefold().strip()
+        selected_role = self.role_filter.currentData()
+        selected_permission = self.permission_filter.currentData()
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
-            item.setHidden(phrase not in item.text().casefold())
+            name = self._item_name(item)
+            profile = normalize_profile(self.profiles.get(name))
+            searchable = " ".join(
+                [
+                    name,
+                    *(PERSON_ROLE_OPTIONS.get(role, role) for role in profile["roles"]),
+                    *(ASSIGNMENT_OPTIONS.get(permission, permission) for permission in profile["permissions"]),
+                ]
+            ).casefold()
+            item.setHidden(
+                bool(phrase and phrase not in searchable)
+                or bool(selected_role and selected_role not in profile["roles"])
+                or bool(selected_permission and selected_permission not in profile["permissions"])
+            )
+        self.update_count()
 
     def add_person(self):
         name = self.input.text().strip()
         if name and name not in self.people:
             self.people.append(name)
             self.profiles[name] = normalize_profile()
-            self.list_widget.addItem(name)
             self.input.clear()
             self.search.clear()
-            self.update_count()
-            self.list_widget.setCurrentRow(self.list_widget.count() - 1)
+            self.refresh_list()
+            for index in range(self.list_widget.count()):
+                if self._item_name(self.list_widget.item(index)) == name:
+                    self.list_widget.setCurrentRow(index)
+                    break
 
     def edit_person(self):
         row = self.list_widget.currentRow()
         name = self.input.text().strip()
         if row >= 0 and name:
-            old_name = self.list_widget.item(row).text()
+            old_name = self._item_name(self.list_widget.item(row))
+            if name != old_name and name in self.people:
+                QMessageBox.information(self, "Osoba już istnieje", "W bibliotece jest już osoba o tej nazwie.")
+                return
             source_index = self.people.index(old_name)
             self.people[source_index] = name
             self.profiles[name] = self.profiles.pop(old_name, normalize_profile())
-            self.list_widget.item(row).setText(name)
+            self.refresh_list()
 
     def delete_person(self):
         row = self.list_widget.currentRow()
         if row >= 0:
-            name = self.list_widget.item(row).text()
+            name = self._item_name(self.list_widget.item(row))
             self.people.remove(name)
             self.profiles.pop(name, None)
             self.list_widget.takeItem(row)
-            self.update_count()
+            self.filter_people()
 
-    def select_person(self, name):
+    def select_person(self, current, _previous=None):
+        name = self._item_name(current)
         self.input.setText(name)
         self._loading_roles = True
         profile = normalize_profile(self.profiles.get(name))
@@ -277,7 +343,8 @@ class PeopleDialog(QDialog):
     def update_selected_roles(self, *_args):
         if self._loading_roles:
             return
-        name = self.list_widget.currentItem().text() if self.list_widget.currentItem() else ""
+        current_item = self.list_widget.currentItem()
+        name = self._item_name(current_item)
         if name:
             selected_roles = [role for role, check in self.person_role_checks.items() if check.isChecked()]
             self.auxiliary_until.setEnabled("auxiliary_pioneer" in selected_roles)
@@ -294,6 +361,11 @@ class PeopleDialog(QDialog):
                     ),
                 }
             )
+            row = self.list_widget.row(current_item)
+            self.list_widget.takeItem(row)
+            self.list_widget.insertItem(row, self._person_item(name))
+            self.list_widget.setCurrentRow(row)
+            self.filter_people()
 
     def set_selected_permissions(self, permissions):
         self._loading_roles = True

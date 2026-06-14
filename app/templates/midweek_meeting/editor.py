@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.config import USER_DATA_DIR
+from app.config import PROJECTS_DIR, USER_DATA_DIR
 from app.core.project_io import ProjectIO
 from app.core.people_roles import ASSIGNMENT_OPTIONS
 from app.gui.document_preview import DocumentPreview
@@ -1122,7 +1122,7 @@ class MidweekMeetingEditor(QWidget):
 
     def save_project_as(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "Zapisz projekt", str(USER_DATA_DIR / "zebrania-w-tygodniu.json"), "Projekt JSON (*.json)"
+            self, "Zapisz projekt", str(PROJECTS_DIR / "zebrania-w-tygodniu.json"), "Projekt JSON (*.json)"
         )
         if path:
             self.project_path = Path(path)

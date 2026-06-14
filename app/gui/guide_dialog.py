@@ -108,8 +108,8 @@ class GuideDialog(QDialog):
         ),
         (
             "Porządkowanie listy",
-            "Użyj wyszukiwarki, aby szybko znaleźć osobę. Zaznacz wpis, zmień nazwisko albo usuń "
-            "je z biblioteki. Usunięcie nie zmienia już zapisanych projektów.",
+            "Role są widoczne bezpośrednio pod nazwiskiem na liście. Użyj wyszukiwarki oraz filtrów roli "
+            "i możliwego przydziału, aby szybko znaleźć odpowiednie osoby. Usunięcie osoby nie zmienia już zapisanych projektów.",
         ),
         (
             "Role i możliwe przydziały",
@@ -123,9 +123,10 @@ class GuideDialog(QDialog):
     PLANNING = [
         (
             "Asystent układania grafików",
-            "Na ekranie głównym wybierz „Asystent planowania”. Ustaw zakres dat, dni tygodnia, dostępne osoby "
+            "Na ekranie głównym wybierz „Asystent planowania”, a następnie wskaż projekty, które mają być sprawdzane "
+            "pod kątem zajętych osób. Ustaw zakres dat, dni tygodnia, dostępne osoby "
             "oraz zasady. Planora przygotuje propozycję zbiórek bez dwóch kolejnych przydziałów tej samej osoby "
-            "i z możliwie równym podziałem obowiązków. Uwzględnia też zajęte osoby z lokalnego archiwum projektów.",
+            "i z możliwie równym podziałem obowiązków.",
         ),
         (
             "Automatyczne terminy",
@@ -144,7 +145,7 @@ class GuideDialog(QDialog):
         ),
         (
             "Centrum projektów",
-            "Centrum projektów łączy obowiązki ze wszystkich ostatnio edytowanych grafików. Pokazuje centralny kalendarz, "
+            "Przed otwarciem Centrum wybierasz zapisane projekty, które chcesz wspólnie sprawdzić. Centrum pokazuje centralny kalendarz, "
             "nadchodzące obowiązki, globalne kolizje, statystyki oraz indywidualny plan wybranej osoby. "
             "Możesz skopiować gotową wiadomość z przydziałami, otworzyć ją w programie pocztowym oraz drukować wiele planów naraz.",
         ),
@@ -209,13 +210,14 @@ class GuideDialog(QDialog):
         (
             "Automatyczny zapis i odzyskiwanie",
             "Podczas edycji Planora tworzy lokalną kopię awaryjną co 20 sekund. Po nieprawidłowym zamknięciu "
-            "zaproponuje odzyskanie ostatniego projektu. Zwykły zapis projektu nadal tworzy właściwy plik JSON.",
+            "zaproponuje odzyskanie ostatniego projektu. Kopie awaryjne są przechowywane osobno i nie trafiają "
+            "do Asystenta ani Centrum projektów.",
         ),
         (
-            "Lokalne archiwum projektów",
-            "Każdy edytowany projekt jest również automatycznie aktualizowany w lokalnym archiwum Planory. "
-            "Archiwum zasila centralny kalendarz i statystyki, nie zastępuje własnych plików JSON i jest usuwane po 90 dniach. "
-            "Plan grup służby jest wyjątkiem: ma osobny trwały zapis i nigdy nie jest automatycznie usuwany.",
+            "Wybór projektów do analizy",
+            "Zapisane projekty trafiają domyślnie do osobnego katalogu „projects”. Przed otwarciem Asystenta lub Centrum "
+            "wybierz konkretne pliki JSON albo świadomie dołącz aktualnie otwarty projekt. Dzięki temu stare i robocze wersje "
+            "nie zniekształcają kolizji ani statystyk. Plan grup służby nadal ma osobny trwały zapis.",
         ),
         (
             "Kontrola przed eksportem",

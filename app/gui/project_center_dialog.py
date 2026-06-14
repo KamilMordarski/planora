@@ -37,7 +37,6 @@ from app.core.assignment_tools import (
     parse_date,
     upcoming_assignments,
 )
-from app.core.project_archive import ProjectArchive, RETENTION_DAYS
 from app.core.template_registry import TemplateRegistry
 from app.gui.printing import print_pages
 from app.gui.responsive import ResponsiveActionBar
@@ -55,12 +54,11 @@ def _table(headers: tuple[str, ...]) -> QTableWidget:
 
 
 class ProjectCenterDialog(QDialog):
-    def __init__(self, archive: ProjectArchive, people: list[str], open_project, parent=None):
+    def __init__(self, entries: list[dict], people: list[str], open_project, parent=None):
         super().__init__(parent)
-        self.archive = archive
+        self.entries = list(entries)
         self.people = list(people)
         self.open_project = open_project
-        self.entries = []
         self.assignments = []
         self._marked_dates = set()
         self.setWindowTitle("Centrum projektów")
@@ -78,7 +76,7 @@ class ProjectCenterDialog(QDialog):
         self.summary.setWordWrap(True)
         hero_text.addWidget(title)
         hero_text.addWidget(self.summary)
-        refresh = QPushButton("Odśwież dane")
+        refresh = QPushButton("Przelicz dane")
         refresh.clicked.connect(self.reload)
         hero_layout.addLayout(hero_text, 1)
         hero_layout.addWidget(refresh)
@@ -101,7 +99,7 @@ class ProjectCenterDialog(QDialog):
     def _calendar_tab(self) -> QWidget:
         tab = QWidget()
         layout = QVBoxLayout(tab)
-        info = QLabel("Wybierz dzień, aby zobaczyć obowiązki ze wszystkich automatycznie zapisanych projektów.")
+        info = QLabel("Wybierz dzień, aby zobaczyć obowiązki z projektów wskazanych przed otwarciem Centrum.")
         info.setObjectName("helpText")
         info.setWordWrap(True)
         layout.addWidget(info)
@@ -151,7 +149,7 @@ class ProjectCenterDialog(QDialog):
         layout = QVBoxLayout(tab)
         info = QLabel(
             "Kolizja oznacza, że ta sama osoba ma co najmniej dwa obowiązki tego samego dnia "
-            "w jednym lub kilku automatycznie zapisanych projektach."
+            "w jednym lub kilku wybranych projektach."
         )
         info.setObjectName("helpText")
         info.setWordWrap(True)
@@ -222,14 +220,11 @@ class ProjectCenterDialog(QDialog):
         return tab
 
     def reload(self):
-        self.archive.cleanup()
-        self.entries = self.archive.load_entries()
         self.assignments = archive_assignments(self.entries)
         dated = sum(parse_date(item.get("date")) is not None for item in self.assignments)
         self.summary.setText(
-            f"Planora przechowuje lokalnie {len(self.entries)} ostatnio edytowanych projektów i "
-            f"{len(self.assignments)} przydziałów. Rozpoznane daty w kalendarzu: {dated}. "
-            f"Archiwum pozostałych projektów jest usuwane po {RETENTION_DAYS} dniach; plan grup służby pozostaje na stałe."
+            f"Wybrano {len(self.entries)} projektów i znaleziono {len(self.assignments)} przydziałów. "
+            f"Rozpoznane daty w kalendarzu: {dated}. Kopie awaryjne nie są analizowane."
         )
         self._mark_calendar_dates()
         self._refresh_calendar_rows()
@@ -387,7 +382,7 @@ class ProjectCenterDialog(QDialog):
         archive_id = self.calendar_table.item(row, 0).data(Qt.UserRole)
         entry = next((item for item in self.entries if item.get("archive_id") == archive_id), None)
         if entry:
-            self.open_project(entry["project"])
+            self.open_project(entry["project"], entry.get("source_path") or None)
             self.accept()
 
     def _export_person_text(self):

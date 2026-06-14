@@ -86,23 +86,24 @@ osób. Aplikacja nie zawiera przykładowych ani domyślnych nazwisk.
 
 Bibliotekę osób można wyeksportować do jednego pliku JSON zawierającego nazwiska
 i przypisane role oraz możliwe przydziały. Ponowny import takiego pliku odtwarza profil i pomija
-duplikaty. Starsze pliki będące prostą listą nazwisk nadal są obsługiwane.
+duplikaty. Role są wyróżnione na liście, którą można filtrować po roli i możliwym
+przydziale. Starsze pliki będące prostą listą nazwisk nadal są obsługiwane.
 
 Centralny Asystent planowania generuje wybrane dni tygodnia z zakresu dat,
 tworzy propozycję zbiórek z równym podziałem obowiązków i unika tej samej osoby
-dwa razy z rzędu. Uwzględnia obowiązki z ostatnio edytowanych projektów i nie
+dwa razy z rzędu. Uwzględnia obowiązki z projektów wskazanych przez użytkownika i nie
 tworzy przydziału osobie zajętej tego samego dnia. Pozwala też zaznaczyć kilka terminów do wspólnej zmiany,
 wyeksportować kalendarz ICS dla Google Calendar, Outlooka i Kalendarza Apple
 oraz zapisać listę przydziałów konkretnej osoby.
 
-Podczas edycji aktywny projekt jest automatycznie zapisywany co 20 sekund.
-Po nieprawidłowym zamknięciu Planora proponuje odzyskanie kopii awaryjnej.
+Podczas edycji aktywny projekt jest automatycznie zapisywany co 20 sekund w osobnym
+katalogu odzyskiwania. Po nieprawidłowym zamknięciu Planora proponuje odzyskanie
+kopii awaryjnej, ale nie uwzględnia jej automatycznie w analizach.
 
-Centrum projektów korzysta z osobnego lokalnego archiwum, które jest aktualizowane
-automatycznie podczas pracy. Łączy przydziały w centralnym kalendarzu, wykrywa
-kolizje między projektami, pokazuje statystyki równego podziału i tworzy
-indywidualny plan osoby. Wpisy archiwum starsze niż 90 dni są automatycznie
-usuwane. Przed każdym eksportem Planora pokazuje panel kontroli brakujących
+Przed otwarciem Centrum projektów i Asystenta użytkownik wybiera zapisane pliki,
+które mają być sprawdzane. Centrum łączy ich przydziały w centralnym kalendarzu,
+wykrywa kolizje między projektami, pokazuje statystyki równego podziału i tworzy
+indywidualny plan osoby. Przed każdym eksportem Planora pokazuje panel kontroli brakujących
 danych i kolizji. Zmiany można cofać i ponawiać przez menu **Edycja** oraz
 skróty `Ctrl+Z` i `Ctrl+Y`.
 

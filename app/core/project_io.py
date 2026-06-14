@@ -3,7 +3,17 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from app.config import LEGACY_USER_DATA_DIR, PEOPLE_FILE, PEOPLE_ROLES_FILE, SETTINGS_FILE, UPDATE_URL, USER_DATA_DIR
+from app.config import (
+    AUTOSAVE_FILE,
+    LEGACY_USER_DATA_DIR,
+    PEOPLE_FILE,
+    PEOPLE_ROLES_FILE,
+    PROJECTS_DIR,
+    RECOVERY_DIR,
+    SETTINGS_FILE,
+    UPDATE_URL,
+    USER_DATA_DIR,
+)
 from app.core.people_roles import normalize_profiles
 
 
@@ -39,6 +49,14 @@ class ProjectIO:
             except OSError:
                 pass
         USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
+        PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+        RECOVERY_DIR.mkdir(parents=True, exist_ok=True)
+        legacy_autosave = USER_DATA_DIR / "autosave-project.json"
+        if legacy_autosave.exists() and not AUTOSAVE_FILE.exists():
+            try:
+                legacy_autosave.replace(AUTOSAVE_FILE)
+            except OSError:
+                pass
         if not PEOPLE_FILE.exists():
             ProjectIO._write_json(PEOPLE_FILE, DEFAULT_PEOPLE)
         if not SETTINGS_FILE.exists():

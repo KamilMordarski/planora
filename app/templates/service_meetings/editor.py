@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.config import USER_DATA_DIR
+from app.config import PROJECTS_DIR
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
@@ -392,7 +392,7 @@ class ServiceMeetingsEditor(QWidget):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Zapisz projekt",
-            str(USER_DATA_DIR / "zbiorki-do-sluzby.json"),
+            str(PROJECTS_DIR / "zbiorki-do-sluzby.json"),
             "Projekt JSON (*.json)",
         )
         if path:

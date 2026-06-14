@@ -8,7 +8,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from app.config import UPDATE_URL
+from app.config import AUTOSAVE_FILE, PROJECTS_DIR, RECOVERY_DIR, UPDATE_URL
 from app.core.assignment_tools import (
     assigned_people_by_date,
     archive_assignments,
@@ -780,6 +780,23 @@ class ProjectArchiveTests(unittest.TestCase):
             removed = archive.cleanup(datetime(2026, 6, 14, tzinfo=UTC))
 
         self.assertEqual(removed, 1)
+
+    def test_selected_project_entry_uses_file_path_without_mutating_project(self):
+        project = TemplateRegistry.get("service_meetings").default_project
+        project[ARCHIVE_ID_KEY] = "legacy-shared-id"
+
+        first = ProjectArchive.entry_for_project(project, Path("first.json"))
+        second = ProjectArchive.entry_for_project(project, Path("second.json"))
+
+        self.assertNotEqual(first["archive_id"], second["archive_id"])
+        self.assertEqual(project[ARCHIVE_ID_KEY], "legacy-shared-id")
+        self.assertEqual(first["source_path"], "first.json")
+
+
+class ProjectStorageTests(unittest.TestCase):
+    def test_recovery_and_saved_projects_use_separate_directories(self):
+        self.assertEqual(AUTOSAVE_FILE.parent, RECOVERY_DIR)
+        self.assertNotEqual(AUTOSAVE_FILE.parent, PROJECTS_DIR)
 
 
 class ProjectHistoryTests(unittest.TestCase):
