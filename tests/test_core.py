@@ -671,6 +671,48 @@ class ProjectIOTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 ProjectIO.import_people(path)
 
+    def test_people_library_export_and_import_preserves_roles(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "library.json"
+            ProjectIO.export_people_library(
+                path,
+                ["Jan Test", "Anna Test"],
+                {
+                    "Jan Test": ["console", "microphone"],
+                    "Anna Test": ["service_conductor"],
+                },
+            )
+
+            people, profiles, added, roles_updated = ProjectIO.import_people_library(path)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+
+        self.assertEqual(people, ["Jan Test", "Anna Test"])
+        self.assertEqual(profiles["Jan Test"], ["console", "microphone"])
+        self.assertEqual(profiles["Anna Test"], ["service_conductor"])
+        self.assertEqual(added, 2)
+        self.assertEqual(roles_updated, 2)
+        self.assertEqual(payload["format"], "planora_people_library")
+        self.assertEqual(payload["people"][0]["roles"], ["console", "microphone"])
+
+    def test_people_library_import_updates_roles_without_duplicating_names(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "library.json"
+            path.write_text(
+                json.dumps({"people": [{"name": "jan test", "roles": ["reader"]}]}),
+                encoding="utf-8",
+            )
+
+            people, profiles, added, roles_updated = ProjectIO.import_people_library(
+                path,
+                ["Jan Test"],
+                {"Jan Test": ["console"]},
+            )
+
+        self.assertEqual(people, ["Jan Test"])
+        self.assertEqual(profiles["Jan Test"], ["reader"])
+        self.assertEqual(added, 0)
+        self.assertEqual(roles_updated, 1)
+
     def test_people_profiles_are_migrated_and_saved(self):
         with tempfile.TemporaryDirectory() as directory:
             roles_path = Path(directory) / "people-roles.json"

@@ -52,8 +52,11 @@ class PeopleDialog(QDialog):
 
         tools = QHBoxLayout()
         import_json = QPushButton("Importuj listę JSON")
-        import_json.setToolTip("Dodaje nowe osoby z pliku JSON bez usuwania obecnej listy.")
+        import_json.setToolTip("Dodaje osoby i odtwarza ich uprawnienia z pliku JSON bez usuwania obecnej listy.")
+        export_json = QPushButton("Eksportuj listę JSON")
+        export_json.setToolTip("Zapisuje nazwiska i wszystkie przypisane uprawnienia w jednym pliku JSON.")
         tools.addWidget(import_json)
+        tools.addWidget(export_json)
         tools.addStretch()
         people_layout.addLayout(tools)
 
@@ -117,6 +120,7 @@ class PeopleDialog(QDialog):
 
         self.search.textChanged.connect(self.filter_people)
         import_json.clicked.connect(self.import_json)
+        export_json.clicked.connect(self.export_json)
         add.clicked.connect(self.add_person)
         edit.clicked.connect(self.edit_person)
         delete.clicked.connect(self.delete_person)
@@ -139,16 +143,43 @@ class PeopleDialog(QDialog):
         if not path:
             return
         try:
-            self.people, added = ProjectIO.import_people(Path(path), self.people)
+            self.people, self.profiles, added, roles_updated = ProjectIO.import_people_library(
+                Path(path),
+                self.people,
+                self.profiles,
+            )
         except ValueError as exc:
             QMessageBox.warning(self, "Nie można zaimportować listy", str(exc))
             return
-        self.profiles = normalize_profiles(self.people, self.profiles)
         self.refresh_list()
         QMessageBox.information(
             self,
             "Import zakończony",
-            f"Dodano nowych osób: {added}\nŁączna liczba osób: {len(self.people)}",
+            f"Dodano nowych osób: {added}\nZaktualizowano uprawnienia: {roles_updated}\n"
+            f"Łączna liczba osób: {len(self.people)}",
+        )
+
+    def export_json(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Eksportuj bibliotekę osób",
+            str(USER_DATA_DIR / "planora-biblioteka-osob.json"),
+            "Biblioteka osób JSON (*.json)",
+        )
+        if not path:
+            return
+        destination = Path(path)
+        if destination.suffix.casefold() != ".json":
+            destination = destination.with_suffix(".json")
+        try:
+            ProjectIO.export_people_library(destination, self.people, self.profiles)
+        except OSError as exc:
+            QMessageBox.warning(self, "Nie można wyeksportować listy", str(exc))
+            return
+        QMessageBox.information(
+            self,
+            "Eksport zakończony",
+            f"Zapisano osoby wraz z uprawnieniami:\n{destination}",
         )
 
     def refresh_list(self):

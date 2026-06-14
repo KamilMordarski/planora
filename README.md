@@ -70,6 +70,10 @@ w razie wyjątkowego przydziału.
 Nowa instalacja Planory zawsze rozpoczyna pracę z całkowicie pustą biblioteką
 osób. Aplikacja nie zawiera przykładowych ani domyślnych nazwisk.
 
+Bibliotekę osób można wyeksportować do jednego pliku JSON zawierającego nazwiska
+i przypisane uprawnienia. Ponowny import takiego pliku odtwarza role i pomija
+duplikaty. Starsze pliki będące prostą listą nazwisk nadal są obsługiwane.
+
 Centralny Asystent planowania generuje wybrane dni tygodnia z zakresu dat,
 tworzy propozycję zbiórek z równym podziałem obowiązków i unika tej samej osoby
 dwa razy z rzędu. Uwzględnia obowiązki z ostatnio edytowanych projektów i nie
@@ -133,7 +137,8 @@ skopiowana do katalogu użytkownika. Dane ze starszego katalogu
 `GeneratorGrafikow` są automatycznie przenoszone do Planory.
 
 Bibliotekę można uzupełnić przez import pliku JSON zawierającego tablicę nazwisk
-albo obiekt z polem `people`. Import łączy listy i pomija duplikaty.
+albo obiekt z polem `people`. Import łączy listy i pomija duplikaty. Eksport
+biblioteki zapisuje osoby wraz z rolami w jednym przenośnym pliku JSON.
 
 ## Aktualizacje
 

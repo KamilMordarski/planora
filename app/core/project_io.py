@@ -117,24 +117,73 @@ class ProjectIO:
 
     @staticmethod
     def import_people(path: Path, current_people: list[str] | None = None) -> tuple[list[str], int]:
-        value = ProjectIO._read_json(path)
-        if isinstance(value, dict):
-            value = value.get("people")
+        people, _profiles, added, _roles_updated = ProjectIO.import_people_library(path, current_people)
+        return people, added
+
+    @staticmethod
+    def import_people_library(
+        path: Path,
+        current_people: list[str] | None = None,
+        current_profiles: dict[str, list[str]] | None = None,
+    ) -> tuple[list[str], dict[str, list[str]], int, int]:
+        payload = ProjectIO._read_json(path)
+        imported_profiles = {}
+        value = payload
+        if isinstance(payload, dict):
+            value = payload.get("people")
+            profiles_value = payload.get("profiles", {})
+            if isinstance(profiles_value, dict):
+                imported_profiles.update(profiles_value)
         if not isinstance(value, list):
-            raise ValueError(
-                'Lista osób musi być tablicą JSON albo obiektem z polem "people".'
-            )
+            raise ValueError('Lista osób musi być tablicą JSON albo obiektem z polem "people".')
+
+        imported_names = []
+        for person in value:
+            if isinstance(person, dict):
+                name = str(person.get("name", "")).strip()
+                if name:
+                    imported_names.append(name)
+                    imported_profiles[name] = person.get("roles", [])
+            else:
+                name = str(person).strip()
+                if name:
+                    imported_names.append(name)
 
         people = [str(person).strip() for person in (current_people or []) if str(person).strip()]
         known = {person.casefold() for person in people}
         added = 0
-        for person in value:
-            name = str(person).strip()
+        for name in imported_names:
             if name and name.casefold() not in known:
                 people.append(name)
                 known.add(name.casefold())
                 added += 1
-        return people, added
+        profiles = normalize_profiles(people, current_profiles)
+        roles_updated = 0
+        for imported_name, roles in imported_profiles.items():
+            existing_name = next((name for name in people if name.casefold() == str(imported_name).casefold()), "")
+            if not existing_name:
+                continue
+            normalized = normalize_profiles([existing_name], {existing_name: roles})[existing_name]
+            if profiles.get(existing_name) != normalized:
+                roles_updated += 1
+            profiles[existing_name] = normalized
+        return people, profiles, added, roles_updated
+
+    @staticmethod
+    def export_people_library(path: Path, people: list[str], profiles: dict[str, list[str]]):
+        normalized = normalize_profiles(people, profiles)
+        payload = {
+            "format": "planora_people_library",
+            "version": 1,
+            "people": [
+                {
+                    "name": person,
+                    "roles": normalized.get(person, []),
+                }
+                for person in people
+            ],
+        }
+        ProjectIO._write_json(path, payload)
 
     @staticmethod
     def load_settings() -> dict:

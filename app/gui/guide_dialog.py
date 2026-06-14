@@ -56,13 +56,19 @@ class GuideDialog(QDialog):
         ),
         (
             "Import listy JSON",
-            "Import dodaje nowe osoby do istniejącej biblioteki, nie usuwa obecnych wpisów "
-            "i pomija duplikaty bez względu na wielkość liter.",
+            "Import dodaje nowe osoby do istniejącej biblioteki, nie usuwa obecnych wpisów i pomija duplikaty "
+            "bez względu na wielkość liter. Plik wyeksportowany przez Planorę odtwarza również uprawnienia.",
+        ),
+        (
+            "Eksport listy JSON",
+            "Przycisk „Eksportuj listę JSON” zapisuje nazwiska oraz przypisane role w jednym przenośnym pliku. "
+            "Możesz użyć go jako kopii zapasowej albo przenieść kompletną bibliotekę na inny komputer.",
         ),
         (
             "Obsługiwane formaty",
             'Najprostszy plik ma postać ["Jan Kowalski", "Anna Nowak"]. Możesz też użyć obiektu '
-            'w postaci {"people": ["Jan Kowalski", "Anna Nowak"]}.',
+            'w postaci {"people": ["Jan Kowalski", "Anna Nowak"]}. Format eksportowany przez Planorę zawiera '
+            'obiekty z polami "name" i "roles".',
         ),
         (
             "Porządkowanie listy",
