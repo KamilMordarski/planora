@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.11.3",
+  "latest_version": "1.12.0",
   "release_date": "2026-06-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.11.3/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.12.0/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.11.3/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.11.3/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.12.0/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.12.0/Planora-macOS.zip"
   },
   "notes": [
-    "Plan grup służby jest przechowywany na stałe i nie podlega retencji 90 dni",
-    "Każda zmiana planu grup zapisuje się automatycznie i natychmiast",
-    "Istniejący plan grup jest automatycznie migrowany z lokalnego archiwum"
+    "Dodano bezpośrednie drukowanie oraz drukowanie zbiorcze wielu projektów",
+    "Dodano panel nadchodzących obowiązków, globalne kolizje i wiadomości dla osób",
+    "Dodano szablon punktów zebrań w tygodniu oraz import bieżącego programu z WOL"
   ]
 }

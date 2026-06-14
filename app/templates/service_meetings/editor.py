@@ -27,6 +27,7 @@ from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
+from app.gui.printing import print_project
 from app.gui.responsive import configure_editable_combo, configure_form
 from app.templates.service_meetings.default_project import DEFAULT_PROJECT, meeting_row
 
@@ -215,8 +216,9 @@ class ServiceMeetingsEditor(QWidget):
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
+        print_button = QPushButton("Drukuj")
         both.setObjectName("primaryButton")
-        for button in (pdf, jpg, both):
+        for button in (print_button, pdf, jpg, both):
             export_row.addWidget(button)
         preview_layout.addWidget(self.preview, 1)
         preview_layout.addLayout(export_row)
@@ -245,6 +247,7 @@ class ServiceMeetingsEditor(QWidget):
         pdf.clicked.connect(lambda: self._export("pdf"))
         jpg.clicked.connect(lambda: self._export("jpg"))
         both.clicked.connect(lambda: self._export("both"))
+        print_button.clicked.connect(lambda: print_project(self, self.renderer, self.project, "Planora"))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

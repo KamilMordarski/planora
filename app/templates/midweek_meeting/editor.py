@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -30,7 +31,9 @@ from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
+from app.gui.printing import print_project
 from app.gui.responsive import configure_editable_combo, configure_form
+from app.core.wol_importer import WolImportError, current_week_url, fetch_wol_program, standard_program_sections
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section, special_event
 from app.templates.midweek_meeting.renderer import numbered_program_title
 
@@ -182,8 +185,9 @@ class MidweekMeetingEditor(QWidget):
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
+        print_button = QPushButton("Drukuj")
         both.setObjectName("primaryButton")
-        for button in (pdf, jpg, both):
+        for button in (print_button, pdf, jpg, both):
             export_row.addWidget(button)
         preview_layout.addWidget(self.preview, 1)
         preview_layout.addLayout(export_row)
@@ -207,6 +211,7 @@ class MidweekMeetingEditor(QWidget):
         pdf.clicked.connect(lambda: self._export("pdf"))
         jpg.clicked.connect(lambda: self._export("jpg"))
         both.clicked.connect(lambda: self._export("both"))
+        print_button.clicked.connect(lambda: print_project(self, self.renderer, self.project, "Planora"))
         self.meeting_list.currentRowChanged.connect(self.select_meeting)
         self.meeting_switch.currentIndexChanged.connect(self.select_meeting)
         previous_meeting.clicked.connect(lambda: self.switch_meeting(-1))
@@ -331,6 +336,12 @@ class MidweekMeetingEditor(QWidget):
         add_section.setObjectName("primaryButton")
         add_standard = QPushButton("Dodaj standardowe sekcje")
         add_standard.setToolTip("Dodaje brakujące sekcje: Skarby, Ulepszajmy swoją służbę i Chrześcijański tryb życia.")
+        add_template = QPushButton("Wstaw szablon punktów")
+        add_template.setToolTip("Wstawia standardowe sekcje wraz z najczęściej używanymi punktami.")
+        import_current = QPushButton("Pobierz bieżący tydzień z WOL")
+        import_current.setToolTip("Pobiera nazwy i czasy punktów z oficjalnej strony WOL. Przydziały osób pozostają puste.")
+        import_url = QPushButton("Importuj z adresu WOL…")
+        import_url.setToolTip("Pozwala pobrać program z adresu konkretnego tygodnia WOL.")
         delete_section = QPushButton("Usuń sekcję")
         delete_section.setObjectName("dangerButton")
         section_buttons.addWidget(add_section)
@@ -338,6 +349,9 @@ class MidweekMeetingEditor(QWidget):
         section_side.addWidget(self.section_list)
         section_side.addLayout(section_buttons)
         section_side.addWidget(add_standard)
+        section_side.addWidget(add_template)
+        section_side.addWidget(import_current)
+        section_side.addWidget(import_url)
         lists.addWidget(section_group)
 
         item_group = QGroupBox("Punkty wybranej sekcji")
@@ -409,6 +423,9 @@ class MidweekMeetingEditor(QWidget):
         self.item_list.currentRowChanged.connect(self.select_item)
         add_section.clicked.connect(self.add_section)
         add_standard.clicked.connect(self.add_standard_sections)
+        add_template.clicked.connect(self.apply_standard_program)
+        import_current.clicked.connect(self.import_current_wol_program)
+        import_url.clicked.connect(self.import_wol_program_from_url)
         delete_section.clicked.connect(self.delete_section)
         add_item.clicked.connect(self.add_item)
         duplicate_item.clicked.connect(self.duplicate_item)
@@ -905,6 +922,63 @@ class MidweekMeetingEditor(QWidget):
         self.refresh_sections(self.section_index)
         self.select_section(self.section_index)
         self.refresh_preview()
+
+    def apply_standard_program(self):
+        self._replace_program_sections(standard_program_sections(), "")
+
+    def import_current_wol_program(self):
+        self._import_wol_program(current_week_url())
+
+    def import_wol_program_from_url(self):
+        url, accepted = QInputDialog.getText(
+            self,
+            "Import programu z WOL",
+            "Adres strony tygodnia lub programu:",
+            text=current_week_url(),
+        )
+        if accepted and url.strip():
+            self._import_wol_program(url.strip())
+
+    def _import_wol_program(self, url):
+        try:
+            imported = fetch_wol_program(url)
+        except WolImportError as exc:
+            QMessageBox.warning(
+                self,
+                "Nie udało się pobrać programu",
+                f"{exc}\n\nMożesz nadal użyć lokalnego przycisku „Wstaw szablon punktów”.",
+            )
+            return
+        if self._replace_program_sections(imported["sections"], imported.get("bible_reading", "")):
+            QMessageBox.information(
+                self,
+                "Program pobrany",
+                "Pobrano nazwy punktów i czasy trwania. Przydziały osób pozostały puste.",
+            )
+
+    def _replace_program_sections(self, sections, bible_reading):
+        meeting = self._current_meeting()
+        if not meeting or meeting.get("type") == "special":
+            QMessageBox.information(self, "Program", "Najpierw wybierz zwykłe zebranie.")
+            return False
+        if meeting.get("sections"):
+            answer = QMessageBox.question(
+                self,
+                "Zastąpić program?",
+                "Wybrane zebranie ma już punkty programu. Czy zastąpić je nowym szablonem?",
+            )
+            if answer != QMessageBox.Yes:
+                return False
+        meeting["sections"] = copy.deepcopy(sections)
+        if bible_reading:
+            meeting["bible_reading"] = bible_reading
+            self.bible_reading.setText(bible_reading)
+        self.section_index = 0 if meeting["sections"] else -1
+        self.item_index = 0
+        self.refresh_sections(self.section_index)
+        self.select_section(self.section_index)
+        self.refresh_preview()
+        return True
 
     def delete_section(self):
         meeting = self._current_meeting()

@@ -43,8 +43,8 @@ class GuideDialog(QDialog):
         ),
         (
             "6. Zapisz i eksportuj",
-            "Zapis projektu tworzy edytowalny plik JSON. Eksport PDF służy do druku, a JPG "
-            "do łatwego wysyłania gotowego planu.",
+            "Zapis projektu tworzy edytowalny plik JSON. Możesz od razu użyć przycisku „Drukuj”, "
+            "wyeksportować PDF do późniejszego druku albo JPG do łatwego wysyłania gotowego planu.",
         ),
     ]
 
@@ -107,7 +107,8 @@ class GuideDialog(QDialog):
         (
             "Centrum projektów",
             "Centrum projektów łączy obowiązki ze wszystkich ostatnio edytowanych grafików. Pokazuje centralny kalendarz, "
-            "kolizje między projektami, statystyki równego podziału oraz indywidualny plan wybranej osoby.",
+            "nadchodzące obowiązki, globalne kolizje, statystyki oraz indywidualny plan wybranej osoby. "
+            "Możesz skopiować gotową wiadomość z przydziałami, otworzyć ją w programie pocztowym oraz drukować wiele planów naraz.",
         ),
         (
             "Cofanie i ponawianie",
@@ -134,7 +135,8 @@ class GuideDialog(QDialog):
             "wydarzenie specjalne z tytułem, podtytułem i obrazem. W podglądzie i eksporcie "
             "punkty są automatycznie numerowane od pierwszego punktu po uwagach wstępnych. "
             "Górny pasek przełącza dni bez wracania do listy, a duplikowanie zebrania ustawia "
-            "datę tydzień później. Standardowe sekcje można dodać jednym kliknięciem.",
+            "datę tydzień później. Możesz wstawić pełny lokalny szablon punktów albo pobrać program "
+            "bieżącego lub wskazanego tygodnia z WOL; importowane przydziały osób pozostają puste.",
         ),
         (
             "Plan grup służby",

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBo
 from app.config import APP_ICON, AUTOSAVE_FILE, UPDATE_DIR, UPDATE_URL, USER_DATA_DIR
 from app.core.app_info import APP_NAME, APP_VERSION
 from app.core.group_tools import latest_group_leaders
+from app.core.assignment_tools import archive_assignments, global_assignment_collisions, upcoming_assignments
 from app.core.group_plan_store import GroupPlanStore
 from app.core.people_roles import ROLE_OPTIONS, eligible_people
 from app.core.project_archive import ProjectArchive
@@ -114,8 +115,20 @@ class MainWindow(QMainWindow):
 
     def show_home(self):
         self.archive_current_project()
+        self.refresh_home_summary()
         self.stack.setCurrentWidgetAnimated(self.home)
         QTimer.singleShot(0, self._sync_history_actions)
+
+    def refresh_home_summary(self):
+        entries = self.project_archive.load_entries()
+        assignments = archive_assignments(entries)
+        upcoming = upcoming_assignments(assignments, days=14)
+        collisions = global_assignment_collisions(assignments)
+        text = f"Najbliższe 14 dni: {len(upcoming)} obowiązków. Globalne kolizje: {len(collisions)}."
+        if upcoming:
+            first = upcoming[0]
+            text += f" Najbliższy: {first['date']} — {first['person']}, {first['role']}."
+        self.home.set_duty_summary(text)
 
     def show_schedule_types(self):
         self.stack.setCurrentWidgetAnimated(self.schedule_types)

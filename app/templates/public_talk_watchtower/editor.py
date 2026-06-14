@@ -24,6 +24,7 @@ from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
+from app.gui.printing import print_project
 from app.gui.responsive import configure_editable_combo, configure_form
 
 
@@ -196,8 +197,9 @@ class PublicTalkWatchtowerEditor(QWidget):
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
+        print_button = QPushButton("Drukuj")
         both.setObjectName("primaryButton")
-        for button in (pdf, jpg, both):
+        for button in (print_button, pdf, jpg, both):
             export_row.addWidget(button)
         preview_layout.addLayout(export_row)
 
@@ -221,6 +223,7 @@ class PublicTalkWatchtowerEditor(QWidget):
         pdf.clicked.connect(self.export_pdf)
         jpg.clicked.connect(self.export_jpg)
         both.clicked.connect(self.export_both)
+        print_button.clicked.connect(lambda: print_project(self, self.renderer, self.project, "Planora"))
         for widget in (self.title_edit, self.date_edit, self.special_text):
             widget.textChanged.connect(self.update_current)
         for field in self.combo_fields.values():

@@ -1,9 +1,12 @@
 from collections import Counter, defaultdict
+from datetime import date
 from pathlib import Path
+from urllib.parse import quote
 
-from PySide6.QtCore import QDate, Qt
-from PySide6.QtGui import QColor, QTextCharFormat
+from PySide6.QtCore import QDate, QUrl, Qt
+from PySide6.QtGui import QColor, QDesktopServices, QTextCharFormat
 from PySide6.QtWidgets import (
+    QApplication,
     QCalendarWidget,
     QComboBox,
     QDialog,
@@ -29,9 +32,14 @@ from app.core.assignment_tools import (
     assignment_rows_for_person,
     export_assignment_rows_ics,
     export_assignment_rows_text,
+    format_assignment_message,
+    global_assignment_collisions,
     parse_date,
+    upcoming_assignments,
 )
 from app.core.project_archive import ProjectArchive, RETENTION_DAYS
+from app.core.template_registry import TemplateRegistry
+from app.gui.printing import print_pages
 
 
 def _table(headers: tuple[str, ...]) -> QTableWidget:
@@ -77,8 +85,11 @@ class ProjectCenterDialog(QDialog):
 
         self.tabs = QTabWidget()
         self.tabs.addTab(self._calendar_tab(), "Centralny kalendarz")
+        self.tabs.addTab(self._upcoming_tab(), "Nadchodzące obowiązki")
+        self.tabs.addTab(self._collisions_tab(), "Globalne kolizje")
         self.tabs.addTab(self._statistics_tab(), "Statystyki i równy podział")
         self.tabs.addTab(self._person_tab(), "Indywidualny plan osoby")
+        self.tabs.addTab(self._batch_print_tab(), "Drukowanie zbiorcze")
         root.addWidget(self.tabs, 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
@@ -114,6 +125,43 @@ class ProjectCenterDialog(QDialog):
         layout.addWidget(splitter, 1)
         return tab
 
+    def _upcoming_tab(self) -> QWidget:
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        controls = QHBoxLayout()
+        controls.addWidget(QLabel("Pokaż obowiązki z najbliższych:"))
+        self.upcoming_range = QComboBox()
+        for label, days in (("7 dni", 7), ("14 dni", 14), ("30 dni", 30), ("90 dni", 90)):
+            self.upcoming_range.addItem(label, days)
+        self.upcoming_range.setCurrentIndex(2)
+        self.upcoming_range.currentIndexChanged.connect(self._refresh_upcoming)
+        controls.addWidget(self.upcoming_range)
+        controls.addStretch()
+        self.upcoming_summary = QLabel()
+        self.upcoming_summary.setObjectName("helpText")
+        self.upcoming_table = _table(("Data", "Osoba", "Obowiązek", "Projekt", "Szczegóły"))
+        layout.addLayout(controls)
+        layout.addWidget(self.upcoming_summary)
+        layout.addWidget(self.upcoming_table, 1)
+        return tab
+
+    def _collisions_tab(self) -> QWidget:
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        info = QLabel(
+            "Kolizja oznacza, że ta sama osoba ma co najmniej dwa obowiązki tego samego dnia "
+            "w jednym lub kilku automatycznie zapisanych projektach."
+        )
+        info.setObjectName("helpText")
+        info.setWordWrap(True)
+        self.collisions_summary = QLabel()
+        self.collisions_summary.setObjectName("screenSubtitle")
+        self.collisions_table = _table(("Data", "Osoba", "Liczba", "Obowiązki", "Projekty"))
+        layout.addWidget(info)
+        layout.addWidget(self.collisions_summary)
+        layout.addWidget(self.collisions_table, 1)
+        return tab
+
     def _statistics_tab(self) -> QWidget:
         tab = QWidget()
         layout = QVBoxLayout(tab)
@@ -135,16 +183,49 @@ class ProjectCenterDialog(QDialog):
         row.addWidget(self.person_combo, 1)
         export_text = QPushButton("Eksportuj TXT")
         export_calendar = QPushButton("Eksportuj ICS")
+        copy_message = QPushButton("Kopiuj wiadomość")
+        send_email = QPushButton("Wyślij e-mailem")
         export_text.clicked.connect(self._export_person_text)
         export_calendar.clicked.connect(self._export_person_calendar)
+        copy_message.clicked.connect(self._copy_person_message)
+        send_email.clicked.connect(self._email_person_message)
         row.addWidget(export_text)
         row.addWidget(export_calendar)
+        row.addWidget(copy_message)
+        row.addWidget(send_email)
         self.person_summary = QLabel()
         self.person_summary.setObjectName("helpText")
         self.person_table = _table(("Data", "Projekt", "Obowiązek", "Szczegóły"))
         layout.addLayout(row)
         layout.addWidget(self.person_summary)
         layout.addWidget(self.person_table, 1)
+        return tab
+
+    def _batch_print_tab(self) -> QWidget:
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        info = QLabel(
+            "Zaznacz projekty, które mają zostać wysłane do drukarki jako jedno zadanie. "
+            "Każdy projekt korzysta ze swojego aktualnego renderera."
+        )
+        info.setObjectName("helpText")
+        info.setWordWrap(True)
+        actions = QHBoxLayout()
+        select_all = QPushButton("Zaznacz wszystko")
+        select_none = QPushButton("Odznacz wszystko")
+        print_selected = QPushButton("Drukuj zaznaczone")
+        print_selected.setObjectName("primaryButton")
+        select_all.clicked.connect(lambda: self._set_all_print_checks(Qt.Checked))
+        select_none.clicked.connect(lambda: self._set_all_print_checks(Qt.Unchecked))
+        print_selected.clicked.connect(self._print_selected_projects)
+        actions.addWidget(select_all)
+        actions.addWidget(select_none)
+        actions.addStretch()
+        actions.addWidget(print_selected)
+        self.batch_print_table = _table(("Drukuj", "Projekt", "Szablon", "Ostatnia zmiana"))
+        layout.addWidget(info)
+        layout.addLayout(actions)
+        layout.addWidget(self.batch_print_table, 1)
         return tab
 
     def reload(self):
@@ -161,6 +242,9 @@ class ProjectCenterDialog(QDialog):
         self._refresh_calendar_rows()
         self._refresh_statistics()
         self._refresh_people()
+        self._refresh_upcoming()
+        self._refresh_collisions()
+        self._refresh_batch_print()
 
     def _mark_calendar_dates(self):
         clear_format = QTextCharFormat()
@@ -237,6 +321,44 @@ class ProjectCenterDialog(QDialog):
         else:
             self.balance_summary.setText("Brak danych do obliczenia podziału obowiązków.")
 
+    def _refresh_upcoming(self):
+        days = self.upcoming_range.currentData() or 30
+        rows = upcoming_assignments(self.assignments, date.today(), days)
+        self.upcoming_summary.setText(f"Znaleziono {len(rows)} obowiązków w ciągu najbliższych {days} dni.")
+        self.upcoming_table.setRowCount(len(rows))
+        for row_index, assignment in enumerate(rows):
+            values = (
+                assignment.get("date", ""),
+                assignment.get("person", ""),
+                assignment.get("role", ""),
+                assignment.get("project_title", ""),
+                assignment.get("details", ""),
+            )
+            for column, value in enumerate(values):
+                self.upcoming_table.setItem(row_index, column, QTableWidgetItem(str(value)))
+
+    def _refresh_collisions(self):
+        collisions = global_assignment_collisions(self.assignments)
+        self.collisions_summary.setText(
+            "Brak wykrytych kolizji."
+            if not collisions
+            else f"Wykryto {len(collisions)} kolizji wymagających sprawdzenia."
+        )
+        self.collisions_table.setRowCount(len(collisions))
+        for row_index, collision in enumerate(collisions):
+            rows = collision["assignments"]
+            values = (
+                collision["date"],
+                collision["person"],
+                len(rows),
+                "; ".join(item.get("role", "") for item in rows),
+                "; ".join(dict.fromkeys(item.get("project_title", "") for item in rows)),
+            )
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(str(value))
+                item.setBackground(QColor("#f7d9d9"))
+                self.collisions_table.setItem(row_index, column, item)
+
     def _refresh_people(self):
         current = self.person_combo.currentText()
         names = sorted(set(self.people) | {item["person"] for item in self.assignments}, key=str.casefold)
@@ -302,3 +424,65 @@ class ProjectCenterDialog(QDialog):
         if path:
             export_assignment_rows_ics(Path(path), self._person_rows())
             QMessageBox.information(self, "Gotowe", "Indywidualny kalendarz został zapisany.")
+
+    def _person_message(self) -> str:
+        return format_assignment_message(
+            upcoming_assignments(self._person_rows(), date.today(), 90),
+            self.person_combo.currentText(),
+        )
+
+    def _copy_person_message(self):
+        if not self.person_combo.currentText():
+            return
+        QApplication.clipboard().setText(self._person_message())
+        QMessageBox.information(self, "Gotowe", "Wiadomość z przydziałami została skopiowana.")
+
+    def _email_person_message(self):
+        if not self.person_combo.currentText():
+            return
+        subject = quote(f"Przydziały — {self.person_combo.currentText()}")
+        body = quote(self._person_message())
+        QDesktopServices.openUrl(QUrl(f"mailto:?subject={subject}&body={body}"))
+
+    def _refresh_batch_print(self):
+        self.batch_print_table.setRowCount(len(self.entries))
+        for row, entry in enumerate(self.entries):
+            check = QTableWidgetItem()
+            check.setFlags(check.flags() | Qt.ItemIsUserCheckable)
+            check.setCheckState(Qt.Unchecked)
+            check.setData(Qt.UserRole, entry.get("archive_id", ""))
+            self.batch_print_table.setItem(row, 0, check)
+            for column, value in enumerate(
+                (
+                    entry.get("title", ""),
+                    entry.get("template_name", ""),
+                    str(entry.get("updated_at", "")).replace("T", " ")[:19],
+                ),
+                start=1,
+            ):
+                self.batch_print_table.setItem(row, column, QTableWidgetItem(str(value)))
+
+    def _set_all_print_checks(self, state):
+        for row in range(self.batch_print_table.rowCount()):
+            self.batch_print_table.item(row, 0).setCheckState(state)
+
+    def _print_selected_projects(self):
+        selected_ids = {
+            self.batch_print_table.item(row, 0).data(Qt.UserRole)
+            for row in range(self.batch_print_table.rowCount())
+            if self.batch_print_table.item(row, 0).checkState() == Qt.Checked
+        }
+        if not selected_ids:
+            QMessageBox.information(self, "Drukowanie zbiorcze", "Zaznacz co najmniej jeden projekt.")
+            return
+        pages = []
+        try:
+            for entry in reversed(self.entries):
+                if entry.get("archive_id") not in selected_ids:
+                    continue
+                template = TemplateRegistry.for_project(entry["project"])
+                if template:
+                    pages.extend(template.renderer_class.render_pages(entry["project"]))
+            print_pages(self, pages, "Planora — drukowanie zbiorcze")
+        except Exception as exc:
+            QMessageBox.warning(self, "Błąd drukowania", str(exc))

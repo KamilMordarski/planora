@@ -136,6 +136,52 @@ def assignment_rows_for_person(assignments: list[dict], person: str) -> list[dic
     return [item for item in assignments if item.get("person", "").casefold() == target]
 
 
+def upcoming_assignments(assignments: list[dict], start: date | None = None, days: int = 30) -> list[dict]:
+    first = start or date.today()
+    last = first + timedelta(days=max(0, days))
+    return sorted(
+        [
+            item
+            for item in assignments
+            if (parsed := parse_date(item.get("date"))) is not None and first <= parsed <= last
+        ],
+        key=lambda item: (parse_date(item.get("date")), item.get("person", "").casefold(), item.get("role", "")),
+    )
+
+
+def global_assignment_collisions(assignments: list[dict]) -> list[dict]:
+    grouped = defaultdict(list)
+    for item in assignments:
+        parsed = parse_date(item.get("date"))
+        person = str(item.get("person", "")).strip()
+        if parsed and person:
+            grouped[(parsed, person.casefold())].append(item)
+    result = []
+    for (duty_date, _person_key), rows in grouped.items():
+        if len(rows) > 1:
+            result.append(
+                {
+                    "date": duty_date.isoformat(),
+                    "person": rows[0]["person"],
+                    "assignments": rows,
+                }
+            )
+    return sorted(result, key=lambda item: (item["date"], item["person"].casefold()))
+
+
+def format_assignment_message(rows: list[dict], person: str) -> str:
+    rows = sorted(rows, key=lambda item: (iso_or_text_date(item.get("date")), item.get("role", "")))
+    lines = [f"Cześć {person},", "", "Twoje najbliższe przydziały:"]
+    for row in rows:
+        details = f" — {row['details']}" if row.get("details") else ""
+        project = f" [{row['project_title']}]" if row.get("project_title") else ""
+        lines.append(f"• {row.get('date', '')}: {row.get('role', '')}{details}{project}")
+    if not rows:
+        lines.append("Brak zaplanowanych przydziałów.")
+    lines.extend(["", "Wiadomość wygenerowana w Planora."])
+    return "\n".join(lines)
+
+
 def assigned_people_by_date(project: dict | None) -> dict[str, set[str]]:
     result = defaultdict(set)
     for item in extract_assignments(project or {}):

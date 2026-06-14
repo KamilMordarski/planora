@@ -94,6 +94,25 @@ class HomeScreen(QWidget):
         root.addWidget(disclaimer)
         root.addSpacing(12)
 
+        duty_panel = QFrame()
+        duty_panel.setObjectName("infoCard")
+        duty_layout = QHBoxLayout(duty_panel)
+        duty_text = QVBoxLayout()
+        duty_title = QLabel("Nadchodzące obowiązki")
+        duty_title.setObjectName("sectionTitle")
+        self.duty_summary = QLabel("Ładowanie lokalnego kalendarza…")
+        self.duty_summary.setObjectName("screenSubtitle")
+        self.duty_summary.setWordWrap(True)
+        open_duties = QPushButton("Otwórz panel")
+        open_duties.setObjectName("primaryButton")
+        open_duties.clicked.connect(open_project_center)
+        duty_text.addWidget(duty_title)
+        duty_text.addWidget(self.duty_summary)
+        duty_layout.addLayout(duty_text, 1)
+        duty_layout.addWidget(open_duties)
+        root.addWidget(duty_panel)
+        root.addSpacing(12)
+
         section = QLabel("Narzędzia")
         section.setObjectName("screenTitle")
         root.addWidget(section)
@@ -103,7 +122,7 @@ class HomeScreen(QWidget):
             ("Asystent planowania", "Automatyczne daty, przydziały, masowa edycja i kalendarz.", open_planning_tools),
             (
                 "Centrum projektów",
-                "Centralny kalendarz, statystyki i indywidualne plany z ostatnich 3 miesięcy.",
+                "Obowiązki, globalne kolizje, wiadomości, statystyki i drukowanie zbiorcze.",
                 open_project_center,
             ),
             ("Sprawdź aktualizacje", "Sprawdź, czy dostępna jest nowsza wersja aplikacji.", check_updates),
@@ -137,6 +156,9 @@ class HomeScreen(QWidget):
         footer.setOpenExternalLinks(True)
         footer.setTextInteractionFlags(Qt.TextBrowserInteraction)
         root.addWidget(footer)
+
+    def set_duty_summary(self, text: str):
+        self.duty_summary.setText(text)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

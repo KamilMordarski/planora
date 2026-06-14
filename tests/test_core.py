@@ -17,9 +17,12 @@ from app.core.assignment_tools import (
     extract_assignments,
     export_ics,
     export_person_assignments,
+    format_assignment_message,
     generate_recurring_dates,
+    global_assignment_collisions,
     person_assignments,
     shift_project_dates,
+    upcoming_assignments,
 )
 from app.core.people_roles import ALL_ROLES, eligible_people, normalize_profiles
 from app.core.group_tools import group_leaders_from_project, latest_group_leaders, normalize_group_name
@@ -30,6 +33,7 @@ from app.core.project_history import ProjectHistory
 from app.core.project_validation import validate_project
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
+from app.core.wol_importer import current_week_url, parse_wol_program, standard_program_sections
 from app.core.update_installer import (
     apply_update,
     _independent_process_environment,
@@ -571,6 +575,21 @@ class GroupPlanStoreTests(unittest.TestCase):
 
 
 class AssignmentToolsTests(unittest.TestCase):
+    def test_upcoming_assignments_and_global_collisions(self):
+        assignments = [
+            {"date": "2026-06-15", "person": "Jan Test", "role": "Konsola"},
+            {"date": "2026-06-15", "person": "Jan Test", "role": "Mikrofon"},
+            {"date": "2026-07-30", "person": "Anna Test", "role": "Lektor"},
+        ]
+
+        upcoming = upcoming_assignments(assignments, date(2026, 6, 14), 14)
+        collisions = global_assignment_collisions(assignments)
+        message = format_assignment_message(upcoming, "Jan Test")
+
+        self.assertEqual(len(upcoming), 2)
+        self.assertEqual(len(collisions), 1)
+        self.assertIn("Konsola", message)
+
     def test_recurring_dates_can_generate_selected_weekdays(self):
         dates = generate_recurring_dates(date(2026, 6, 1), date(2026, 6, 14), {2, 5, 6})
 
@@ -625,6 +644,25 @@ class AssignmentToolsTests(unittest.TestCase):
         )
 
         self.assertEqual(rows[0]["conductor"], "Anna")
+
+    def test_midweek_standard_template_and_wol_parser(self):
+        source = """
+        <h2>JEREMIASZA 4-6</h2>
+        <h2>SKARBY ZE SŁOWA BOŻEGO</h2>
+        <h3>1. Pierwszy punkt</h3><p>(10 min)</p>
+        <h2>ULEPSZAJMY SWOJĄ SŁUŻBĘ</h2>
+        <h3>2. Drugi punkt</h3><p>(4 min)</p>
+        <h2>CHRZEŚCIJAŃSKI TRYB ŻYCIA</h2>
+        <h3>3. Trzeci punkt</h3><p>(30 min)</p>
+        """
+
+        parsed = parse_wol_program(source)
+        preset = standard_program_sections()
+
+        self.assertEqual(current_week_url(date(2026, 6, 14)).split("/")[-2:], ["2026", "24"])
+        self.assertEqual(parsed["bible_reading"], "JEREMIASZA 4-6")
+        self.assertEqual(parsed["sections"][0]["items"][0]["title"], "Pierwszy punkt (10 min)")
+        self.assertEqual(len(preset), 3)
 
     def test_dates_can_be_shifted_in_bulk(self):
         project = TemplateRegistry.get("cleaning_attendants").default_project
