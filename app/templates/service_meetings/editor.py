@@ -148,11 +148,17 @@ class ServiceMeetingsEditor(QWidget):
         self.meeting_splitter = QSplitter(Qt.Horizontal)
         list_panel = QGroupBox("Lista zbiórek")
         list_layout = QVBoxLayout(list_panel)
-        help_label = QLabel("Kolejność na liście jest kolejnością w eksporcie. Dwukrotnie kliknij wpis, aby go edytować.")
+        help_label = QLabel(
+            "Nowy termin: wybierz „Nowy formularz”, uzupełnij dane po prawej i kliknij „Dodaj z formularza”. "
+            "Kolejność na liście jest kolejnością w eksporcie."
+        )
         help_label.setObjectName("helpText")
         help_label.setWordWrap(True)
         self.meeting_list = QListWidget()
-        add = QPushButton("+ Dodaj zbiórkę")
+        new_form = QPushButton("Nowy formularz")
+        new_form.setToolTip("Czyści formularz po prawej, aby przygotować nową zbiórkę bez zmieniania wybranego wpisu.")
+        add = QPushButton("+ Dodaj z formularza")
+        add.setToolTip("Dodaje nową zbiórkę z datą, godziną, miejscem i prowadzącym widocznymi po prawej.")
         add.setObjectName("primaryButton")
         duplicate = QPushButton("Duplikuj zbiórkę")
         remove = QPushButton("Usuń zbiórkę")
@@ -164,6 +170,7 @@ class ServiceMeetingsEditor(QWidget):
         move_row.addWidget(down)
         list_layout.addWidget(help_label)
         list_layout.addWidget(self.meeting_list, 1)
+        list_layout.addWidget(new_form)
         list_layout.addWidget(add)
         list_layout.addWidget(duplicate)
         list_layout.addWidget(remove)
@@ -221,6 +228,7 @@ class ServiceMeetingsEditor(QWidget):
         people_button.clicked.connect(edit_people)
         save.clicked.connect(self.save_project)
         save_as.clicked.connect(self.save_project_as)
+        new_form.clicked.connect(self.new_meeting_form)
         add.clicked.connect(self.add_meeting)
         duplicate.clicked.connect(self.duplicate_meeting)
         remove.clicked.connect(self.remove_meeting)
@@ -313,25 +321,34 @@ class ServiceMeetingsEditor(QWidget):
     def update_meeting(self, *_args):
         if self._loading or not 0 <= self.current_index < len(self.project["meetings"]):
             return
-        self.project["meetings"][self.current_index].update(
-            {
-                "date": self.date.text(),
-                "time": self.time.text(),
-                "place": self.place.text(),
-                "conductor": self.conductor.currentText(),
-                "date_color": self.date_color.text(),
-            }
-        )
+        self.project["meetings"][self.current_index].update(self._meeting_from_form())
         self.refresh_meeting_list(self.current_index)
         self.refresh_preview()
 
+    def _meeting_from_form(self):
+        return meeting_row(
+            self.date.text(),
+            self.time.text(),
+            self.place.text(),
+            self.conductor.currentText(),
+            self.date_color.text(),
+        )
+
     def add_meeting(self):
-        self.project["meetings"].append(meeting_row())
+        self.project["meetings"].append(self._meeting_from_form())
         self.current_index = len(self.project["meetings"]) - 1
         self.refresh_meeting_list(self.current_index)
         self.select_meeting(self.current_index)
-        self.date.setFocus()
         self.refresh_preview()
+
+    def new_meeting_form(self):
+        self.current_index = -1
+        self.meeting_list.blockSignals(True)
+        self.meeting_list.setCurrentRow(-1)
+        self.meeting_list.clearSelection()
+        self.meeting_list.blockSignals(False)
+        self._load_row(meeting_row())
+        self.date.setFocus()
 
     def duplicate_meeting(self):
         if not 0 <= self.current_index < len(self.project["meetings"]):

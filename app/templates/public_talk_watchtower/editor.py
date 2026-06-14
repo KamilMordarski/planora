@@ -86,13 +86,19 @@ class PublicTalkWatchtowerEditor(QWidget):
 
         weeks_group = QGroupBox("Tygodnie w projekcie")
         left_layout = QVBoxLayout(weeks_group)
-        help_text = QLabel("Wybierz tydzień, który chcesz uzupełnić. Kolejność na liście jest kolejnością w eksporcie.")
+        help_text = QLabel(
+            "Nowy tydzień: wybierz „Nowy formularz”, uzupełnij krok „Dane” i kliknij „Dodaj z formularza”. "
+            "Kolejność na liście jest kolejnością w eksporcie."
+        )
         help_text.setObjectName("helpText")
         help_text.setWordWrap(True)
         left_layout.addWidget(help_text)
         self.week_list = QListWidget()
         left_layout.addWidget(self.week_list)
-        add = QPushButton("+ Dodaj tydzień")
+        new_form = QPushButton("Nowy formularz")
+        new_form.setToolTip("Czyści krok „Dane”, aby przygotować nowy tydzień bez zmieniania wybranego wpisu.")
+        add = QPushButton("+ Dodaj z formularza")
+        add.setToolTip("Dodaje nowy tydzień z datą, osobami i tematami wpisanymi w kroku „Dane”.")
         add.setObjectName("primaryButton")
         delete = QPushButton("Usuń tydzień")
         delete.setObjectName("dangerButton")
@@ -101,6 +107,7 @@ class PublicTalkWatchtowerEditor(QWidget):
         down = QPushButton("Przenieś niżej")
         move_row.addWidget(up)
         move_row.addWidget(down)
+        left_layout.addWidget(new_form)
         left_layout.addWidget(add)
         left_layout.addWidget(delete)
         left_layout.addLayout(move_row)
@@ -165,6 +172,13 @@ class PublicTalkWatchtowerEditor(QWidget):
         special_layout.addWidget(special_help)
         special_layout.addWidget(self.special_text)
         form.addWidget(special_group)
+        form_actions = QHBoxLayout()
+        new_form_from_data = QPushButton("Wyczyść i przygotuj nowy formularz")
+        add_from_data = QPushButton("Dodaj jako nowy tydzień z formularza")
+        add_from_data.setObjectName("primaryButton")
+        form_actions.addWidget(new_form_from_data)
+        form_actions.addWidget(add_from_data)
+        form.addLayout(form_actions)
         form.addStretch()
         editor_scroll.setWidget(editor)
         data_layout.addWidget(editor_scroll, 1)
@@ -196,7 +210,10 @@ class PublicTalkWatchtowerEditor(QWidget):
         save_as.clicked.connect(self.save_project_as)
         self.week_list.currentRowChanged.connect(self.select_week)
         self.week_list.itemDoubleClicked.connect(lambda _item: self.wizard.set_step(1))
+        new_form.clicked.connect(self.new_week_form)
+        new_form_from_data.clicked.connect(self.new_week_form)
         add.clicked.connect(self.add_week)
+        add_from_data.clicked.connect(self.add_week)
         delete.clicked.connect(self.delete_week)
         up.clicked.connect(lambda: self.move_week(-1))
         down.clicked.connect(lambda: self.move_week(1))
@@ -251,18 +268,22 @@ class PublicTalkWatchtowerEditor(QWidget):
     def update_current(self, *_args):
         self.project["title"] = self.title_edit.text()
         if self.current_index < 0:
+            self._update_field_state()
             return
-        week = self.project["weeks"][self.current_index]
-        week["date"] = self.date_edit.text()
-        week["type"] = "special" if self.special_radio.isChecked() else "normal"
-        for key, field in self.combo_fields.items():
-            week[key] = field.currentText()
-        for key, field in self.text_fields.items():
-            week[key] = field.toPlainText()
-        week["special_text"] = self.special_text.toPlainText()
+        self.project["weeks"][self.current_index].update(self._week_from_form())
         self._update_field_state()
         self.refresh_weeks(self.current_index)
         self.refresh_preview()
+
+    def _week_from_form(self):
+        week = {
+            "date": self.date_edit.text(),
+            "type": "special" if self.special_radio.isChecked() else "normal",
+            "special_text": self.special_text.toPlainText(),
+        }
+        week.update({key: field.currentText() for key, field in self.combo_fields.items()})
+        week.update({key: field.toPlainText() for key, field in self.text_fields.items()})
+        return week
 
     def refresh_preview(self):
         try:
@@ -283,22 +304,35 @@ class PublicTalkWatchtowerEditor(QWidget):
             field.blockSignals(False)
 
     def add_week(self):
-        self.project.setdefault("weeks", []).append(
-            {
-                "date": "",
-                "type": "normal",
-                "chairman": "",
-                "lecture_topic": "",
-                "lecturer": "",
-                "watchtower_topic": "",
-                "watchtower_conductor": "",
-                "reader": "",
-            }
-        )
+        self.project.setdefault("weeks", []).append(self._week_from_form())
         index = len(self.project["weeks"]) - 1
         self.refresh_weeks(index)
         self.select_week(index)
         self.refresh_preview()
+
+    def new_week_form(self):
+        self.current_index = -1
+        self.week_list.blockSignals(True)
+        self.week_list.setCurrentRow(-1)
+        self.week_list.clearSelection()
+        self.week_list.blockSignals(False)
+        widgets = [self.date_edit, self.normal_radio, self.special_radio, self.special_text]
+        widgets += list(self.combo_fields.values()) + list(self.text_fields.values())
+        for widget in widgets:
+            widget.blockSignals(True)
+        self.date_edit.clear()
+        self.normal_radio.setChecked(True)
+        self.special_radio.setChecked(False)
+        for field in self.combo_fields.values():
+            field.setCurrentText("")
+        for field in self.text_fields.values():
+            field.clear()
+        self.special_text.clear()
+        for widget in widgets:
+            widget.blockSignals(False)
+        self._update_field_state()
+        self.wizard.set_step(1)
+        self.date_edit.setFocus()
 
     def delete_week(self):
         weeks = self.project.get("weeks", [])

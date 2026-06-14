@@ -121,10 +121,16 @@ class MidweekMeetingEditor(QWidget):
 
         left = QGroupBox("Zebrania w projekcie")
         left_layout = QVBoxLayout(left)
-        left_layout.addWidget(self._instruction("Najpierw wybierz zebranie, które chcesz edytować."))
+        left_layout.addWidget(self._instruction(
+            "Aby dodać wypełnione zebranie, wybierz „Nowy formularz”, uzupełnij krok „Dane” i dodaj je z formularza."
+        ))
         self.meeting_list = QListWidget()
-        add_normal = QPushButton("+ Dodaj zebranie")
-        add_special = QPushButton("+ Dodaj wydarzenie specjalne")
+        new_form = QPushButton("Nowy formularz")
+        new_form.setToolTip("Czyści krok „Dane”, aby przygotować nowe zebranie bez zmieniania wybranego wpisu.")
+        add_normal = QPushButton("+ Dodaj zwykłe z formularza")
+        add_special = QPushButton("+ Dodaj specjalne z formularza")
+        add_normal.setToolTip("Dodaje zwykłe zebranie z informacjami wpisanymi w kroku „Dane”.")
+        add_special.setToolTip("Dodaje wydarzenie specjalne z aktualnie wpisanymi informacjami.")
         duplicate = QPushButton("Duplikuj wybrane (+7 dni)")
         duplicate.setToolTip("Kopiuje całe zebranie wraz z programem i ustawia datę tydzień później.")
         delete = QPushButton("Usuń")
@@ -135,6 +141,7 @@ class MidweekMeetingEditor(QWidget):
         move.addWidget(up)
         move.addWidget(down)
         left_layout.addWidget(self.meeting_list)
+        left_layout.addWidget(new_form)
         left_layout.addWidget(add_normal)
         left_layout.addWidget(add_special)
         left_layout.addWidget(duplicate)
@@ -189,6 +196,7 @@ class MidweekMeetingEditor(QWidget):
         people.clicked.connect(edit_people)
         save.clicked.connect(self.save_project)
         save_as.clicked.connect(self.save_project_as)
+        new_form.clicked.connect(self.new_meeting_form)
         add_normal.clicked.connect(self.add_normal)
         add_special.clicked.connect(self.add_special)
         duplicate.clicked.connect(self.duplicate_meeting)
@@ -270,6 +278,14 @@ class MidweekMeetingEditor(QWidget):
         ]:
             closing_form.addRow(label, field)
         content_layout.addWidget(closing)
+        add_from_form = QPushButton("Dodaj jako nowe zebranie z formularza")
+        add_from_form.setObjectName("primaryButton")
+        add_from_form.setToolTip("Tworzy nowy termin z aktualnie widocznych danych bez dodawania pustego wpisu.")
+        add_from_form.clicked.connect(self.add_from_form)
+        new_form = QPushButton("Wyczyść i przygotuj nowy formularz")
+        new_form.clicked.connect(self.new_meeting_form)
+        content_layout.addWidget(new_form)
+        content_layout.addWidget(add_from_form)
         content_layout.addStretch()
         scroll.setWidget(content)
 
@@ -581,9 +597,10 @@ class MidweekMeetingEditor(QWidget):
 
     def update_meeting(self, *_args):
         meeting = self._current_meeting()
+        new_type = self.meeting_type.currentData()
+        self.content_stack.setCurrentWidget(self.special_widget if new_type == "special" else self.program_widget)
         if not meeting:
             return
-        new_type = self.meeting_type.currentData()
         meeting["type"] = new_type
         meeting["date"] = self.meeting_date.date().toString("yyyy-MM-dd")
         for field, key in [
@@ -599,7 +616,6 @@ class MidweekMeetingEditor(QWidget):
         meeting["closing_prayer"] = self.closing_prayer.currentText()
         if new_type == "normal":
             meeting.setdefault("sections", [])
-        self.content_stack.setCurrentWidget(self.special_widget if new_type == "special" else self.program_widget)
         self.refresh_meetings(self.meeting_index)
         self.refresh_program_context()
         self.refresh_preview()
@@ -713,14 +729,111 @@ class MidweekMeetingEditor(QWidget):
         self.refresh_preview()
 
     def add_normal(self):
-        self.project["meetings"].append(normal_meeting(QDate.currentDate().toString("yyyy-MM-dd")))
+        self.project["meetings"].append(self._meeting_from_form("normal"))
         self._select_last_meeting()
         self.wizard.set_step(1)
 
     def add_special(self):
-        self.project["meetings"].append(special_event(QDate.currentDate().toString("yyyy-MM-dd")))
+        self.project["meetings"].append(self._meeting_from_form("special"))
         self._select_last_meeting()
         self.wizard.set_step(1)
+
+    def add_from_form(self):
+        self.project["meetings"].append(self._meeting_from_form(self.meeting_type.currentData()))
+        self._select_last_meeting()
+        self.wizard.set_step(1)
+
+    def new_meeting_form(self):
+        self.meeting_index = -1
+        self.section_index = -1
+        self.item_index = -1
+        self.meeting_list.blockSignals(True)
+        self.meeting_switch.blockSignals(True)
+        self.meeting_list.setCurrentRow(-1)
+        self.meeting_list.clearSelection()
+        self.meeting_switch.setCurrentIndex(-1)
+        self.meeting_list.blockSignals(False)
+        self.meeting_switch.blockSignals(False)
+        fields = [
+            self.meeting_type,
+            self.meeting_date,
+            self.bible_reading,
+            self.chairman,
+            self.opening_prayer,
+            self.opening_song_time,
+            self.opening_song,
+            self.opening_comments_time,
+            self.opening_comments,
+            self.closing_comments_time,
+            self.closing_comments,
+            self.closing_song_time,
+            self.closing_song,
+            self.closing_prayer,
+            self.special_title,
+            self.special_subtitle,
+            self.image_path,
+        ]
+        for field in fields:
+            field.blockSignals(True)
+        self.meeting_type.setCurrentIndex(0)
+        self.meeting_date.setDate(QDate.currentDate())
+        for field in (
+            self.bible_reading,
+            self.opening_song_time,
+            self.opening_song,
+            self.opening_comments_time,
+            self.opening_comments,
+            self.closing_comments_time,
+            self.closing_comments,
+            self.closing_song_time,
+            self.closing_song,
+            self.special_title,
+            self.special_subtitle,
+            self.image_path,
+        ):
+            field.clear()
+        for field in (self.chairman, self.opening_prayer, self.closing_prayer):
+            field.setCurrentText("")
+        for field in fields:
+            field.blockSignals(False)
+        self.content_stack.setCurrentWidget(self.program_widget)
+        self.refresh_sections()
+        self.refresh_items()
+        self.meeting_position.setText("Nowy formularz")
+        self.refresh_program_context()
+        self.wizard.set_step(1)
+        self.meeting_date.setFocus()
+
+    def _meeting_from_form(self, meeting_type):
+        duty_date = self.meeting_date.date().toString("yyyy-MM-dd")
+        if meeting_type == "special":
+            meeting = special_event(duty_date)
+            meeting.update(
+                {
+                    "special_title": self.special_title.text(),
+                    "special_subtitle": self.special_subtitle.text(),
+                    "image_path": self.image_path.text(),
+                }
+            )
+            return meeting
+        meeting = normal_meeting(duty_date)
+        meeting.update(
+            {
+                "bible_reading": self.bible_reading.text(),
+                "chairman": self.chairman.currentText(),
+                "opening_prayer": self.opening_prayer.currentText(),
+                "opening_song_time": self.opening_song_time.text(),
+                "opening_song": self.opening_song.text(),
+                "opening_comments_time": self.opening_comments_time.text(),
+                "opening_comments": self.opening_comments.text(),
+                "closing_comments_time": self.closing_comments_time.text(),
+                "closing_comments": self.closing_comments.text(),
+                "closing_song_time": self.closing_song_time.text(),
+                "closing_song": self.closing_song.text(),
+                "closing_prayer": self.closing_prayer.currentText(),
+            }
+        )
+        return meeting
 
     def duplicate_meeting(self):
         meeting = self._current_meeting()

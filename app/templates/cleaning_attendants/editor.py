@@ -181,9 +181,13 @@ class CleaningAttendantsEditor(QWidget):
         self.weekly_editor_splitter = QSplitter(Qt.Horizontal)
         list_panel = QWidget()
         list_side = QVBoxLayout(list_panel)
-        list_side.addWidget(self._help_label("Wybierz tydzień, potem przypisz grupę i osoby."))
+        list_side.addWidget(self._help_label(
+            "Nowy tydzień: wybierz „Nowy formularz”, przypisz daty, grupę i osoby, potem kliknij „Dodaj z formularza”."
+        ))
         self.weekly_list = QListWidget()
-        add = QPushButton("+ Dodaj tydzień")
+        new_form = QPushButton("Nowy formularz")
+        add = QPushButton("+ Dodaj z formularza")
+        add.setToolTip("Dodaje tydzień wraz z aktualnie wpisanymi datami, grupą i osobami.")
         delete = QPushButton("Usuń tydzień")
         delete.setObjectName("dangerButton")
         move = QHBoxLayout()
@@ -192,6 +196,7 @@ class CleaningAttendantsEditor(QWidget):
         move.addWidget(up)
         move.addWidget(down)
         list_side.addWidget(self.weekly_list)
+        list_side.addWidget(new_form)
         list_side.addWidget(add)
         list_side.addWidget(delete)
         list_side.addLayout(move)
@@ -220,6 +225,7 @@ class CleaningAttendantsEditor(QWidget):
         layout.addWidget(self.weekly_editor_splitter)
 
         self.weekly_list.currentRowChanged.connect(self.select_weekly)
+        new_form.clicked.connect(self.new_weekly_form)
         add.clicked.connect(self.add_weekly)
         delete.clicked.connect(self.delete_weekly)
         up.clicked.connect(lambda: self.move_weekly(-1))
@@ -236,9 +242,13 @@ class CleaningAttendantsEditor(QWidget):
         self.attendant_editor_splitter = QSplitter(Qt.Horizontal)
         list_panel = QWidget()
         list_side = QVBoxLayout(list_panel)
-        list_side.addWidget(self._help_label("Wybierz datę zebrania i przypisz porządkowych."))
+        list_side.addWidget(self._help_label(
+            "Nowy dyżur: wybierz „Nowy formularz”, ustaw datę i porządkowych, potem kliknij „Dodaj z formularza”."
+        ))
         self.attendant_list = QListWidget()
-        add = QPushButton("+ Dodaj datę zebrania")
+        new_form = QPushButton("Nowy formularz")
+        add = QPushButton("+ Dodaj z formularza")
+        add.setToolTip("Dodaje datę zebrania wraz z aktualnie wybranymi porządkowymi.")
         delete = QPushButton("Usuń datę")
         delete.setObjectName("dangerButton")
         move = QHBoxLayout()
@@ -247,6 +257,7 @@ class CleaningAttendantsEditor(QWidget):
         move.addWidget(up)
         move.addWidget(down)
         list_side.addWidget(self.attendant_list)
+        list_side.addWidget(new_form)
         list_side.addWidget(add)
         list_side.addWidget(delete)
         list_side.addLayout(move)
@@ -265,6 +276,7 @@ class CleaningAttendantsEditor(QWidget):
         layout.addWidget(self.attendant_editor_splitter)
 
         self.attendant_list.currentRowChanged.connect(self.select_attendant)
+        new_form.clicked.connect(self.new_attendant_form)
         add.clicked.connect(self.add_attendant)
         delete.clicked.connect(self.delete_attendant)
         up.clicked.connect(lambda: self.move_attendant(-1))
@@ -384,18 +396,7 @@ class CleaningAttendantsEditor(QWidget):
         rows = self.project["weekly_assignments"]
         if not 0 <= self.weekly_index < len(rows):
             return
-        row = rows[self.weekly_index]
-        row.update(
-            {
-                "start_date": self._iso_date(self.start_date),
-                "end_date": self._iso_date(self.end_date),
-                "group": self.group.currentText(),
-                "cleaning_person": self.cleaning_person.currentText(),
-                "console_person": self.console_person.currentText(),
-                "microphone_1": self.microphone_1.currentText(),
-                "microphone_2": self.microphone_2.currentText(),
-            }
-        )
+        rows[self.weekly_index].update(self._weekly_from_form())
         self.refresh_weekly_list(self.weekly_index)
         self.refresh_all()
 
@@ -403,25 +404,61 @@ class CleaningAttendantsEditor(QWidget):
         rows = self.project["attendant_assignments"]
         if not 0 <= self.attendant_index < len(rows):
             return
-        rows[self.attendant_index].update(
-            {
-                "date": self._iso_date(self.meeting_date),
-                "lobby_attendant": self.lobby_attendant.currentText(),
-                "hall_attendant": self.hall_attendant.currentText(),
-            }
-        )
+        rows[self.attendant_index].update(self._attendant_from_form())
         self.refresh_attendant_list(self.attendant_index)
         self.refresh_all()
 
-    def add_weekly(self):
-        today = QDate.currentDate()
-        self.project["weekly_assignments"].append(
-            weekly_row(today.toString("yyyy-MM-dd"), today.addDays(4).toString("yyyy-MM-dd"))
+    def _weekly_from_form(self):
+        return weekly_row(
+            self._iso_date(self.start_date),
+            self._iso_date(self.end_date),
+            self.group.currentText(),
+            self.cleaning_person.currentText(),
+            self.console_person.currentText(),
+            self.microphone_1.currentText(),
+            self.microphone_2.currentText(),
         )
+
+    def _attendant_from_form(self):
+        return attendant_row(
+            self._iso_date(self.meeting_date),
+            self.lobby_attendant.currentText(),
+            self.hall_attendant.currentText(),
+        )
+
+    def add_weekly(self):
+        self.project["weekly_assignments"].append(self._weekly_from_form())
         self.weekly_index = len(self.project["weekly_assignments"]) - 1
         self.refresh_weekly_list(self.weekly_index)
         self.select_weekly(self.weekly_index)
         self.refresh_all()
+
+    def new_weekly_form(self):
+        self.weekly_index = -1
+        self.weekly_list.blockSignals(True)
+        self.weekly_list.setCurrentRow(-1)
+        self.weekly_list.clearSelection()
+        self.weekly_list.blockSignals(False)
+        fields = [
+            self.start_date,
+            self.end_date,
+            self.group,
+            self.cleaning_person,
+            self.console_person,
+            self.microphone_1,
+            self.microphone_2,
+        ]
+        for field in fields:
+            field.blockSignals(True)
+        today = QDate.currentDate()
+        self.start_date.setDate(today)
+        self.end_date.setDate(today.addDays(4))
+        self.group.setCurrentText("I")
+        for field in (self.cleaning_person, self.console_person, self.microphone_1, self.microphone_2):
+            field.setCurrentText("")
+        for field in fields:
+            field.blockSignals(False)
+        self.start_date.setFocus()
 
     def delete_weekly(self):
         rows = self.project["weekly_assignments"]
@@ -443,11 +480,27 @@ class CleaningAttendantsEditor(QWidget):
             self.refresh_all()
 
     def add_attendant(self):
-        self.project["attendant_assignments"].append(attendant_row(QDate.currentDate().toString("yyyy-MM-dd")))
+        self.project["attendant_assignments"].append(self._attendant_from_form())
         self.attendant_index = len(self.project["attendant_assignments"]) - 1
         self.refresh_attendant_list(self.attendant_index)
         self.select_attendant(self.attendant_index)
         self.refresh_all()
+
+    def new_attendant_form(self):
+        self.attendant_index = -1
+        self.attendant_list.blockSignals(True)
+        self.attendant_list.setCurrentRow(-1)
+        self.attendant_list.clearSelection()
+        self.attendant_list.blockSignals(False)
+        fields = [self.meeting_date, self.lobby_attendant, self.hall_attendant]
+        for field in fields:
+            field.blockSignals(True)
+        self.meeting_date.setDate(QDate.currentDate())
+        self.lobby_attendant.setCurrentText("")
+        self.hall_attendant.setCurrentText("")
+        for field in fields:
+            field.blockSignals(False)
+        self.meeting_date.setFocus()
 
     def delete_attendant(self):
         rows = self.project["attendant_assignments"]

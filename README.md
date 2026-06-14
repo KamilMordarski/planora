@@ -56,6 +56,10 @@ zawiera duży podgląd dokumentu z dopasowaniem strony oraz kontrolą powiększe
 Kafelki, formularze i układ ekranów dopasowują się do szerokości okna.
 Nowe projekty nie zawierają przykładowych dat, osób ani przydziałów.
 
+Terminy można tworzyć bez dodawania pustego wpisu. Wystarczy uzupełnić formularz
+i wybrać **Dodaj z formularza**. Przycisk **Nowy formularz** pozwala przygotować
+kolejny termin bez przypadkowego zmieniania wcześniej wybranego wpisu.
+
 ## Asystent planowania i role
 
 Biblioteka osób przechowuje role i uprawnienia, między innymi prowadzenie zbiórek,

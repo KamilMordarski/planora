@@ -32,12 +32,17 @@ class GuideDialog(QDialog):
             "albo przycisków „Poprzedni krok” i „Następny krok”.",
         ),
         (
-            "4. Kontroluj podgląd",
+            "4. Dodawaj od razu wypełnione terminy",
+            "Wpisz informacje w formularzu, a następnie wybierz „Dodaj z formularza”. Gdy w projekcie są już terminy, "
+            "najpierw użyj „Nowy formularz”, aby przygotować kolejny wpis bez zmieniania obecnego.",
+        ),
+        (
+            "5. Kontroluj podgląd",
             "Ostatni krok pokazuje gotowy dokument. Powiększ podgląd, dopasuj stronę i popraw "
             "zbyt długie teksty przed eksportem.",
         ),
         (
-            "5. Zapisz i eksportuj",
+            "6. Zapisz i eksportuj",
             "Zapis projektu tworzy edytowalny plik JSON. Eksport PDF służy do druku, a JPG "
             "do łatwego wysyłania gotowego planu.",
         ),
