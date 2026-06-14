@@ -497,6 +497,16 @@ class PeopleRoleTests(unittest.TestCase):
 
         self.assertEqual(eligible_people(people, profiles, "service_conductor"), ["Jan"])
         self.assertEqual(eligible_people(people, profiles, "console"), ["Anna"])
+        self.assertEqual(eligible_people(people, profiles, "reader"), [])
+        self.assertIn("prayer", ALL_ROLES)
+
+    def test_midweek_items_infer_specific_permissions(self):
+        from app.templates.midweek_meeting.editor import MidweekMeetingEditor
+
+        self.assertEqual(MidweekMeetingEditor._item_required_role("Czytanie Biblii", ""), "reader")
+        self.assertEqual(MidweekMeetingEditor._item_required_role("Dowolny punkt", "Lektor"), "reader")
+        self.assertEqual(MidweekMeetingEditor._item_required_role("Modlitwa", ""), "prayer")
+        self.assertEqual(MidweekMeetingEditor._item_required_role("Rozpoczynanie rozmowy", ""), "midweek_participant")
 
 
 class GroupToolsTests(unittest.TestCase):
@@ -781,14 +791,11 @@ class ProjectValidationTests(unittest.TestCase):
 
 
 class ProjectIOTests(unittest.TestCase):
-    def test_bundled_people_library_and_sample_assignments_are_empty(self):
+    def test_people_library_is_not_bundled_with_application(self):
         root = Path(__file__).resolve().parents[1]
-        bundled_people = json.loads((root / "data" / "people.json").read_text(encoding="utf-8"))
-        sample_project = ProjectIO.load_project(root / "data" / "project.json")
 
         self.assertEqual(DEFAULT_PEOPLE, [])
-        self.assertEqual(bundled_people, [])
-        self.assertEqual(extract_assignments(sample_project), [])
+        self.assertFalse((root / "data").exists())
 
     def test_people_json_import_merges_and_skips_duplicates(self):
         with tempfile.TemporaryDirectory() as directory:

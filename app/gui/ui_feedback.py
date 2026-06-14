@@ -21,11 +21,20 @@ class UiFeedback(QObject):
         self.effects: dict[str, QSoundEffect] = {}
         self.animations = {}
         self._last_hover_sound = 0.0
-        for name in ("click", "hover", "navigate", "switch", "add", "remove", "open", "save", "export", "confirm"):
+        sound_names = ("click", "hover", "navigate", "switch", "add", "remove", "open", "save", "export", "confirm")
+        self._cleanup_old_sounds(sound_names)
+        for name in sound_names:
             effect = QSoundEffect(self)
             effect.setSource(QUrl.fromLocalFile(str(self._ensure_sound(name))))
             self.effects[name] = effect
         self._update_volume()
+
+    @classmethod
+    def _cleanup_old_sounds(cls, sound_names):
+        current = {f"ui-{name}-v{cls.SOUND_VERSION}.wav" for name in sound_names}
+        for path in USER_DATA_DIR.glob("ui-*.wav"):
+            if path.name not in current:
+                path.unlink(missing_ok=True)
 
     def _update_volume(self):
         volume = max(0, min(100, int(self.settings.get("sound_volume", 35)))) / 100

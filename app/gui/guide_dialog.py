@@ -77,8 +77,9 @@ class GuideDialog(QDialog):
         ),
         (
             "Role i uprawnienia",
-            "Zaznacz osobę, a następnie jej role. Odpowiednie generatory i Asystent planowania podpowiadają "
-            "wyłącznie pasujących kandydatów. Nadal możesz ręcznie wpisać inną osobę w wyjątkowej sytuacji.",
+            "Zaznacz osobę, a następnie jej role. Listy przydziałów pokazują wyłącznie pasujących kandydatów "
+            "i nie pozwalają wybrać osoby bez wymaganego uprawnienia. Dotyczy to między innymi lektorów, "
+            "prowadzących, konsoli, mikrofonów, porządkowych, uczestników zebrań oraz modlitw.",
         ),
     ]
 

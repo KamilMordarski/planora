@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from app.config import LEGACY_DATA_DIR, LEGACY_USER_DATA_DIR, PEOPLE_FILE, PEOPLE_ROLES_FILE, SETTINGS_FILE, UPDATE_URL, USER_DATA_DIR
+from app.config import LEGACY_USER_DATA_DIR, PEOPLE_FILE, PEOPLE_ROLES_FILE, SETTINGS_FILE, UPDATE_URL, USER_DATA_DIR
 from app.core.people_roles import normalize_profiles
 
 
@@ -40,11 +40,7 @@ class ProjectIO:
                 pass
         USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
         if not PEOPLE_FILE.exists():
-            legacy_people = LEGACY_DATA_DIR / "people.json"
-            if legacy_people.exists():
-                shutil.copy2(legacy_people, PEOPLE_FILE)
-            else:
-                ProjectIO._write_json(PEOPLE_FILE, DEFAULT_PEOPLE)
+            ProjectIO._write_json(PEOPLE_FILE, DEFAULT_PEOPLE)
         if not SETTINGS_FILE.exists():
             ProjectIO._write_json(SETTINGS_FILE, DEFAULT_SETTINGS)
 

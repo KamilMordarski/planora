@@ -9,6 +9,7 @@ ROLE_OPTIONS = {
     "watchtower_conductor": "Prowadzenie Studium Strażnicy",
     "reader": "Czytanie / lektor",
     "midweek_participant": "Udział w zebraniu w tygodniu",
+    "prayer": "Modlitwa na zebraniu",
 }
 
 ALL_ROLES = tuple(ROLE_OPTIONS)

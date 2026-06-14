@@ -336,6 +336,7 @@ class FieldServiceGroupsEditor(QWidget):
         row = self.member_table.rowCount()
         self.member_table.insertRow(row)
         person = configure_editable_combo(QComboBox())
+        person.setEditable(False)
         person.addItem("")
         person.addItems(self.people)
         person.setCurrentText(member_value.get("name", ""))

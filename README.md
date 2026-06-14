@@ -139,9 +139,8 @@ Nie zastępuje ono własnych plików JSON i jest utrzymywane wyłącznie przez 9
 Plan grup służby ma dodatkowo trwały plik `field-service-groups.json`, który
 nie podlega automatycznemu usuwaniu po 90 dniach.
 
-Przy pierwszym uruchomieniu istniejąca biblioteka `data/people.json` zostanie
-skopiowana do katalogu użytkownika. Dane ze starszego katalogu
-`GeneratorGrafikow` są automatycznie przenoszone do Planory.
+Przy pierwszym uruchomieniu Planora tworzy pustą bibliotekę w katalogu użytkownika.
+Dane ze starszego katalogu `GeneratorGrafikow` są automatycznie przenoszone do Planory.
 
 Bibliotekę można uzupełnić przez import pliku JSON zawierającego tablicę nazwisk
 albo obiekt z polem `people`. Import łączy listy i pomija duplikaty. Eksport

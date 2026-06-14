@@ -170,12 +170,9 @@ class MainWindow(QMainWindow):
             pass
         if reset_history:
             self.project_history.reset(project)
-        editor_people = self.people
-        if template.id == "service_meetings":
-            editor_people = eligible_people(self.people, self.people_profiles, "service_conductor")
         self.editor = template.editor_class(
             project=project,
-            people=editor_people,
+            people=self.people,
             renderer_class=template.renderer_class,
             project_path=path,
             go_back=self.show_home,
@@ -205,10 +202,7 @@ class MainWindow(QMainWindow):
             ProjectIO.save_people_profiles(self.people_profiles)
             if self.editor is not None:
                 template = TemplateRegistry.for_project(self.editor.project)
-                editor_people = self.people
-                if template and template.id == "service_meetings":
-                    editor_people = eligible_people(self.people, self.people_profiles, "service_conductor")
-                self.editor.set_people(editor_people)
+                self.editor.set_people(self.people)
                 if template:
                     self._apply_role_filters(template.id)
 
@@ -220,13 +214,19 @@ class MainWindow(QMainWindow):
             if combo is None:
                 return
             current = combo.currentText()
+            allowed = eligible_people(self.people, self.people_profiles, role)
+            matched = next((person for person in allowed if person.casefold() == current.casefold()), "")
+            invalid_assignment = bool(current and not matched)
             combo.blockSignals(True)
+            combo.setEditable(False)
             combo.clear()
             combo.addItem("")
-            combo.addItems(eligible_people(self.people, self.people_profiles, role))
-            combo.setCurrentText(current)
-            combo.setToolTip(f"Lista według roli: {ROLE_OPTIONS[role]}. Nadal możesz wpisać inną osobę ręcznie.")
+            combo.addItems(allowed)
+            combo.setCurrentText(matched)
+            combo.setToolTip(f"Lista zawiera wyłącznie osoby z uprawnieniem: {ROLE_OPTIONS[role]}.")
             combo.blockSignals(False)
+            if invalid_assignment:
+                combo.currentTextChanged.emit("")
 
         if template_id == "cleaning_attendants":
             apply(self.editor.cleaning_person, "cleaning")
@@ -243,8 +243,16 @@ class MainWindow(QMainWindow):
             apply(fields.get("reader"), "reader")
         elif template_id == "midweek_meeting":
             apply(self.editor.chairman, "chairman")
-            apply(self.editor.item_person_1, "midweek_participant")
-            apply(self.editor.item_person_2, "midweek_participant")
+            apply(self.editor.opening_prayer, "prayer")
+            apply(self.editor.closing_prayer, "prayer")
+            self.editor.set_role_people(
+                {
+                    role: eligible_people(self.people, self.people_profiles, role)
+                    for role in ROLE_OPTIONS
+                }
+            )
+        elif template_id == "service_meetings":
+            apply(self.editor.conductor, "service_conductor")
 
     def open_settings(self):
         dialog = SettingsDialog(self.settings, self)

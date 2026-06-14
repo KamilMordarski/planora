@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 
 from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
+from app.core.people_roles import ROLE_OPTIONS
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
@@ -67,6 +68,7 @@ class MidweekMeetingEditor(QWidget):
         self.section_index = -1
         self.item_index = -1
         self.person_fields: list[QComboBox] = []
+        self.role_people: dict[str, list[str]] = {}
         self.shortcuts: list[QShortcut] = []
         self._build_ui(go_back, edit_people)
         self.refresh_meetings(0)
@@ -436,6 +438,9 @@ class MidweekMeetingEditor(QWidget):
             field.textChanged.connect(self.update_item)
         self.item_person_1.currentTextChanged.connect(self.update_item)
         self.item_person_2.currentTextChanged.connect(self.update_item)
+        self.item_title.editingFinished.connect(self.refresh_item_person_filters)
+        self.item_role_1.editingFinished.connect(self.refresh_item_person_filters)
+        self.item_role_2.editingFinished.connect(self.refresh_item_person_filters)
 
         self._add_shortcut("Alt+Left", lambda: self.switch_meeting(-1))
         self._add_shortcut("Alt+Right", lambda: self.switch_meeting(1))
@@ -719,10 +724,12 @@ class MidweekMeetingEditor(QWidget):
             field.blockSignals(True)
         self.item_time.setText(item.get("time", ""))
         self.item_title.setText(item.get("title", ""))
-        self.item_person_1.setCurrentText(item.get("participant_1", ""))
         self.item_role_1.setText(item.get("role_1", ""))
-        self.item_person_2.setCurrentText(item.get("participant_2", ""))
         self.item_role_2.setText(item.get("role_2", ""))
+        self._populate_item_person_fields(
+            item.get("participant_1", ""),
+            item.get("participant_2", ""),
+        )
         for field in fields:
             field.blockSignals(False)
 
@@ -1055,6 +1062,49 @@ class MidweekMeetingEditor(QWidget):
             field.addItems(self.people)
             field.setCurrentText(current)
             field.blockSignals(False)
+
+    def set_role_people(self, role_people: dict[str, list[str]]):
+        self.role_people = {role: list(people) for role, people in role_people.items()}
+        self.refresh_item_person_filters()
+
+    @staticmethod
+    def _item_required_role(title: str, role_text: str) -> str:
+        source = str(role_text or title).casefold()
+        if "modlitw" in source:
+            return "prayer"
+        if "lektor" in source or "czytanie biblii" in source:
+            return "reader"
+        if "przewodnicz" in source:
+            return "chairman"
+        return "midweek_participant"
+
+    def _populate_item_person_fields(self, participant_1="", participant_2=""):
+        title = self.item_title.text()
+        roles = (
+            self._item_required_role(title, self.item_role_1.text()),
+            self._item_required_role(title, self.item_role_2.text()),
+        )
+        for field, role, current in zip(
+            (self.item_person_1, self.item_person_2),
+            roles,
+            (participant_1, participant_2),
+        ):
+            field.clear()
+            field.setEditable(False)
+            field.addItem("")
+            field.addItems(self.role_people.get(role, self.people))
+            field.setCurrentText(current)
+            field.setToolTip(f"Lista zawiera wyłącznie osoby z uprawnieniem: {ROLE_OPTIONS[role]}.")
+
+    def refresh_item_person_filters(self):
+        fields = (self.item_person_1, self.item_person_2)
+        current = tuple(field.currentText() for field in fields)
+        for field in fields:
+            field.blockSignals(True)
+        self._populate_item_person_fields(*current)
+        for field in fields:
+            field.blockSignals(False)
+        self.update_item()
 
     def save_project(self):
         if self.project_path is None:
