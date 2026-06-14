@@ -12,6 +12,7 @@ from app.config import UPDATE_URL
 from app.core.assignment_tools import (
     assigned_people_by_date,
     build_service_meetings_plan,
+    extract_assignments,
     export_ics,
     export_person_assignments,
     generate_recurring_dates,
@@ -19,7 +20,7 @@ from app.core.assignment_tools import (
     shift_project_dates,
 )
 from app.core.people_roles import ALL_ROLES, eligible_people, normalize_profiles
-from app.core.project_io import ProjectIO
+from app.core.project_io import DEFAULT_PEOPLE, ProjectIO
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
 from app.core.update_installer import (
@@ -572,6 +573,15 @@ class AssignmentToolsTests(unittest.TestCase):
 
 
 class ProjectIOTests(unittest.TestCase):
+    def test_bundled_people_library_and_sample_assignments_are_empty(self):
+        root = Path(__file__).resolve().parents[1]
+        bundled_people = json.loads((root / "data" / "people.json").read_text(encoding="utf-8"))
+        sample_project = ProjectIO.load_project(root / "data" / "project.json")
+
+        self.assertEqual(DEFAULT_PEOPLE, [])
+        self.assertEqual(bundled_people, [])
+        self.assertEqual(extract_assignments(sample_project), [])
+
     def test_people_json_import_merges_and_skips_duplicates(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "people.json"

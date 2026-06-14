@@ -7,21 +7,7 @@ from app.config import LEGACY_DATA_DIR, LEGACY_USER_DATA_DIR, PEOPLE_FILE, PEOPL
 from app.core.people_roles import normalize_profiles
 
 
-DEFAULT_PEOPLE = [
-    "Łukasz Kapusta",
-    "Sebastian Skiba",
-    "Denis Kurdyk",
-    "Paweł Ugolik",
-    "Paweł Sawaryn",
-    "Richie Fisayo",
-    "Sławomir Mordarski",
-    "Adrian Pokojowczyk jr.",
-    "Jerzy Godzisz",
-    "Paweł Poczęsny",
-    "Andrzej Szmit",
-    "Mirosław Różycki",
-    "Dominik Janus",
-]
+DEFAULT_PEOPLE = []
 
 DEFAULT_SETTINGS = {
     "update_url": UPDATE_URL,

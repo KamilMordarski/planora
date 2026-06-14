@@ -5,32 +5,32 @@
     {
       "date": "14 CZERWCA",
       "type": "normal",
-      "chairman": "Łukasz Kapusta",
+      "chairman": "",
       "lecture_topic": "Wyświadczajmy dobro wszystkim.",
-      "lecturer": "Sebastian Skiba",
+      "lecturer": "",
       "watchtower_topic": "„Bóg prawdy” zawsze realizuje swoje zamierzenie.",
-      "watchtower_conductor": "Denis Kurdyk",
-      "reader": "Paweł Ugolik"
+      "watchtower_conductor": "",
+      "reader": ""
     },
     {
       "date": "21 CZERWCA",
       "type": "normal",
-      "chairman": "Paweł Sawaryn",
+      "chairman": "",
       "lecture_topic": "Czy pokładasz ufność w Jehowie?",
-      "lecturer": "Richie Fisayo",
+      "lecturer": "",
       "watchtower_topic": "Patrz na trudności we właściwy sposób.",
-      "watchtower_conductor": "Sławomir Mordarski",
-      "reader": "Adrian Pokojowczyk jr."
+      "watchtower_conductor": "",
+      "reader": ""
     },
     {
       "date": "28 CZERWCA",
       "type": "normal",
-      "chairman": "Łukasz Kapusta",
+      "chairman": "",
       "lecture_topic": "Któremu przywódcy możesz zaufać?",
-      "lecturer": "Jerzy Godzisz",
+      "lecturer": "",
       "watchtower_topic": "Ucz się od „Boga wszelkiego pocieszenia”.",
-      "watchtower_conductor": "Sławomir Mordarski",
-      "reader": "Paweł Poczęsny"
+      "watchtower_conductor": "",
+      "reader": ""
     },
     {
       "date": "5 LIPCA",
@@ -40,12 +40,12 @@
     {
       "date": "12 LIPCA",
       "type": "normal",
-      "chairman": "Andrzej Szmit",
+      "chairman": "",
       "lecture_topic": "Czy znalazłeś niezwykle cenną perłę?",
-      "lecturer": "Mirosław Różycki",
+      "lecturer": "",
       "watchtower_topic": "Zasady biblijne-dlaczego są ważne.",
-      "watchtower_conductor": "Sławomir Mordarski",
-      "reader": "Dominik Janus"
+      "watchtower_conductor": "",
+      "reader": ""
     }
   ]
 }

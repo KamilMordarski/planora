@@ -63,6 +63,9 @@ obsługę konsoli, mikrofonów, służbę porządkową i udział w programie. Ge
 podpowiadają kandydatów pasujących do danego zadania, a pola pozostają edytowalne
 w razie wyjątkowego przydziału.
 
+Nowa instalacja Planory zawsze rozpoczyna pracę z całkowicie pustą biblioteką
+osób. Aplikacja nie zawiera przykładowych ani domyślnych nazwisk.
+
 Centralny Asystent planowania generuje wybrane dni tygodnia z zakresu dat,
 tworzy propozycję zbiórek z równym podziałem obowiązków i unika tej samej osoby
 dwa razy z rzędu. Uwzględnia obowiązki z aktualnie otwartego projektu i nie
