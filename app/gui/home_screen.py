@@ -19,6 +19,7 @@ class HomeScreen(QWidget):
         open_settings: Callable,
         open_guide: Callable,
         open_planning_tools: Callable,
+        open_project_center: Callable,
     ):
         super().__init__()
         outer = QVBoxLayout(self)
@@ -100,6 +101,11 @@ class HomeScreen(QWidget):
         items = [
             ("Biblioteka osób i role", "Wspólna lista uczestników oraz ich uprawnienia.", edit_people),
             ("Asystent planowania", "Automatyczne daty, przydziały, masowa edycja i kalendarz.", open_planning_tools),
+            (
+                "Centrum projektów",
+                "Centralny kalendarz, statystyki i indywidualne plany z ostatnich 3 miesięcy.",
+                open_project_center,
+            ),
             ("Sprawdź aktualizacje", "Sprawdź, czy dostępna jest nowsza wersja aplikacji.", check_updates),
             ("Poradnik", "Poznaj cały proces tworzenia i eksportowania grafików.", open_guide),
         ]

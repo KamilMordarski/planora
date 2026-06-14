@@ -29,6 +29,7 @@ from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
+from app.gui.export_validation import confirm_export
 from app.gui.responsive import configure_editable_combo, configure_form
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section, special_event
 from app.templates.midweek_meeting.renderer import numbered_program_title
@@ -999,6 +1000,8 @@ class MidweekMeetingEditor(QWidget):
             self.save_project()
 
     def _export(self, kind):
+        if not confirm_export(self, self.project):
+            return
         default_name = "Zebrania-w-tygodniu.jpg" if kind == "jpg" else "Zebrania-w-tygodniu.pdf"
         file_filter = "JPG (*.jpg)" if kind == "jpg" else "PDF (*.pdf)"
         path, _ = QFileDialog.getSaveFileName(self, "Eksport grafiku", default_name, file_filter)

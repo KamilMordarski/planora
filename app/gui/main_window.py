@@ -2,12 +2,14 @@ import copy
 from pathlib import Path
 
 from PySide6.QtCore import QTimer
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QProgressDialog
 
 from app.config import APP_ICON, AUTOSAVE_FILE, UPDATE_DIR, UPDATE_URL, USER_DATA_DIR
 from app.core.app_info import APP_NAME, APP_VERSION
 from app.core.people_roles import ROLE_OPTIONS, eligible_people
+from app.core.project_archive import ProjectArchive
+from app.core.project_history import ProjectHistory
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import (
@@ -26,6 +28,7 @@ from app.gui.home_screen import HomeScreen
 from app.gui.guide_dialog import GuideDialog
 from app.gui.people_dialog import PeopleDialog
 from app.gui.planning_tools_dialog import PlanningToolsDialog
+from app.gui.project_center_dialog import ProjectCenterDialog
 from app.gui.schedule_type_screen import ScheduleTypeScreen
 from app.gui.settings_dialog import SettingsDialog
 from app.gui.animated_stack import AnimatedStackedWidget
@@ -37,6 +40,9 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         ProjectIO.ensure_user_data()
+        self.project_archive = ProjectArchive()
+        self.project_archive.cleanup()
+        self.project_history = ProjectHistory()
         self.people = ProjectIO.load_people()
         self.people_profiles = ProjectIO.load_people_profiles(self.people)
         self.settings = ProjectIO.load_settings()
@@ -61,6 +67,7 @@ class MainWindow(QMainWindow):
             self.open_settings,
             self.open_guide,
             self.open_planning_tools,
+            self.open_project_center,
         )
         self.schedule_types = ScheduleTypeScreen(
             TemplateRegistry.all(),
@@ -77,6 +84,11 @@ class MainWindow(QMainWindow):
         self.autosave_timer.setInterval(20_000)
         self.autosave_timer.timeout.connect(self.autosave_project)
         self.autosave_timer.start()
+        self.history_timer = QTimer(self)
+        self.history_timer.setInterval(1_500)
+        self.history_timer.timeout.connect(self.observe_project_history)
+        self.history_timer.start()
+        self._create_edit_actions()
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -97,10 +109,13 @@ class MainWindow(QMainWindow):
         app.setStyleSheet(build_stylesheet(self.settings))
 
     def show_home(self):
+        self.archive_current_project()
         self.stack.setCurrentWidgetAnimated(self.home)
+        QTimer.singleShot(0, self._sync_history_actions)
 
     def show_schedule_types(self):
         self.stack.setCurrentWidgetAnimated(self.schedule_types)
+        QTimer.singleShot(0, self._sync_history_actions)
 
     def create_project(self, template_id: str):
         template = TemplateRegistry.get(template_id)
@@ -121,14 +136,22 @@ class MainWindow(QMainWindow):
             template = TemplateRegistry.for_project(project)
             if not template:
                 raise ValueError(f"Brak szablonu o ID: {project.get('template_id')}")
+            self.project_archive.ensure_identity(project, Path(path))
             self.open_editor(template, project, Path(path))
         except ValueError as exc:
             QMessageBox.warning(self, "Nie można otworzyć projektu", str(exc))
 
-    def open_editor(self, template, project: dict, path: Path | None = None):
+    def open_editor(self, template, project: dict, path: Path | None = None, reset_history: bool = True):
+        self.archive_current_project()
         if self.editor is not None:
             self.stack.removeWidget(self.editor)
             self.editor.deleteLater()
+        try:
+            self.project_archive.save(project)
+        except OSError:
+            pass
+        if reset_history:
+            self.project_history.reset(project)
         editor_people = self.people
         if template.id == "service_meetings":
             editor_people = eligible_people(self.people, self.people_profiles, "service_conductor")
@@ -144,6 +167,7 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.editor)
         self._apply_role_filters(template.id)
         self.stack.setCurrentWidgetAnimated(self.editor)
+        self._sync_history_actions()
 
     def edit_people(self):
         dialog = PeopleDialog(self.people, self.people_profiles, self)
@@ -212,6 +236,16 @@ class MainWindow(QMainWindow):
             self.current_project,
             self.open_generated_project,
             self.refresh_editor_after_tools,
+            self.project_archive.load_entries,
+            self,
+        ).exec()
+
+    def open_project_center(self):
+        self.archive_current_project()
+        ProjectCenterDialog(
+            self.project_archive,
+            self.people,
+            self.open_generated_project,
             self,
         ).exec()
 
@@ -230,13 +264,72 @@ class MainWindow(QMainWindow):
         path = self.editor.project_path
         template = TemplateRegistry.for_project(project)
         if template:
-            self.open_editor(template, project, path)
+            self.project_history.observe(project)
+            self.open_editor(template, project, path, reset_history=False)
+
+    def _create_edit_actions(self):
+        menu = self.menuBar().addMenu("Edycja")
+        self.undo_action = QAction("Cofnij", self)
+        self.undo_action.setShortcut(QKeySequence.Undo)
+        self.undo_action.triggered.connect(self.undo_project)
+        self.redo_action = QAction("Ponów", self)
+        self.redo_action.setShortcuts((QKeySequence.Redo, QKeySequence("Ctrl+Y")))
+        self.redo_action.triggered.connect(self.redo_project)
+        menu.addAction(self.undo_action)
+        menu.addAction(self.redo_action)
+        self._sync_history_actions()
+
+    def observe_project_history(self):
+        project = self.current_project()
+        if project:
+            self.project_history.observe(project)
+        self._sync_history_actions()
+
+    def _sync_history_actions(self):
+        if not hasattr(self, "undo_action"):
+            return
+        active = self.editor is not None and self.stack.currentWidget() is self.editor
+        self.undo_action.setEnabled(active and self.project_history.can_undo())
+        self.redo_action.setEnabled(active and self.project_history.can_redo())
+
+    def undo_project(self):
+        project = self.current_project()
+        if not project or self.editor is None:
+            return
+        restored = self.project_history.undo(project)
+        if restored is not None:
+            template = TemplateRegistry.for_project(restored)
+            path = self.editor.project_path
+            if template:
+                self.open_editor(template, restored, path, reset_history=False)
+        self._sync_history_actions()
+
+    def redo_project(self):
+        if self.editor is None:
+            return
+        restored = self.project_history.redo()
+        if restored is not None:
+            template = TemplateRegistry.for_project(restored)
+            path = self.editor.project_path
+            if template:
+                self.open_editor(template, restored, path, reset_history=False)
+        self._sync_history_actions()
+
+    def archive_current_project(self):
+        project = self.current_project()
+        if project:
+            try:
+                self.project_archive.save(project)
+            except OSError:
+                pass
 
     def autosave_project(self):
         project = self.current_project()
         if project:
             try:
                 ProjectIO.save_project(AUTOSAVE_FILE, project)
+                self.project_archive.save(project)
+                self.project_archive.cleanup()
             except OSError:
                 pass
 
@@ -260,6 +353,7 @@ class MainWindow(QMainWindow):
             AUTOSAVE_FILE.unlink(missing_ok=True)
 
     def closeEvent(self, event):
+        self.archive_current_project()
         AUTOSAVE_FILE.unlink(missing_ok=True)
         super().closeEvent(event)
 

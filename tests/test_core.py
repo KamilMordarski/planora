@@ -4,13 +4,15 @@ import subprocess
 import tempfile
 import unittest
 import zipfile
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from app.config import UPDATE_URL
 from app.core.assignment_tools import (
     assigned_people_by_date,
+    archive_assignments,
+    assignment_rows_for_person,
     build_service_meetings_plan,
     extract_assignments,
     export_ics,
@@ -21,6 +23,9 @@ from app.core.assignment_tools import (
 )
 from app.core.people_roles import ALL_ROLES, eligible_people, normalize_profiles
 from app.core.project_io import DEFAULT_PEOPLE, ProjectIO
+from app.core.project_archive import ARCHIVE_ID_KEY, ProjectArchive
+from app.core.project_history import ProjectHistory
+from app.core.project_validation import validate_project
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
 from app.core.update_installer import (
@@ -570,6 +575,72 @@ class AssignmentToolsTests(unittest.TestCase):
         self.assertIn("20260616", calendar)
         self.assertIn("Jan Test", calendar)
         self.assertNotIn("Anna Test", calendar)
+
+    def test_archive_assignments_keep_project_title_and_filter_person(self):
+        project = TemplateRegistry.get("service_meetings").default_project
+        project["meetings"] = [meeting_row("14.06.2026", "17:15", "Sala", "Jan Test")]
+        rows = archive_assignments([{"archive_id": "a1", "title": "Czerwiec", "project": project}])
+
+        self.assertEqual(rows[0]["date"], "2026-06-14")
+        self.assertEqual(rows[0]["project_title"], "Czerwiec")
+        self.assertEqual(assignment_rows_for_person(rows, "jan test"), rows)
+
+
+class ProjectArchiveTests(unittest.TestCase):
+    def test_project_is_updated_in_one_archive_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = ProjectArchive(Path(directory))
+            project = TemplateRegistry.get("service_meetings").default_project
+            archive.save(project)
+            project["meetings"].append(meeting_row("2026-06-14", conductor="Jan Test"))
+            archive.save(project)
+
+            entries = archive.load_entries()
+
+        self.assertIn(ARCHIVE_ID_KEY, project)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["project"]["meetings"][0]["conductor"], "Jan Test")
+
+    def test_archive_removes_entries_older_than_90_days(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = ProjectArchive(Path(directory), retention_days=90)
+            project = TemplateRegistry.get("service_meetings").default_project
+            entry = archive.save(project)
+            entry["updated_at"] = (datetime(2026, 1, 1, tzinfo=UTC)).isoformat()
+            ProjectIO._write_json(Path(directory) / f"{entry['archive_id']}.json", entry)
+
+            removed = archive.cleanup(datetime(2026, 6, 14, tzinfo=UTC))
+
+        self.assertEqual(removed, 1)
+
+
+class ProjectHistoryTests(unittest.TestCase):
+    def test_undo_and_redo_restore_project_snapshots(self):
+        history = ProjectHistory()
+        project = {"template_id": "service_meetings", "title": "A"}
+        history.reset(project)
+        project["title"] = "B"
+        history.observe(project)
+        project["title"] = "C"
+
+        self.assertEqual(history.undo(project)["title"], "B")
+        self.assertEqual(history.undo({"template_id": "service_meetings", "title": "B"})["title"], "A")
+        self.assertEqual(history.redo()["title"], "B")
+
+
+class ProjectValidationTests(unittest.TestCase):
+    def test_validation_reports_missing_people_and_duplicate_duties(self):
+        project = TemplateRegistry.get("service_meetings").default_project
+        project["meetings"] = [
+            meeting_row("2026-06-14", conductor="Jan Test"),
+            meeting_row("2026-06-14", conductor="Jan Test"),
+            meeting_row("2026-06-21"),
+        ]
+
+        messages = [issue["message"] for issue in validate_project(project)]
+
+        self.assertTrue(any("nie ma prowadzącego" in message for message in messages))
+        self.assertTrue(any("2 obowiązki" in message for message in messages))
 
 
 class ProjectIOTests(unittest.TestCase):

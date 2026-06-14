@@ -26,6 +26,7 @@ from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
+from app.gui.export_validation import confirm_export
 from app.gui.responsive import configure_editable_combo, configure_form
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
@@ -580,6 +581,8 @@ class CleaningAttendantsEditor(QWidget):
             self.save_project()
 
     def _export(self, kind: str):
+        if not confirm_export(self, self.project):
+            return
         default_name = "Sprzatanie-i-porzadkowi.jpg" if kind == "jpg" else "Sprzatanie-i-porzadkowi.pdf"
         file_filter = "JPG (*.jpg)" if kind == "jpg" else "PDF (*.pdf)"
         path, _ = QFileDialog.getSaveFileName(self, "Eksport grafiku", default_name, file_filter)

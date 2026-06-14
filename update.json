@@ -1,14 +1,15 @@
 {
-  "latest_version": "1.10.0",
+  "latest_version": "1.11.0",
   "release_date": "2026-06-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.10.0/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.11.0/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.10.0/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.10.0/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.11.0/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.11.0/Planora-macOS.zip"
   },
   "notes": [
-    "Dodano tworzenie terminów bezpośrednio z wypełnionego formularza",
-    "Dodano tryb nowego formularza, który nie zmienia istniejącego wpisu",
-    "Uspójniono szybkie dodawanie w czterech generatorach"
+    "Dodano centralny kalendarz wszystkich ostatnio edytowanych projektów",
+    "Dodano statystyki równego podziału i indywidualny plan osoby",
+    "Dodano kontrolę przed eksportem oraz cofanie i ponawianie zmian",
+    "Dodano lokalne archiwum projektów usuwane automatycznie po 90 dniach"
   ]
 }

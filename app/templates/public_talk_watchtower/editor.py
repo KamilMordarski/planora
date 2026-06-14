@@ -23,6 +23,7 @@ from app.config import USER_DATA_DIR
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
+from app.gui.export_validation import confirm_export
 from app.gui.responsive import configure_editable_combo, configure_form
 
 
@@ -385,6 +386,8 @@ class PublicTalkWatchtowerEditor(QWidget):
 
     def _export(self, kind: str):
         self.update_current()
+        if not confirm_export(self, self.project):
+            return
         default_name = "Wyklady.jpg" if kind == "jpg" else "Wyklady.pdf"
         file_filter = "JPG (*.jpg)" if kind == "jpg" else "PDF (*.pdf)"
         path, _ = QFileDialog.getSaveFileName(self, "Eksport grafiku", default_name, file_filter)

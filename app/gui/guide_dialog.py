@@ -81,7 +81,7 @@ class GuideDialog(QDialog):
             "Asystent układania grafików",
             "Na ekranie głównym wybierz „Asystent planowania”. Ustaw zakres dat, dni tygodnia, dostępne osoby "
             "oraz zasady. Planora przygotuje propozycję zbiórek bez dwóch kolejnych przydziałów tej samej osoby "
-            "i z możliwie równym podziałem obowiązków. Uwzględnia też zajęte osoby z aktualnie otwartego projektu.",
+            "i z możliwie równym podziałem obowiązków. Uwzględnia też zajęte osoby z lokalnego archiwum projektów.",
         ),
         (
             "Automatyczne terminy",
@@ -97,6 +97,16 @@ class GuideDialog(QDialog):
             "Kalendarz i przydziały osoby",
             "Zakładka „Kalendarz i przydziały” eksportuje cały projekt albo obowiązki wybranej osoby do ICS, "
             "który obsługują Google Calendar, Outlook i Kalendarz Apple. Przydziały jednej osoby można też zapisać do TXT.",
+        ),
+        (
+            "Centrum projektów",
+            "Centrum projektów łączy obowiązki ze wszystkich ostatnio edytowanych grafików. Pokazuje centralny kalendarz, "
+            "kolizje między projektami, statystyki równego podziału oraz indywidualny plan wybranej osoby.",
+        ),
+        (
+            "Cofanie i ponawianie",
+            "Użyj Ctrl+Z, aby cofnąć zmianę, oraz Ctrl+Y lub Ctrl+Shift+Z, aby ją ponowić. Polecenia są też dostępne "
+            "w menu „Edycja”. Planora grupuje szybko wpisywany tekst w czytelne kroki historii.",
         ),
     ]
 
@@ -151,6 +161,16 @@ class GuideDialog(QDialog):
             "Automatyczny zapis i odzyskiwanie",
             "Podczas edycji Planora tworzy lokalną kopię awaryjną co 20 sekund. Po nieprawidłowym zamknięciu "
             "zaproponuje odzyskanie ostatniego projektu. Zwykły zapis projektu nadal tworzy właściwy plik JSON.",
+        ),
+        (
+            "Lokalne archiwum projektów",
+            "Każdy edytowany projekt jest również automatycznie aktualizowany w lokalnym archiwum Planory. "
+            "Archiwum zasila centralny kalendarz i statystyki, nie zastępuje własnych plików JSON i jest usuwane po 90 dniach.",
+        ),
+        (
+            "Kontrola przed eksportem",
+            "Przed utworzeniem PDF lub JPG Planora sprawdza puste daty, brakujące osoby i podwójne przydziały. "
+            "Możesz wrócić do edycji albo świadomie kontynuować eksport mimo ostrzeżeń.",
         ),
         (
             "Prywatność danych",

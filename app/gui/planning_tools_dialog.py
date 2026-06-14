@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
@@ -39,13 +40,14 @@ from app.gui.responsive import configure_form
 
 
 class PlanningToolsDialog(QDialog):
-    def __init__(self, people, profiles, current_project, create_project, project_changed, parent=None):
+    def __init__(self, people, profiles, current_project, create_project, project_changed, archived_projects=None, parent=None):
         super().__init__(parent)
         self.people = list(people)
         self.profiles = dict(profiles)
         self.current_project = current_project
         self.create_project = create_project
         self.project_changed = project_changed
+        self.archived_projects = archived_projects
         self.setWindowTitle("Asystent i narzędzia planowania")
         self.resize(900, 720)
 
@@ -261,7 +263,12 @@ class PlanningToolsDialog(QDialog):
     def generate_plan(self):
         dates = self._selected_dates(self.assistant_start, self.assistant_end, self.assistant_weekdays)
         project = TemplateRegistry.get("service_meetings").default_project
-        blocked = assigned_people_by_date(self._project())
+        blocked = defaultdict(set)
+        for entry in self.archived_projects() if callable(self.archived_projects) else []:
+            for date_value, people in assigned_people_by_date(entry.get("project")).items():
+                blocked[date_value].update(people)
+        for date_value, people in assigned_people_by_date(self._project()).items():
+            blocked[date_value].update(people)
         project["meetings"] = build_service_meetings_plan(
             project,
             dates,
@@ -271,7 +278,7 @@ class PlanningToolsDialog(QDialog):
             self.assistant_place.text(),
             self.balance_assignments.isChecked(),
             self.avoid_consecutive.isChecked(),
-            blocked,
+            dict(blocked),
         )
         if dates and not project["meetings"]:
             QMessageBox.warning(self, "Brak uprawnionych osób", "Przypisz przynajmniej jednej osobie rolę prowadzenia zbiórki.")
@@ -282,7 +289,7 @@ class PlanningToolsDialog(QDialog):
                 self,
                 "Terminy wymagające decyzji",
                 f"Pozostawiono bez prowadzącego: {missing}. W tych dniach wszystkie dostępne osoby mają już obowiązek "
-                "w aktualnie otwartym projekcie.",
+                "w ostatnio edytowanych projektach.",
             )
         self.create_project(project)
         self.accept()

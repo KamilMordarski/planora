@@ -32,10 +32,17 @@ POLISH_MONTHS = {
 
 
 def parse_date(value) -> date | None:
+    text = str(value or "").strip()
     try:
-        return date.fromisoformat(str(value))
+        return date.fromisoformat(text)
     except (TypeError, ValueError):
-        return None
+        pass
+    for date_format in ("%d.%m.%Y", "%m/%d/%Y", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(text, date_format).date()
+        except ValueError:
+            continue
+    return None
 
 
 def generate_recurring_dates(start: date, end: date, weekdays: set[int]) -> list[date]:
@@ -113,6 +120,22 @@ def person_assignments(project: dict, person: str) -> list[dict]:
     return [item for item in extract_assignments(project) if item["person"].casefold() == target]
 
 
+def archive_assignments(entries: list[dict]) -> list[dict]:
+    result = []
+    for entry in entries:
+        for assignment in extract_assignments(entry.get("project", {})):
+            enriched = dict(assignment)
+            enriched["archive_id"] = entry.get("archive_id", "")
+            enriched["project_title"] = entry.get("title") or entry.get("template_name") or assignment["template_id"]
+            result.append(enriched)
+    return result
+
+
+def assignment_rows_for_person(assignments: list[dict], person: str) -> list[dict]:
+    target = person.casefold().strip()
+    return [item for item in assignments if item.get("person", "").casefold() == target]
+
+
 def assigned_people_by_date(project: dict | None) -> dict[str, set[str]]:
     result = defaultdict(set)
     for item in extract_assignments(project or {}):
@@ -121,11 +144,17 @@ def assigned_people_by_date(project: dict | None) -> dict[str, set[str]]:
 
 
 def export_person_assignments(path: Path, project: dict, person: str):
-    rows = person_assignments(project, person)
-    lines = [f"Przydziały: {person}", ""]
+    export_assignment_rows_text(path, person_assignments(project, person), person)
+
+
+def export_assignment_rows_text(path: Path, rows: list[dict], person: str = ""):
+    heading = f"Przydziały: {person}" if person else "Przydziały"
+    rows = sorted(rows, key=lambda item: (iso_or_text_date(item.get("date")), item.get("role", "")))
+    lines = [heading, ""]
     for row in rows:
-        suffix = f" — {row['details']}" if row["details"] else ""
-        lines.append(f"{row['date']} — {row['role']}{suffix}")
+        suffix = f" — {row['details']}" if row.get("details") else ""
+        project = f" [{row['project_title']}]" if row.get("project_title") else ""
+        lines.append(f"{row['date']} — {row['role']}{suffix}{project}")
     if not rows:
         lines.append("Brak przydziałów.")
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -137,6 +166,10 @@ def _ics_escape(value) -> str:
 
 def export_ics(path: Path, project: dict, person: str = ""):
     assignments = person_assignments(project, person) if person else extract_assignments(project)
+    export_assignment_rows_ics(path, assignments)
+
+
+def export_assignment_rows_ics(path: Path, assignments: list[dict]):
     lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Planora//PL", "CALSCALE:GREGORIAN"]
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     for index, item in enumerate(assignments):
@@ -151,7 +184,7 @@ def export_ics(path: Path, project: dict, person: str = ""):
                 f"DTSTAMP:{stamp}",
                 f"DTSTART;VALUE=DATE:{day}",
                 f"SUMMARY:{_ics_escape(item['role'])}",
-                f"DESCRIPTION:{_ics_escape(item['person'] + (' — ' + item['details'] if item['details'] else ''))}",
+                f"DESCRIPTION:{_ics_escape(item['person'] + (' — ' + item['details'] if item.get('details') else '') + (' [' + item['project_title'] + ']' if item.get('project_title') else ''))}",
                 "END:VEVENT",
             ]
         )
