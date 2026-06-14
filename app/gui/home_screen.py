@@ -18,6 +18,7 @@ class HomeScreen(QWidget):
         check_updates: Callable,
         open_settings: Callable,
         open_guide: Callable,
+        open_planning_tools: Callable,
     ):
         super().__init__()
         outer = QVBoxLayout(self)
@@ -97,7 +98,8 @@ class HomeScreen(QWidget):
         root.addWidget(section)
         cards = ResponsiveCardGrid(min_column_width=280, max_columns=3)
         items = [
-            ("Biblioteka osób", "Wspólna lista uczestników dla wszystkich generatorów.", edit_people),
+            ("Biblioteka osób i role", "Wspólna lista uczestników oraz ich uprawnienia.", edit_people),
+            ("Asystent planowania", "Automatyczne daty, przydziały, masowa edycja i kalendarz.", open_planning_tools),
             ("Sprawdź aktualizacje", "Sprawdź, czy dostępna jest nowsza wersja aplikacji.", check_updates),
             ("Poradnik", "Poznaj cały proces tworzenia i eksportowania grafików.", open_guide),
         ]

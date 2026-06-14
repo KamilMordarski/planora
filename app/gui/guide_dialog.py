@@ -18,8 +18,8 @@ class GuideDialog(QDialog):
     QUICK_START = [
         (
             "1. Przygotuj bibliotekę osób",
-            "Otwórz „Bibliotekę osób”. Dodaj nazwiska ręcznie albo użyj przycisku „Importuj listę JSON”. "
-            "Ta sama lista jest dostępna we wszystkich generatorach.",
+            "Otwórz „Bibliotekę osób i role”. Dodaj nazwiska ręcznie albo użyj przycisku „Importuj listę JSON”. "
+            "Zaznacz, kto może prowadzić zbiórkę, obsługiwać konsolę, mikrofony i wykonywać inne zadania.",
         ),
         (
             "2. Utwórz pusty projekt",
@@ -63,6 +63,35 @@ class GuideDialog(QDialog):
             "Porządkowanie listy",
             "Użyj wyszukiwarki, aby szybko znaleźć osobę. Zaznacz wpis, zmień nazwisko albo usuń "
             "je z biblioteki. Usunięcie nie zmienia już zapisanych projektów.",
+        ),
+        (
+            "Role i uprawnienia",
+            "Zaznacz osobę, a następnie jej role. Odpowiednie generatory i Asystent planowania podpowiadają "
+            "wyłącznie pasujących kandydatów. Nadal możesz ręcznie wpisać inną osobę w wyjątkowej sytuacji.",
+        ),
+    ]
+
+    PLANNING = [
+        (
+            "Asystent układania grafików",
+            "Na ekranie głównym wybierz „Asystent planowania”. Ustaw zakres dat, dni tygodnia, dostępne osoby "
+            "oraz zasady. Planora przygotuje propozycję zbiórek bez dwóch kolejnych przydziałów tej samej osoby "
+            "i z możliwie równym podziałem obowiązków. Uwzględnia też zajęte osoby z aktualnie otwartego projektu.",
+        ),
+        (
+            "Automatyczne terminy",
+            "Zaznacz dowolną kombinację dni tygodnia, na przykład wszystkie środy, soboty i niedziele. "
+            "Asystent wygeneruje odpowiadające im daty z wybranego zakresu.",
+        ),
+        (
+            "Masowa edycja",
+            "Otwórz projekt, uruchom Asystenta planowania i przejdź do zakładki „Masowa edycja”. "
+            "Zaznacz konkretne terminy, aby wspólnie przesunąć ich daty albo ustawić godzinę i miejsce.",
+        ),
+        (
+            "Kalendarz i przydziały osoby",
+            "Zakładka „Kalendarz i przydziały” eksportuje cały projekt albo obowiązki wybranej osoby do ICS, "
+            "który obsługują Google Calendar, Outlook i Kalendarz Apple. Przydziały jednej osoby można też zapisać do TXT.",
         ),
     ]
 
@@ -114,6 +143,11 @@ class GuideDialog(QDialog):
             "strony PDF i osobne pliki JPG oznaczone numerem strony.",
         ),
         (
+            "Automatyczny zapis i odzyskiwanie",
+            "Podczas edycji Planora tworzy lokalną kopię awaryjną co 20 sekund. Po nieprawidłowym zamknięciu "
+            "zaproponuje odzyskanie ostatniego projektu. Zwykły zapis projektu nadal tworzy właściwy plik JSON.",
+        ),
+        (
             "Prywatność danych",
             "Biblioteka osób, projekty i ustawienia pozostają na Twoim urządzeniu. Do internetu "
             "wysyłane jest jedynie zapytanie o dostępność aktualizacji.",
@@ -159,6 +193,7 @@ class GuideDialog(QDialog):
         tabs = QTabWidget()
         tabs.addTab(self._cards_tab(self.QUICK_START, "Najkrótsza droga od pustego projektu do eksportu."), "Start")
         tabs.addTab(self._cards_tab(self.PEOPLE, "Jedna lista nazwisk dla całej aplikacji."), "Lista osób")
+        tabs.addTab(self._cards_tab(self.PLANNING, "Szybsze przygotowanie wielu terminów i przydziałów."), "Planowanie")
         tabs.addTab(self._cards_tab(self.GENERATORS, "Każdy generator prowadzi przez własne kroki."), "Generatory")
         tabs.addTab(self._cards_tab(self.FILES, "Co zapisywać i który format wybrać."), "Pliki i eksport")
         tabs.addTab(
@@ -185,7 +220,7 @@ class GuideDialog(QDialog):
         layout.addWidget(subtitle)
 
         facts = QHBoxLayout()
-        for text in ("5 generatorów", "PDF i JPG", "Lokalne dane", "Aktualizacje online"):
+        for text in ("5 generatorów", "Role i asystent", "PDF, JPG i ICS", "Lokalne dane"):
             label = QLabel(text)
             label.setObjectName("guideBadge")
             label.setAlignment(Qt.AlignCenter)

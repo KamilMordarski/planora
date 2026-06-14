@@ -2,56 +2,68 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QSplitter,
     QVBoxLayout,
+    QWidget,
 )
 
 from app.config import USER_DATA_DIR
+from app.core.people_roles import ALL_ROLES, ROLE_OPTIONS, normalize_profiles
 from app.core.project_io import ProjectIO
 
 
 class PeopleDialog(QDialog):
-    def __init__(self, people: list[str], parent=None):
+    def __init__(self, people: list[str], profiles: dict | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Biblioteka osób")
-        self.resize(560, 640)
+        self.resize(920, 680)
         self.people = list(people)
+        self.profiles = normalize_profiles(self.people, profiles)
+        self.role_checks: dict[str, QCheckBox] = {}
+        self._loading_roles = False
 
         layout = QVBoxLayout(self)
         title = QLabel("Biblioteka osób")
         title.setObjectName("screenTitle")
-        subtitle = QLabel("Jedna lista nazwisk używana przez wszystkie generatory.")
+        subtitle = QLabel("Jedna lista nazwisk i uprawnień używana przez wszystkie generatory oraz asystenta.")
         subtitle.setObjectName("screenSubtitle")
         layout.addWidget(title)
         layout.addWidget(subtitle)
 
+        splitter = QSplitter(Qt.Horizontal)
+        people_panel = QWidget()
+        people_layout = QVBoxLayout(people_panel)
         self.search = QLineEdit()
         self.search.setPlaceholderText("Szukaj osoby…")
         self.search.setClearButtonEnabled(True)
-        layout.addWidget(self.search)
+        people_layout.addWidget(self.search)
 
         tools = QHBoxLayout()
         import_json = QPushButton("Importuj listę JSON")
         import_json.setToolTip("Dodaje nowe osoby z pliku JSON bez usuwania obecnej listy.")
         tools.addWidget(import_json)
         tools.addStretch()
-        layout.addLayout(tools)
+        people_layout.addLayout(tools)
 
         self.list_widget = QListWidget()
         self.list_widget.addItems(self.people)
-        layout.addWidget(self.list_widget)
+        people_layout.addWidget(self.list_widget)
 
         self.input = QLineEdit()
         self.input.setPlaceholderText("Imię i nazwisko")
-        layout.addWidget(self.input)
+        people_layout.addWidget(self.input)
         row = QHBoxLayout()
         add = QPushButton("Dodaj osobę")
         add.setObjectName("primaryButton")
@@ -60,13 +72,45 @@ class PeopleDialog(QDialog):
         delete.setObjectName("dangerButton")
         for widget in (add, edit, delete):
             row.addWidget(widget)
-        layout.addLayout(row)
+        people_layout.addLayout(row)
 
         count = QLabel()
         count.setObjectName("screenSubtitle")
         count.setAlignment(Qt.AlignRight)
-        layout.addWidget(count)
+        people_layout.addWidget(count)
         self.count = count
+        splitter.addWidget(people_panel)
+
+        roles_group = QGroupBox("Role i uprawnienia wybranej osoby")
+        roles_layout = QVBoxLayout(roles_group)
+        roles_help = QLabel(
+            "Asystent układania wybiera tylko osoby z odpowiednim uprawnieniem. "
+            "Nowe oraz istniejące osoby mają początkowo zaznaczone wszystkie role."
+        )
+        roles_help.setObjectName("helpText")
+        roles_help.setWordWrap(True)
+        roles_layout.addWidget(roles_help)
+        role_actions = QHBoxLayout()
+        all_roles = QPushButton("Zaznacz wszystkie")
+        no_roles = QPushButton("Wyczyść")
+        role_actions.addWidget(all_roles)
+        role_actions.addWidget(no_roles)
+        roles_layout.addLayout(role_actions)
+        roles_scroll = QScrollArea()
+        roles_scroll.setWidgetResizable(True)
+        roles_content = QWidget()
+        roles_content_layout = QVBoxLayout(roles_content)
+        for role, label in ROLE_OPTIONS.items():
+            check = QCheckBox(label)
+            check.toggled.connect(self.update_selected_roles)
+            self.role_checks[role] = check
+            roles_content_layout.addWidget(check)
+        roles_content_layout.addStretch()
+        roles_scroll.setWidget(roles_content)
+        roles_layout.addWidget(roles_scroll, 1)
+        splitter.addWidget(roles_group)
+        splitter.setSizes([430, 470])
+        layout.addWidget(splitter, 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         layout.addWidget(buttons)
@@ -76,10 +120,14 @@ class PeopleDialog(QDialog):
         add.clicked.connect(self.add_person)
         edit.clicked.connect(self.edit_person)
         delete.clicked.connect(self.delete_person)
-        self.list_widget.currentTextChanged.connect(self.input.setText)
+        self.list_widget.currentTextChanged.connect(self.select_person)
+        all_roles.clicked.connect(lambda: self.set_selected_roles(ALL_ROLES))
+        no_roles.clicked.connect(lambda: self.set_selected_roles(()))
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         self.update_count()
+        if self.people:
+            self.list_widget.setCurrentRow(0)
 
     def import_json(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -95,6 +143,7 @@ class PeopleDialog(QDialog):
         except ValueError as exc:
             QMessageBox.warning(self, "Nie można zaimportować listy", str(exc))
             return
+        self.profiles = normalize_profiles(self.people, self.profiles)
         self.refresh_list()
         QMessageBox.information(
             self,
@@ -122,10 +171,12 @@ class PeopleDialog(QDialog):
         name = self.input.text().strip()
         if name and name not in self.people:
             self.people.append(name)
+            self.profiles[name] = list(ALL_ROLES)
             self.list_widget.addItem(name)
             self.input.clear()
             self.search.clear()
             self.update_count()
+            self.list_widget.setCurrentRow(self.list_widget.count() - 1)
 
     def edit_person(self):
         row = self.list_widget.currentRow()
@@ -134,6 +185,7 @@ class PeopleDialog(QDialog):
             old_name = self.list_widget.item(row).text()
             source_index = self.people.index(old_name)
             self.people[source_index] = name
+            self.profiles[name] = self.profiles.pop(old_name, list(ALL_ROLES))
             self.list_widget.item(row).setText(name)
 
     def delete_person(self):
@@ -141,5 +193,30 @@ class PeopleDialog(QDialog):
         if row >= 0:
             name = self.list_widget.item(row).text()
             self.people.remove(name)
+            self.profiles.pop(name, None)
             self.list_widget.takeItem(row)
             self.update_count()
+
+    def select_person(self, name):
+        self.input.setText(name)
+        self._loading_roles = True
+        selected = set(self.profiles.get(name, ALL_ROLES))
+        for role, check in self.role_checks.items():
+            check.setChecked(role in selected)
+            check.setEnabled(bool(name))
+        self._loading_roles = False
+
+    def update_selected_roles(self, *_args):
+        if self._loading_roles:
+            return
+        name = self.list_widget.currentItem().text() if self.list_widget.currentItem() else ""
+        if name:
+            self.profiles[name] = [role for role, check in self.role_checks.items() if check.isChecked()]
+
+    def set_selected_roles(self, roles):
+        self._loading_roles = True
+        selected = set(roles)
+        for role, check in self.role_checks.items():
+            check.setChecked(role in selected)
+        self._loading_roles = False
+        self.update_selected_roles()

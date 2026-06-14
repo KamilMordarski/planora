@@ -4,10 +4,21 @@ import subprocess
 import tempfile
 import unittest
 import zipfile
+from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from app.config import UPDATE_URL
+from app.core.assignment_tools import (
+    assigned_people_by_date,
+    build_service_meetings_plan,
+    export_ics,
+    export_person_assignments,
+    generate_recurring_dates,
+    person_assignments,
+    shift_project_dates,
+)
+from app.core.people_roles import ALL_ROLES, eligible_people, normalize_profiles
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
 from app.core.updater import UpdateChecker, UpdateCheckError
@@ -451,6 +462,115 @@ class CleaningAttendantsConflictTests(unittest.TestCase):
         self.assertIn("porządkowy sala", conflicts[0]["roles"])
 
 
+class PeopleRoleTests(unittest.TestCase):
+    def test_legacy_people_receive_all_roles(self):
+        profiles = normalize_profiles(["Jan Test"], {})
+
+        self.assertEqual(set(profiles["Jan Test"]), set(ALL_ROLES))
+
+    def test_eligible_people_respect_assigned_role(self):
+        people = ["Anna", "Jan", "Piotr"]
+        profiles = {
+            "Anna": ["console"],
+            "Jan": ["service_conductor"],
+            "Piotr": [],
+        }
+
+        self.assertEqual(eligible_people(people, profiles, "service_conductor"), ["Jan"])
+        self.assertEqual(eligible_people(people, profiles, "console"), ["Anna"])
+
+
+class AssignmentToolsTests(unittest.TestCase):
+    def test_recurring_dates_can_generate_selected_weekdays(self):
+        dates = generate_recurring_dates(date(2026, 6, 1), date(2026, 6, 14), {2, 5, 6})
+
+        self.assertEqual(
+            dates,
+            [
+                date(2026, 6, 3),
+                date(2026, 6, 6),
+                date(2026, 6, 7),
+                date(2026, 6, 10),
+                date(2026, 6, 13),
+                date(2026, 6, 14),
+            ],
+        )
+
+    def test_assistant_uses_only_conductors_and_balances_assignments(self):
+        people = ["Anna", "Jan", "Piotr"]
+        profiles = {
+            "Anna": ["service_conductor"],
+            "Jan": ["service_conductor"],
+            "Piotr": ["console"],
+        }
+        project = TemplateRegistry.get("service_meetings").default_project
+        rows = build_service_meetings_plan(
+            project,
+            [date(2026, 6, day) for day in (2, 4, 6, 9, 11)],
+            people,
+            profiles,
+            "17:15",
+            "Sala",
+        )
+        assigned = [row["conductor"] for row in rows]
+
+        self.assertNotIn("Piotr", assigned)
+        self.assertNotEqual(assigned[0], assigned[1])
+        self.assertLessEqual(abs(assigned.count("Anna") - assigned.count("Jan")), 1)
+
+    def test_assistant_avoids_people_busy_in_open_project(self):
+        current = TemplateRegistry.get("cleaning_attendants").default_project
+        current["attendant_assignments"] = [attendant_row("2026-06-14", hall_attendant="Jan")]
+        blocked = assigned_people_by_date(current)
+        project = TemplateRegistry.get("service_meetings").default_project
+
+        rows = build_service_meetings_plan(
+            project,
+            [date(2026, 6, 14)],
+            ["Jan", "Anna"],
+            {"Jan": ["service_conductor"], "Anna": ["service_conductor"]},
+            "17:15",
+            "Sala",
+            blocked_people_by_date=blocked,
+        )
+
+        self.assertEqual(rows[0]["conductor"], "Anna")
+
+    def test_dates_can_be_shifted_in_bulk(self):
+        project = TemplateRegistry.get("cleaning_attendants").default_project
+        project["weekly_assignments"] = [weekly_row("2026-06-10", "2026-06-14")]
+        project["attendant_assignments"] = [attendant_row("2026-06-14")]
+
+        changed = shift_project_dates(project, 7)
+
+        self.assertEqual(changed, 3)
+        self.assertEqual(project["weekly_assignments"][0]["start_date"], "2026-06-17")
+        self.assertEqual(project["attendant_assignments"][0]["date"], "2026-06-21")
+
+    def test_person_assignments_export_to_text_and_calendar(self):
+        project = TemplateRegistry.get("service_meetings").default_project
+        project["meetings"] = [
+            meeting_row("2026-06-16", "17:15", "Sala Królestwa", "Jan Test"),
+            meeting_row("2026-06-18", "17:15", "Zoom", "Anna Test"),
+        ]
+
+        self.assertEqual(len(person_assignments(project, "Jan Test")), 1)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            text_path = root / "jan.txt"
+            calendar_path = root / "jan.ics"
+            export_person_assignments(text_path, project, "Jan Test")
+            export_ics(calendar_path, project, "Jan Test")
+
+            text = text_path.read_text(encoding="utf-8")
+            calendar = calendar_path.read_text(encoding="utf-8")
+
+        self.assertIn("Prowadzenie zbiórki", text)
+        self.assertIn("20260616", calendar)
+        self.assertIn("Jan Test", calendar)
+        self.assertNotIn("Anna Test", calendar)
+
+
 class ProjectIOTests(unittest.TestCase):
     def test_people_json_import_merges_and_skips_duplicates(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -469,6 +589,17 @@ class ProjectIOTests(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 ProjectIO.import_people(path)
+
+    def test_people_profiles_are_migrated_and_saved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            roles_path = Path(directory) / "people-roles.json"
+            with patch("app.core.project_io.PEOPLE_ROLES_FILE", roles_path):
+                profiles = ProjectIO.load_people_profiles(["Jan Test"])
+                profiles["Jan Test"] = ["console"]
+                ProjectIO.save_people_profiles(profiles)
+                loaded = ProjectIO.load_people_profiles(["Jan Test"])
+
+        self.assertEqual(loaded["Jan Test"], ["console"])
 
     def test_legacy_project_gets_default_template_id(self):
         with tempfile.TemporaryDirectory() as directory:

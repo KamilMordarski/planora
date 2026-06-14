@@ -3,7 +3,8 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from app.config import LEGACY_DATA_DIR, LEGACY_USER_DATA_DIR, PEOPLE_FILE, SETTINGS_FILE, UPDATE_URL, USER_DATA_DIR
+from app.config import LEGACY_DATA_DIR, LEGACY_USER_DATA_DIR, PEOPLE_FILE, PEOPLE_ROLES_FILE, SETTINGS_FILE, UPDATE_URL, USER_DATA_DIR
+from app.core.people_roles import normalize_profiles
 
 
 DEFAULT_PEOPLE = [
@@ -73,7 +74,13 @@ class ProjectIO:
     @staticmethod
     def _write_json(path: Path, value: Any):
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary = path.with_suffix(path.suffix + ".tmp")
+        try:
+            temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+            temporary.replace(path)
+        except OSError:
+            temporary.unlink(missing_ok=True)
+            raise
 
     @staticmethod
     def load_project(path: Path) -> dict:
@@ -106,6 +113,21 @@ class ProjectIO:
     @staticmethod
     def save_people(people: list[str]):
         ProjectIO._write_json(PEOPLE_FILE, people)
+
+    @staticmethod
+    def load_people_profiles(people: list[str] | None = None) -> dict[str, list[str]]:
+        people = list(people if people is not None else ProjectIO.load_people())
+        try:
+            value = ProjectIO._read_json(PEOPLE_ROLES_FILE)
+        except ValueError:
+            value = {}
+        profiles = normalize_profiles(people, value)
+        ProjectIO.save_people_profiles(profiles)
+        return profiles
+
+    @staticmethod
+    def save_people_profiles(profiles: dict[str, list[str]]):
+        ProjectIO._write_json(PEOPLE_ROLES_FILE, profiles)
 
     @staticmethod
     def import_people(path: Path, current_people: list[str] | None = None) -> tuple[list[str], int]:

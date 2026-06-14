@@ -56,6 +56,23 @@ zawiera duży podgląd dokumentu z dopasowaniem strony oraz kontrolą powiększe
 Kafelki, formularze i układ ekranów dopasowują się do szerokości okna.
 Nowe projekty nie zawierają przykładowych dat, osób ani przydziałów.
 
+## Asystent planowania i role
+
+Biblioteka osób przechowuje role i uprawnienia, między innymi prowadzenie zbiórek,
+obsługę konsoli, mikrofonów, służbę porządkową i udział w programie. Generatory
+podpowiadają kandydatów pasujących do danego zadania, a pola pozostają edytowalne
+w razie wyjątkowego przydziału.
+
+Centralny Asystent planowania generuje wybrane dni tygodnia z zakresu dat,
+tworzy propozycję zbiórek z równym podziałem obowiązków i unika tej samej osoby
+dwa razy z rzędu. Uwzględnia obowiązki z aktualnie otwartego projektu i nie
+tworzy przydziału osobie zajętej tego samego dnia. Pozwala też zaznaczyć kilka terminów do wspólnej zmiany,
+wyeksportować kalendarz ICS dla Google Calendar, Outlooka i Kalendarza Apple
+oraz zapisać listę przydziałów konkretnej osoby.
+
+Podczas edycji aktywny projekt jest automatycznie zapisywany co 20 sekund.
+Po nieprawidłowym zamknięciu Planora proponuje odzyskanie kopii awaryjnej.
+
 ## Uruchomienie
 
 ```bash
