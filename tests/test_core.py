@@ -22,6 +22,7 @@ from app.core.assignment_tools import (
     shift_project_dates,
 )
 from app.core.people_roles import ALL_ROLES, eligible_people, normalize_profiles
+from app.core.group_tools import group_leaders_from_project, latest_group_leaders, normalize_group_name
 from app.core.project_io import DEFAULT_PEOPLE, ProjectIO
 from app.core.project_archive import ARCHIVE_ID_KEY, ProjectArchive
 from app.core.project_history import ProjectHistory
@@ -40,6 +41,7 @@ from app.core.update_installer import (
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
 from app.templates.field_service_groups.default_project import ROLE_MEMBER, group, member
+from app.templates.field_service_groups.default_project import ROLE_LEADER
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section
 from app.templates.midweek_meeting.renderer import numbered_program_title
 from app.templates.service_meetings.default_project import meeting_row
@@ -484,6 +486,41 @@ class PeopleRoleTests(unittest.TestCase):
 
         self.assertEqual(eligible_people(people, profiles, "service_conductor"), ["Jan"])
         self.assertEqual(eligible_people(people, profiles, "console"), ["Anna"])
+
+
+class GroupToolsTests(unittest.TestCase):
+    def test_roman_and_numeric_group_names_match(self):
+        self.assertEqual(normalize_group_name("I"), "1")
+        self.assertEqual(normalize_group_name("GRUPA I"), "1")
+        self.assertEqual(normalize_group_name("Grupa 1"), "1")
+
+    def test_group_leader_is_read_from_latest_field_service_groups_project(self):
+        older = TemplateRegistry.get("field_service_groups").default_project
+        older["groups"][0]["members"] = [member("Starszy Grupowy", ROLE_LEADER)]
+        latest = TemplateRegistry.get("field_service_groups").default_project
+        latest["groups"][0]["members"] = [member("Aktualny Grupowy", ROLE_LEADER)]
+
+        leaders, names = latest_group_leaders(
+            [
+                {"project": {"template_id": "cleaning_attendants"}},
+                {"project": latest},
+                {"project": older},
+            ]
+        )
+
+        self.assertEqual(leaders["1"], "Aktualny Grupowy")
+        self.assertEqual(names[0], "GRUPA 1")
+
+    def test_custom_group_name_and_leader_are_preserved(self):
+        project = {
+            "template_id": "field_service_groups",
+            "groups": [group("Północ", [member("Jan Test", ROLE_LEADER)])],
+        }
+
+        leaders, names = group_leaders_from_project(project)
+
+        self.assertEqual(leaders["północ"], "Jan Test")
+        self.assertEqual(names, ["Północ"])
 
 
 class AssignmentToolsTests(unittest.TestCase):

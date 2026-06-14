@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.11.1",
+  "latest_version": "1.11.2",
   "release_date": "2026-06-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.11.1/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.11.2/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.11.1/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.11.1/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.11.2/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.11.2/Planora-macOS.zip"
   },
   "notes": [
-    "Dodano eksport biblioteki osób wraz z uprawnieniami",
-    "Import biblioteki odtwarza przypisane role i pomija duplikaty",
-    "Zachowano obsługę starszych plików zawierających tylko listę nazwisk"
+    "Grupowy jest automatycznie przypisywany do sprzątania po wyborze grupy",
+    "Nazwy grup rzymskie, liczbowe i własne są poprawnie rozpoznawane",
+    "Automatyczne przypisanie korzysta z najnowszego planu grup służby"
   ]
 }

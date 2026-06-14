@@ -125,7 +125,8 @@ class GuideDialog(QDialog):
         (
             "Sprzątanie, nagłośnienie i porządkowi",
             "Dodaj zakresy tygodniowe i konkretne daty służby porządkowej. Panel kolizji ostrzega, "
-            "gdy ta sama osoba ma kilka obowiązków tego samego dnia.",
+            "gdy ta sama osoba ma kilka obowiązków tego samego dnia. Po wybraniu grupy Planora automatycznie "
+            "ustawia jej grupowego jako osobę odpowiedzialną za sprzątanie, korzystając z ostatniego planu grup służby.",
         ),
         (
             "Plan zebrań w tygodniu",

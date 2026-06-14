@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.config import USER_DATA_DIR
+from app.core.group_tools import normalize_group_name
 from app.core.project_io import ProjectIO
 from app.gui.document_preview import DocumentPreview
 from app.gui.editor_wizard import EditorWizard, page_layout
@@ -55,6 +56,7 @@ class CleaningAttendantsEditor(QWidget):
         self.weekly_index = -1
         self.attendant_index = -1
         self.person_fields: list[QComboBox] = []
+        self.group_leaders: dict[str, str] = {}
         self._build_ui(go_back, edit_people)
         self.refresh_weekly_list(0)
         self.refresh_attendant_list(0)
@@ -233,6 +235,7 @@ class CleaningAttendantsEditor(QWidget):
         down.clicked.connect(lambda: self.move_weekly(1))
         for field in (self.start_date, self.end_date):
             field.dateChanged.connect(self.update_weekly)
+        self.group.currentTextChanged.connect(self.assign_group_leader)
         for field in (self.group, self.cleaning_person, self.console_person, self.microphone_1, self.microphone_2):
             field.currentTextChanged.connect(self.update_weekly)
         return tab
@@ -420,6 +423,27 @@ class CleaningAttendantsEditor(QWidget):
             self.microphone_2.currentText(),
         )
 
+    def set_group_leaders(self, leaders: dict[str, str], group_names: list[str] | None = None):
+        self.group_leaders = dict(leaders)
+        existing = {self.group.itemText(index).casefold() for index in range(self.group.count())}
+        existing_keys = {normalize_group_name(self.group.itemText(index)) for index in range(self.group.count())}
+        current = self.group.currentText()
+        self.group.blockSignals(True)
+        for name in group_names or []:
+            if name.casefold() not in existing and normalize_group_name(name) not in existing_keys:
+                self.group.addItem(name)
+                existing.add(name.casefold())
+                existing_keys.add(normalize_group_name(name))
+        self.group.setCurrentText(current)
+        self.group.blockSignals(False)
+        if self.weekly_index < 0 and not self.cleaning_person.currentText():
+            self.assign_group_leader(current)
+
+    def assign_group_leader(self, group_name: str):
+        leader = self.group_leaders.get(normalize_group_name(group_name), "")
+        if leader:
+            self.cleaning_person.setCurrentText(leader)
+
     def _attendant_from_form(self):
         return attendant_row(
             self._iso_date(self.meeting_date),
@@ -459,6 +483,7 @@ class CleaningAttendantsEditor(QWidget):
             field.setCurrentText("")
         for field in fields:
             field.blockSignals(False)
+        self.assign_group_leader(self.group.currentText())
         self.start_date.setFocus()
 
     def delete_weekly(self):

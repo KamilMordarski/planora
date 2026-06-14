@@ -26,6 +26,8 @@ Obecnie dostępne szablony:
 Szablon sprzątania i porządkowych porównuje zakresy tygodniowe z konkretnymi
 datami zebrań. Ostrzega, gdy ta sama osoba ma danego dnia więcej niż jeden
 obowiązek, na przykład konsolę Zoom oraz służbę porządkowego.
+Po wybraniu grupy automatycznie przypisuje jej grupowego do sprzątania,
+korzystając z ostatniego planu grup służby zapisanego w lokalnym archiwum.
 
 Szablon zebrań w tygodniu umożliwia dodawanie własnych sekcji i punktów,
 przypisywanie uczestników z biblioteki osób oraz umieszczanie wydarzeń

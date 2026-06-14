@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBo
 
 from app.config import APP_ICON, AUTOSAVE_FILE, UPDATE_DIR, UPDATE_URL, USER_DATA_DIR
 from app.core.app_info import APP_NAME, APP_VERSION
+from app.core.group_tools import latest_group_leaders
 from app.core.people_roles import ROLE_OPTIONS, eligible_people
 from app.core.project_archive import ProjectArchive
 from app.core.project_history import ProjectHistory
@@ -166,6 +167,9 @@ class MainWindow(QMainWindow):
         )
         self.stack.addWidget(self.editor)
         self._apply_role_filters(template.id)
+        if template.id == "cleaning_attendants":
+            leaders, group_names = latest_group_leaders(self.project_archive.load_entries())
+            self.editor.set_group_leaders(leaders, group_names)
         self.stack.setCurrentWidgetAnimated(self.editor)
         self._sync_history_actions()
 
