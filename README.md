@@ -47,8 +47,8 @@ otwarcie generatora zawsze przywraca ten sam aktualny plan.
 
 ## Personalizacja interfejsu
 
-W ustawieniach aplikacji można wybrać jeden z pięciu motywów, ustawić własny
-kolor akcentu, zmienić skalę i gęstość interfejsu, kształt kontrolek, szybkość
+W ustawieniach aplikacji można wybrać jeden z 12 gotowych jasnych lub ciemnych
+motywów, zmienić skalę i gęstość interfejsu, kształt kontrolek, szybkość
 animacji oraz zachowanie dźwięków i logo startowego. Przyciski, nawigacja,
 dodawanie, usuwanie, zapis i eksport mają własne subtelne efekty. Ustawienia
 interfejsu nie wpływają na wygląd eksportowanych plików.

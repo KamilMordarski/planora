@@ -1,14 +1,14 @@
 {
-  "latest_version": "1.13.3",
+  "latest_version": "1.13.4",
   "release_date": "2026-06-15",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.3/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.4/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.3/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.3/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.4/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.4/Planora-macOS.zip"
   },
   "notes": [
-    "Sprzątanie sali, modlitwy i prowadzenie zbiórki nie wywołują już kolizji",
-    "Naprawiono odświeżanie wybranych projektów w Centrum projektów",
-    "Usunięto niedziałającego Asystenta planowania z aplikacji i dokumentacji"
+    "Dodano siedem jasnych i pięć ciemnych gotowych motywów interfejsu",
+    "Dopracowano czytelność menu, tabel, kalendarza i suwaków w trybie ciemnym",
+    "Usunięto wybór własnego koloru akcentu z ustawień aplikacji"
   ]
 }

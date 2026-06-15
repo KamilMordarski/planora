@@ -23,7 +23,6 @@ DEFAULT_SETTINGS = {
     "update_url": UPDATE_URL,
     "check_updates_on_start": False,
     "theme": "ocean",
-    "accent_color": "",
     "font_scale": 100,
     "interface_density": "comfortable",
     "corner_style": "rounded",
@@ -209,10 +208,13 @@ class ProjectIO:
         settings = dict(DEFAULT_SETTINGS)
         if isinstance(value, dict):
             settings.update(value)
+        settings.pop("accent_color", None)
         settings["update_url"] = UPDATE_URL
         ProjectIO.save_settings(settings)
         return settings
 
     @staticmethod
     def save_settings(settings: dict):
-        ProjectIO._write_json(SETTINGS_FILE, settings)
+        saved = dict(settings)
+        saved.pop("accent_color", None)
+        ProjectIO._write_json(SETTINGS_FILE, saved)

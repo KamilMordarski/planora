@@ -224,8 +224,8 @@ class GuideDialog(QDialog):
     SETTINGS_AND_HELP = [
         (
             "Personalizacja",
-            "W ustawieniach zmienisz motyw, kolor akcentu, skalę tekstu, gęstość interfejsu i "
-            "kształt kontrolek. Eksportowane pliki zachowują swój ustalony wygląd.",
+            "W ustawieniach wybierzesz jeden z 12 gotowych jasnych lub ciemnych motywów oraz zmienisz "
+            "skalę tekstu, gęstość interfejsu i kształt kontrolek. Eksportowane pliki zachowują swój ustalony wygląd.",
         ),
         (
             "Animacje i dźwięki",

@@ -82,22 +82,124 @@ THEMES = {
         "#382d21",
         "#80705f",
         "#e5d9c8",
-        "#b0672d",
+        "#a85e27",
         "#925322",
         "#ffffff",
         "#b64040",
         "#39795b",
     ),
+    "porcelain": Theme(
+        "Porcelanowy",
+        "#f3f5f7",
+        "#ffffff",
+        "#f8f9fa",
+        "#20262e",
+        "#68717d",
+        "#d9dee4",
+        "#526579",
+        "#3f5266",
+        "#ffffff",
+        "#bd3d45",
+        "#2d7c5d",
+    ),
+    "lavender": Theme(
+        "Lawendowy",
+        "#f1f1fb",
+        "#ffffff",
+        "#f7f7fd",
+        "#25253d",
+        "#6c6b87",
+        "#dadaec",
+        "#6261a8",
+        "#4e4d91",
+        "#ffffff",
+        "#bd4052",
+        "#347b62",
+    ),
+    "mint": Theme(
+        "Miętowy",
+        "#edf7f5",
+        "#ffffff",
+        "#f5faf9",
+        "#17332f",
+        "#607c77",
+        "#cfe3df",
+        "#247b70",
+        "#19675e",
+        "#ffffff",
+        "#b83e48",
+        "#26795b",
+    ),
+    "midnight": Theme(
+        "Nocny granat",
+        "#0f1724",
+        "#172235",
+        "#1e2c42",
+        "#edf4ff",
+        "#9eb0c7",
+        "#30415a",
+        "#65a9e8",
+        "#87bced",
+        "#0e1825",
+        "#ff7b83",
+        "#66d1a4",
+    ),
+    "dark_forest": Theme(
+        "Leśny",
+        "#101b18",
+        "#182823",
+        "#20342d",
+        "#edf8f3",
+        "#a3bdb2",
+        "#345247",
+        "#62bc96",
+        "#82cbaa",
+        "#102018",
+        "#ff7d82",
+        "#70d5a4",
+    ),
+    "dark_plum": Theme(
+        "Śliwkowy",
+        "#1c1520",
+        "#2a2030",
+        "#35293c",
+        "#f7eff9",
+        "#c2adc8",
+        "#4d3b55",
+        "#c58bd3",
+        "#d5a6df",
+        "#211626",
+        "#ff7d8e",
+        "#70d2a6",
+    ),
+    "espresso": Theme(
+        "Espresso",
+        "#1d1815",
+        "#2a231f",
+        "#362d27",
+        "#f7f1eb",
+        "#c1afa1",
+        "#514238",
+        "#d49a68",
+        "#e0ad80",
+        "#211914",
+        "#ff817d",
+        "#76d19f",
+    ),
 }
+
+LIGHT_THEME_KEYS = {"ocean", "forest", "plum", "sand", "porcelain", "lavender", "mint"}
 
 
 def theme_options():
-    return [(key, value.name) for key, value in THEMES.items()]
+    light = [(key, f"Jasny · {value.name}") for key, value in THEMES.items() if key in LIGHT_THEME_KEYS]
+    dark = [(key, f"Ciemny · {value.name}") for key, value in THEMES.items() if key not in LIGHT_THEME_KEYS]
+    return light + dark
 
 
 def build_stylesheet(settings: dict) -> str:
     theme = THEMES.get(settings.get("theme"), THEMES["ocean"])
-    accent = settings.get("accent_color") or theme.accent
+    accent = theme.accent
     scale = max(80, min(140, int(settings.get("font_scale", 100)))) / 100
     density = {
         "compact": 0.78,
@@ -149,6 +251,20 @@ def build_stylesheet(settings: dict) -> str:
             color: {theme.text};
             border: 1px solid {theme.border};
             padding: 6px;
+        }}
+        QMenu, QMenuBar {{
+            background: {theme.surface};
+            color: {theme.text};
+            border: 1px solid {theme.border};
+        }}
+        QMenuBar::item:selected, QMenu::item:selected {{
+            background: {accent};
+            color: {theme.accent_text};
+        }}
+        QMenu::separator {{
+            background: {theme.border};
+            height: 1px;
+            margin: 4px 8px;
         }}
         QLabel, QCheckBox, QRadioButton {{
             background-color: transparent;
@@ -278,6 +394,33 @@ def build_stylesheet(settings: dict) -> str:
             margin: 3px;
             min-height: {px(22)}px;
         }}
+        QHeaderView::section {{
+            background: {theme.surface_alt};
+            color: {theme.text};
+            border: none;
+            border-right: 1px solid {theme.border};
+            border-bottom: 1px solid {theme.border};
+            padding: {space(px(6))}px;
+            font-weight: 700;
+        }}
+        QTableCornerButton::section {{
+            background: {theme.surface_alt};
+            border: 1px solid {theme.border};
+        }}
+        QCalendarWidget QWidget {{
+            alternate-background-color: {theme.surface_alt};
+        }}
+        QCalendarWidget QAbstractItemView:enabled {{
+            background: {theme.surface};
+            color: {theme.text};
+            selection-background-color: {accent};
+            selection-color: {theme.accent_text};
+        }}
+        QCalendarWidget QToolButton {{
+            background: transparent;
+            color: {theme.text};
+            border: none;
+        }}
         QTabWidget::pane {{
             background: {theme.surface};
             border: 1px solid {theme.border};
@@ -318,6 +461,33 @@ def build_stylesheet(settings: dict) -> str:
         QCheckBox::indicator {{
             width: {px(17)}px;
             height: {px(17)}px;
+        }}
+        QSlider::groove:horizontal {{
+            background: {theme.border};
+            height: 5px;
+            border-radius: 2px;
+        }}
+        QSlider::sub-page:horizontal {{
+            background: {accent};
+            border-radius: 2px;
+        }}
+        QSlider::handle:horizontal {{
+            background: {theme.surface};
+            border: 2px solid {accent};
+            width: 16px;
+            margin: -6px 0;
+            border-radius: 8px;
+        }}
+        QProgressBar {{
+            background: {theme.surface_alt};
+            color: {theme.text};
+            border: 1px solid {theme.border};
+            border-radius: {radius}px;
+            text-align: center;
+        }}
+        QProgressBar::chunk {{
+            background: {accent};
+            border-radius: {radius}px;
         }}
         QGroupBox {{
             background-color: {theme.surface};

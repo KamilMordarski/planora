@@ -1,9 +1,7 @@
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QColor
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QCheckBox,
-    QColorDialog,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -22,7 +20,7 @@ from PySide6.QtWidgets import (
 
 from app.config import UPDATE_URL, USER_DATA_DIR
 from app.gui.responsive import configure_form
-from app.gui.theme_manager import THEMES, theme_options
+from app.gui.theme_manager import theme_options
 from app.gui.ui_feedback import UiFeedback
 
 
@@ -64,15 +62,11 @@ class SettingsDialog(QDialog):
         index = self.theme.findData(settings.get("theme", "ocean"))
         self.theme.setCurrentIndex(max(0, index))
 
-        self.accent_color = QLineEdit(settings.get("accent_color", ""))
-        self.accent_color.setPlaceholderText("Domyślny kolor motywu")
-        choose_color = QPushButton("Wybierz kolor")
-        choose_color.clicked.connect(self.choose_accent)
-        color_row = QHBoxLayout()
-        color_row.addWidget(self.accent_color)
-        color_row.addWidget(choose_color)
-        form.addRow("Gotowy motyw:", self.theme)
-        form.addRow("Własny kolor akcentu:", color_row)
+        theme_help = QLabel("Gotowe motywy mają dobrane kolory tekstu, tła i akcentów dla dobrej czytelności.")
+        theme_help.setObjectName("helpText")
+        theme_help.setWordWrap(True)
+        form.addRow("Motyw interfejsu:", self.theme)
+        form.addRow("", theme_help)
         layout.addWidget(theme_group)
 
         font_group = QGroupBox("Rozmiar interfejsu")
@@ -200,19 +194,9 @@ class SettingsDialog(QDialog):
         layout.addStretch()
         return tab
 
-    def choose_accent(self):
-        fallback = THEMES.get(self.theme.currentData(), THEMES["ocean"]).accent
-        color = QColorDialog.getColor(QColor(self.accent_color.text() or fallback), self, "Wybierz kolor akcentu")
-        if color.isValid():
-            self.accent_color.setText(color.name())
-
     def values(self) -> dict:
-        accent = self.accent_color.text().strip()
-        if accent and not QColor(accent).isValid():
-            accent = ""
         return {
             "theme": self.theme.currentData(),
-            "accent_color": accent,
             "font_scale": self.font_scale.value(),
             "interface_density": self.interface_density.currentData(),
             "corner_style": self.corner_style.currentData(),

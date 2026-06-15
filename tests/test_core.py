@@ -56,7 +56,7 @@ from app.templates.field_service_groups.default_project import ROLE_LEADER
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section
 from app.templates.midweek_meeting.renderer import numbered_program_title
 from app.templates.service_meetings.default_project import meeting_row
-from app.gui.theme_manager import THEMES, build_stylesheet
+from app.gui.theme_manager import THEMES, build_stylesheet, theme_options
 from app.gui.ui_feedback import UiFeedback
 from app.gui.project_transfer_dialog import _available_path
 from tools.update_download_catalog import update_catalog
@@ -315,11 +315,35 @@ class WindowsVersionInfoTests(unittest.TestCase):
 
 
 class ThemeTests(unittest.TestCase):
-    def test_multiple_themes_and_custom_accent_are_available(self):
-        self.assertGreaterEqual(len(THEMES), 5)
+    @staticmethod
+    def _contrast(first: str, second: str) -> float:
+        def luminance(color: str) -> float:
+            channels = [int(color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+            red, green, blue = [
+                value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+                for value in channels
+            ]
+            return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+        lighter, darker = sorted((luminance(first), luminance(second)), reverse=True)
+        return (lighter + 0.05) / (darker + 0.05)
+
+    def test_light_and_dark_themes_ignore_custom_accent(self):
+        self.assertGreaterEqual(len(THEMES), 12)
+        labels = [label for _key, label in theme_options()]
+        self.assertGreaterEqual(sum(label.startswith("Jasny") for label in labels), 5)
+        self.assertGreaterEqual(sum(label.startswith("Ciemny") for label in labels), 5)
         stylesheet = build_stylesheet({"theme": "graphite", "accent_color": "#123456", "font_scale": 120})
-        self.assertIn("#123456", stylesheet)
+        self.assertNotIn("#123456", stylesheet)
+        self.assertIn(THEMES["graphite"].accent, stylesheet)
         self.assertIn("QPushButton", stylesheet)
+
+    def test_all_themes_have_readable_contrast(self):
+        for key, theme in THEMES.items():
+            with self.subTest(theme=key):
+                self.assertGreaterEqual(self._contrast(theme.text, theme.background), 4.5)
+                self.assertGreaterEqual(self._contrast(theme.text, theme.surface), 4.5)
+                self.assertGreaterEqual(self._contrast(theme.accent_text, theme.accent), 4.5)
 
     def test_density_and_corner_settings_change_stylesheet(self):
         stylesheet = build_stylesheet(
@@ -853,6 +877,24 @@ class ProjectValidationTests(unittest.TestCase):
 
 
 class ProjectIOTests(unittest.TestCase):
+    def test_legacy_custom_accent_is_removed_from_settings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            settings_path = Path(directory) / "settings.json"
+            settings_path.write_text(
+                json.dumps({"theme": "graphite", "accent_color": "#123456"}),
+                encoding="utf-8",
+            )
+            with (
+                patch("app.core.project_io.SETTINGS_FILE", settings_path),
+                patch.object(ProjectIO, "ensure_user_data"),
+            ):
+                settings = ProjectIO.load_settings()
+                saved = json.loads(settings_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(settings["theme"], "graphite")
+        self.assertNotIn("accent_color", settings)
+        self.assertNotIn("accent_color", saved)
+
     def test_people_library_is_not_bundled_with_application(self):
         root = Path(__file__).resolve().parents[1]
 
