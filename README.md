@@ -88,6 +88,12 @@ Bibliotekę osób można wyeksportować do jednego pliku JSON zawierającego naz
 i przypisane role oraz możliwe przydziały. Ponowny import takiego pliku odtwarza profil i pomija
 duplikaty. Role są wyróżnione na liście, którą można filtrować po roli i możliwym
 przydziale. Starsze pliki będące prostą listą nazwisk nadal są obsługiwane.
+Możliwe przydziały obejmują między innymi lektora i wspólną kategorię punktów
+ćwiczebnych. Osoba sprzątająca jest pobierana z planu grup i nie wymaga osobnego uprawnienia.
+
+Ekran **Import i eksport grafików** pozwala przenosić wiele edytowalnych projektów
+JSON między komputerami i folderami. Pełna dokumentacja jest dostępna na stronie
+[Planora Docs](https://kamilmordarski.github.io/planora-docs/).
 
 Centralny Asystent planowania generuje wybrane dni tygodnia z zakresu dat,
 tworzy propozycję zbiórek z równym podziałem obowiązków i unika tej samej osoby

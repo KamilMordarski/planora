@@ -1,11 +1,20 @@
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtWidgets import QBoxLayout, QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
 from app.config import APP_ICON
-from app.core.app_info import APP_AUTHOR, APP_AUTHOR_URL, APP_DISCLAIMER, APP_NAME, APP_TAGLINE, APP_VERSION, LAST_UPDATE
+from app.core.app_info import (
+    APP_AUTHOR,
+    APP_AUTHOR_URL,
+    APP_DISCLAIMER,
+    APP_DOCS_URL,
+    APP_NAME,
+    APP_TAGLINE,
+    APP_VERSION,
+    LAST_UPDATE,
+)
 from app.gui.responsive import ResponsiveCardGrid
 
 
@@ -20,6 +29,7 @@ class HomeScreen(QWidget):
         open_guide: Callable,
         open_planning_tools: Callable,
         open_project_center: Callable,
+        open_project_transfer: Callable,
     ):
         super().__init__()
         outer = QVBoxLayout(self)
@@ -119,6 +129,11 @@ class HomeScreen(QWidget):
         cards = ResponsiveCardGrid(min_column_width=280, max_columns=3)
         items = [
             ("Biblioteka osób i role", "Wspólna lista uczestników, ról i możliwych przydziałów.", edit_people),
+            (
+                "Import i eksport grafików",
+                "Przenoś edytowalne projekty JSON między komputerami i folderami.",
+                open_project_transfer,
+            ),
             ("Asystent planowania", "Automatyczne daty, przydziały, masowa edycja i kalendarz.", open_planning_tools),
             (
                 "Centrum projektów",
@@ -127,6 +142,11 @@ class HomeScreen(QWidget):
             ),
             ("Sprawdź aktualizacje", "Sprawdź, czy dostępna jest nowsza wersja aplikacji.", check_updates),
             ("Poradnik", "Poznaj cały proces tworzenia i eksportowania grafików.", open_guide),
+            (
+                "Dokumentacja online",
+                "Pełny opis funkcji, generatorów i aktualnych sposobów pracy z Planorą.",
+                lambda: QDesktopServices.openUrl(QUrl(APP_DOCS_URL)),
+            ),
         ]
         for index, (title, description, callback) in enumerate(items):
             card = QFrame()
@@ -149,6 +169,7 @@ class HomeScreen(QWidget):
 
         footer = QLabel(
             f'Autor: <a href="{APP_AUTHOR_URL}">{APP_AUTHOR}</a>'
+            f'  •  <a href="{APP_DOCS_URL}">Dokumentacja</a>'
             f"  •  Ostatnia aktualizacja: {LAST_UPDATE}"
         )
         footer.setObjectName("appInfo")

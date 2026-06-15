@@ -24,7 +24,7 @@ from app.core.assignment_tools import (
     shift_project_dates,
     upcoming_assignments,
 )
-from app.core.people_roles import ALL_PERMISSIONS, eligible_people, normalize_profile, normalize_profiles
+from app.core.people_roles import ASSIGNMENT_OPTIONS, ALL_PERMISSIONS, eligible_people, normalize_profile, normalize_profiles
 from app.core.group_tools import group_leaders_from_project, latest_group_leaders, normalize_group_name
 from app.core.group_plan_store import GroupPlanStore
 from app.core.project_io import DEFAULT_PEOPLE, ProjectIO
@@ -59,6 +59,7 @@ from app.templates.midweek_meeting.renderer import numbered_program_title
 from app.templates.service_meetings.default_project import meeting_row
 from app.gui.theme_manager import THEMES, build_stylesheet
 from app.gui.ui_feedback import UiFeedback
+from app.gui.project_transfer_dialog import _available_path
 from tools.update_download_catalog import update_catalog
 from tools.generate_windows_version_info import render_version_info, version_tuple
 
@@ -502,6 +503,11 @@ class PeopleRoleTests(unittest.TestCase):
         self.assertEqual(eligible_people(people, profiles, "reader"), [])
         self.assertIn("prayer", ALL_PERMISSIONS)
 
+    def test_permission_labels_are_simple_and_cleaning_comes_from_group(self):
+        self.assertEqual(ASSIGNMENT_OPTIONS["reader"], "Lektor")
+        self.assertEqual(ASSIGNMENT_OPTIONS["training_part"], "Punkty ćwiczebne")
+        self.assertNotIn("cleaning", ASSIGNMENT_OPTIONS)
+
     def test_auxiliary_pioneer_role_expires_automatically(self):
         active = normalize_profile(
             {"roles": ["auxiliary_pioneer"], "auxiliary_pioneer_until": "2026-07-31"},
@@ -797,6 +803,14 @@ class ProjectStorageTests(unittest.TestCase):
     def test_recovery_and_saved_projects_use_separate_directories(self):
         self.assertEqual(AUTOSAVE_FILE.parent, RECOVERY_DIR)
         self.assertNotEqual(AUTOSAVE_FILE.parent, PROJECTS_DIR)
+
+    def test_project_transfer_does_not_overwrite_existing_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "grafik.json").write_text("{}", encoding="utf-8")
+            (root / "grafik-2.json").write_text("{}", encoding="utf-8")
+
+            self.assertEqual(_available_path(root, "grafik.json"), root / "grafik-3.json")
 
 
 class ProjectHistoryTests(unittest.TestCase):

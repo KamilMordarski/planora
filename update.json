@@ -1,15 +1,15 @@
 {
-  "latest_version": "1.13.1",
+  "latest_version": "1.13.2",
   "release_date": "2026-06-15",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.1/Planora-Windows.zip",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.2/Planora-Windows.zip",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.1/Planora-Windows.zip",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.1/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.2/Planora-Windows.zip",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.2/Planora-macOS.zip"
   },
   "notes": [
-    "Oddzielono kopie awaryjne od zapisanych projektów i analiz",
-    "Dodano wybór projektów przed otwarciem Asystenta i Centrum projektów",
-    "Dodano wyróżnianie ról oraz filtry w Bibliotece osób",
-    "Poprawiono wiarygodność kolizji, statystyk i podsumowań"
+    "Dodano centralny import i eksport wielu edytowalnych grafików JSON",
+    "Dodano linki do pełnej dokumentacji Planory w menu i poradniku",
+    "Uproszczono uprawnienia: Lektor i wspólne Punkty ćwiczebne",
+    "Usunięto osobne uprawnienie do sprzątania, które jest pobierane z planu grup"
   ]
 }

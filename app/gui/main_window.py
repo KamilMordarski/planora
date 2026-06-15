@@ -32,6 +32,7 @@ from app.gui.people_dialog import PeopleDialog
 from app.gui.planning_tools_dialog import PlanningToolsDialog
 from app.gui.project_center_dialog import ProjectCenterDialog
 from app.gui.project_selection_dialog import ProjectSelectionDialog
+from app.gui.project_transfer_dialog import ProjectTransferDialog
 from app.gui.schedule_type_screen import ScheduleTypeScreen
 from app.gui.settings_dialog import SettingsDialog
 from app.gui.animated_stack import AnimatedStackedWidget
@@ -71,6 +72,7 @@ class MainWindow(QMainWindow):
             self.open_guide,
             self.open_planning_tools,
             self.open_project_center,
+            self.open_project_transfer,
         )
         self.schedule_types = ScheduleTypeScreen(
             TemplateRegistry.all(),
@@ -216,7 +218,6 @@ class MainWindow(QMainWindow):
             combo.blockSignals(False)
 
         if template_id == "cleaning_attendants":
-            apply(self.editor.cleaning_person, "cleaning")
             apply(self.editor.console_person, "console")
             apply(self.editor.microphone_1, "microphone")
             apply(self.editor.microphone_2, "microphone")
@@ -250,6 +251,9 @@ class MainWindow(QMainWindow):
 
     def open_guide(self):
         GuideDialog(self).exec()
+
+    def open_project_transfer(self):
+        ProjectTransferDialog(self).exec()
 
     def open_planning_tools(self):
         entries = self.select_analysis_projects("użycia w Asystencie planowania")

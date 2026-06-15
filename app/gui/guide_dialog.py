@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.core.app_info import APP_DISCLAIMER, APP_NAME
+from app.core.app_info import APP_DISCLAIMER, APP_DOCS_URL, APP_NAME
 from app.core.wol_importer import JW_MEETINGS_BASE_URL
 
 
@@ -48,6 +48,11 @@ class GuideDialog(QDialog):
             "6. Zapisz i eksportuj",
             "Zapis projektu tworzy edytowalny plik JSON. Możesz od razu użyć przycisku „Drukuj”, "
             "wyeksportować PDF do późniejszego druku albo JPG do łatwego wysyłania gotowego planu.",
+        ),
+        (
+            "7. Przenieś kilka grafików",
+            "Na ekranie głównym otwórz „Import i eksport grafików”. Możesz zaimportować kilka edytowalnych "
+            "projektów JSON do biblioteki Planory albo wyeksportować zaznaczone projekty do innego folderu.",
         ),
     ]
 
@@ -115,7 +120,8 @@ class GuideDialog(QDialog):
             "Role i możliwe przydziały",
             "Role osoby obejmują starszego, sługę pomocniczego i rodzaje pionierów. Pionier pomocniczy może mieć "
             "datę końcową i wtedy rola wygaśnie automatycznie. Osobno zaznacz możliwe przydziały, dzięki którym "
-            "listy podpowiadają lektorów, prowadzących, konsolę, mikrofony, porządkowych, uczestników i modlitwy. "
+            "listy podpowiadają lektorów, prowadzących, konsolę, mikrofony, porządkowych, punkty ćwiczebne i modlitwy. "
+            "Osoba sprzątająca jest pobierana z grupy, dlatego nie wymaga osobnego uprawnienia. "
             "W wyjątkowej sytuacji możesz ręcznie wpisać inną osobę; taki przydział zostanie zachowany.",
         ),
     ]
@@ -256,6 +262,10 @@ class GuideDialog(QDialog):
             "Informacja o aplikacji",
             APP_DISCLAIMER,
         ),
+        (
+            "Dokumentacja online",
+            f"Pełna dokumentacja Planory jest dostępna pod adresem {APP_DOCS_URL}",
+        ),
     ]
 
     def __init__(self, parent=None):
@@ -296,6 +306,9 @@ class GuideDialog(QDialog):
         subtitle.setWordWrap(True)
         layout.addWidget(title)
         layout.addWidget(subtitle)
+        docs = QPushButton("Otwórz pełną dokumentację online")
+        docs.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(APP_DOCS_URL)))
+        layout.addWidget(docs)
 
         facts = QHBoxLayout()
         for text in ("5 generatorów", "Import z JW", "PDF, JPG i ICS", "Lokalne dane"):
