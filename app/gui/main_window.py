@@ -29,7 +29,6 @@ from app.core.update_installer import (
 from app.gui.home_screen import HomeScreen
 from app.gui.guide_dialog import GuideDialog
 from app.gui.people_dialog import PeopleDialog
-from app.gui.planning_tools_dialog import PlanningToolsDialog
 from app.gui.project_center_dialog import ProjectCenterDialog
 from app.gui.project_selection_dialog import ProjectSelectionDialog
 from app.gui.project_transfer_dialog import ProjectTransferDialog
@@ -70,7 +69,6 @@ class MainWindow(QMainWindow):
             self.check_updates,
             self.open_settings,
             self.open_guide,
-            self.open_planning_tools,
             self.open_project_center,
             self.open_project_transfer,
         )
@@ -254,20 +252,6 @@ class MainWindow(QMainWindow):
 
     def open_project_transfer(self):
         ProjectTransferDialog(self).exec()
-
-    def open_planning_tools(self):
-        entries = self.select_analysis_projects("użycia w Asystencie planowania")
-        if entries is None:
-            return
-        PlanningToolsDialog(
-            self.people,
-            self.people_profiles,
-            self.current_project,
-            self.open_generated_project,
-            self.refresh_editor_after_tools,
-            entries,
-            self,
-        ).exec()
 
     def open_project_center(self):
         entries = self.select_analysis_projects("otwarcia Centrum projektów")

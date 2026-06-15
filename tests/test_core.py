@@ -10,10 +10,9 @@ from unittest.mock import MagicMock, patch
 
 from app.config import AUTOSAVE_FILE, PROJECTS_DIR, RECOVERY_DIR, UPDATE_URL
 from app.core.assignment_tools import (
-    assigned_people_by_date,
+    assignment_causes_collision,
     archive_assignments,
     assignment_rows_for_person,
-    build_service_meetings_plan,
     extract_assignments,
     export_ics,
     export_person_assignments,
@@ -482,6 +481,17 @@ class CleaningAttendantsConflictTests(unittest.TestCase):
         self.assertIn("konsola Zoom", conflicts[0]["roles"])
         self.assertIn("porządkowy sala", conflicts[0]["roles"])
 
+    def test_cleaning_does_not_conflict_with_other_duties(self):
+        project = TemplateRegistry.get("cleaning_attendants").default_project
+        project["weekly_assignments"] = [
+            weekly_row("2026-06-10", "2026-06-14", cleaning_person="Jan Test"),
+        ]
+        project["attendant_assignments"] = [
+            attendant_row("2026-06-14", hall_attendant="Jan Test"),
+        ]
+
+        self.assertEqual(find_conflicts(project), [])
+
 
 class PeopleRoleTests(unittest.TestCase):
     def test_legacy_people_receive_all_roles(self):
@@ -632,6 +642,19 @@ class AssignmentToolsTests(unittest.TestCase):
         self.assertEqual(len(collisions), 1)
         self.assertIn("Konsola", message)
 
+    def test_prayers_cleaning_and_service_conductor_never_cause_collisions(self):
+        exempt = [
+            {"date": "2026-06-15", "person": "Jan Test", "role": "Sprzątanie sali"},
+            {"date": "2026-06-15", "person": "Jan Test", "role": "Modlitwa początkowa"},
+            {"date": "2026-06-15", "person": "Jan Test", "role": "Modlitwa końcowa"},
+            {"date": "2026-06-15", "person": "Jan Test", "role": "Prowadzenie zbiórki"},
+            {"date": "2026-06-15", "person": "Jan Test", "role": "Prowadzenie zbiórki do służby"},
+            {"date": "2026-06-15", "person": "Jan Test", "role": "Konsola / Zoom"},
+        ]
+
+        self.assertTrue(all(not assignment_causes_collision(row) for row in exempt[:5]))
+        self.assertEqual(global_assignment_collisions(exempt), [])
+
     def test_recurring_dates_can_generate_selected_weekdays(self):
         dates = generate_recurring_dates(date(2026, 6, 1), date(2026, 6, 14), {2, 5, 6})
 
@@ -646,46 +669,6 @@ class AssignmentToolsTests(unittest.TestCase):
                 date(2026, 6, 14),
             ],
         )
-
-    def test_assistant_uses_only_conductors_and_balances_assignments(self):
-        people = ["Anna", "Jan", "Piotr"]
-        profiles = {
-            "Anna": ["service_conductor"],
-            "Jan": ["service_conductor"],
-            "Piotr": ["console"],
-        }
-        project = TemplateRegistry.get("service_meetings").default_project
-        rows = build_service_meetings_plan(
-            project,
-            [date(2026, 6, day) for day in (2, 4, 6, 9, 11)],
-            people,
-            profiles,
-            "17:15",
-            "Sala",
-        )
-        assigned = [row["conductor"] for row in rows]
-
-        self.assertNotIn("Piotr", assigned)
-        self.assertNotEqual(assigned[0], assigned[1])
-        self.assertLessEqual(abs(assigned.count("Anna") - assigned.count("Jan")), 1)
-
-    def test_assistant_avoids_people_busy_in_open_project(self):
-        current = TemplateRegistry.get("cleaning_attendants").default_project
-        current["attendant_assignments"] = [attendant_row("2026-06-14", hall_attendant="Jan")]
-        blocked = assigned_people_by_date(current)
-        project = TemplateRegistry.get("service_meetings").default_project
-
-        rows = build_service_meetings_plan(
-            project,
-            [date(2026, 6, 14)],
-            ["Jan", "Anna"],
-            {"Jan": ["service_conductor"], "Anna": ["service_conductor"]},
-            "17:15",
-            "Sala",
-            blocked_people_by_date=blocked,
-        )
-
-        self.assertEqual(rows[0]["conductor"], "Anna")
 
     def test_midweek_standard_template_and_wol_parser(self):
         source = """
@@ -829,17 +812,44 @@ class ProjectHistoryTests(unittest.TestCase):
 
 class ProjectValidationTests(unittest.TestCase):
     def test_validation_reports_missing_people_and_duplicate_duties(self):
-        project = TemplateRegistry.get("service_meetings").default_project
-        project["meetings"] = [
-            meeting_row("2026-06-14", conductor="Jan Test"),
-            meeting_row("2026-06-14", conductor="Jan Test"),
+        service_project = TemplateRegistry.get("service_meetings").default_project
+        service_project["meetings"] = [
             meeting_row("2026-06-21"),
+        ]
+        cleaning_project = TemplateRegistry.get("cleaning_attendants").default_project
+        cleaning_project["weekly_assignments"] = [
+            weekly_row(
+                "2026-06-14",
+                "2026-06-14",
+                console_person="Jan Test",
+                microphone_1="Jan Test",
+            )
+        ]
+
+        messages = [
+            *(issue["message"] for issue in validate_project(service_project)),
+            *(issue["message"] for issue in validate_project(cleaning_project)),
+        ]
+
+        self.assertTrue(any("nie ma prowadzącego" in message for message in messages))
+        self.assertTrue(any("2 obowiązki" in message for message in messages))
+
+    def test_validation_ignores_exempt_collision_roles(self):
+        project = TemplateRegistry.get("midweek_meeting").default_project
+        project["meetings"] = [
+            {
+                "type": "normal",
+                "date": "2026-06-17",
+                "chairman": "Anna Test",
+                "opening_prayer": "Jan Test",
+                "closing_prayer": "Jan Test",
+                "sections": [],
+            }
         ]
 
         messages = [issue["message"] for issue in validate_project(project)]
 
-        self.assertTrue(any("nie ma prowadzącego" in message for message in messages))
-        self.assertTrue(any("2 obowiązki" in message for message in messages))
+        self.assertFalse(any("Jan Test ma 2 obowiązki" in message for message in messages))
 
 
 class ProjectIOTests(unittest.TestCase):

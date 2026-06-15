@@ -1,10 +1,6 @@
-from collections import Counter, defaultdict
+from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-
-from app.core.people_roles import eligible_people
-from app.templates.service_meetings.default_project import meeting_row
-
 
 POLISH_WEEKDAYS = {
     0: "Poniedziałek",
@@ -149,12 +145,21 @@ def upcoming_assignments(assignments: list[dict], start: date | None = None, day
     )
 
 
+def assignment_causes_collision(assignment: dict) -> bool:
+    role = str(assignment.get("role", "")).casefold().strip()
+    return not (
+        role == "sprzątanie sali"
+        or role.startswith("prowadzenie zbiórki")
+        or "modlitw" in role
+    )
+
+
 def global_assignment_collisions(assignments: list[dict]) -> list[dict]:
     grouped = defaultdict(list)
     for item in assignments:
         parsed = parse_date(item.get("date"))
         person = str(item.get("person", "")).strip()
-        if parsed and person:
+        if parsed and person and assignment_causes_collision(item):
             grouped[(parsed, person.casefold())].append(item)
     result = []
     for (duty_date, _person_key), rows in grouped.items():
@@ -180,13 +185,6 @@ def format_assignment_message(rows: list[dict], person: str) -> str:
         lines.append("Brak zaplanowanych przydziałów.")
     lines.extend(["", "Wiadomość wygenerowana w Planora."])
     return "\n".join(lines)
-
-
-def assigned_people_by_date(project: dict | None) -> dict[str, set[str]]:
-    result = defaultdict(set)
-    for item in extract_assignments(project or {}):
-        result[item["date"]].add(item["person"].casefold())
-    return dict(result)
 
 
 def export_person_assignments(path: Path, project: dict, person: str):
@@ -254,40 +252,3 @@ def shift_project_dates(project: dict, days: int) -> int:
             shift(row, "start_date")
             shift(row, "end_date")
     return changed
-
-
-def build_service_meetings_plan(
-    project: dict,
-    dates: list[date],
-    people: list[str],
-    profiles: dict,
-    time: str,
-    place: str,
-    balance_assignments: bool = True,
-    avoid_consecutive: bool = True,
-    blocked_people_by_date: dict[str, set[str]] | None = None,
-) -> list[dict]:
-    candidates = eligible_people(people, profiles, "service_conductor")
-    if not candidates:
-        return []
-    counts = Counter(item.get("conductor") for item in project.get("meetings", []) if item.get("conductor"))
-    previous = ""
-    rows = []
-    for index, duty_date in enumerate(dates):
-        blocked = (blocked_people_by_date or {}).get(duty_date.isoformat(), set())
-        available = [person for person in candidates if person.casefold() not in blocked]
-        if not available:
-            rows.append(meeting_row(duty_date.isoformat(), time, place, ""))
-            continue
-        if avoid_consecutive and len(candidates) > 1:
-            without_previous = [person for person in available if person != previous]
-            if without_previous:
-                available = without_previous
-        if balance_assignments:
-            selected = min(available, key=lambda person: (counts[person], person.casefold()))
-        else:
-            selected = available[index % len(available)]
-        counts[selected] += 1
-        previous = selected
-        rows.append(meeting_row(duty_date.isoformat(), time, place, selected))
-    return rows

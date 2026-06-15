@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 
 from app.config import USER_DATA_DIR
 from app.core.assignment_tools import (
+    assignment_causes_collision,
     archive_assignments,
     assignment_rows_for_person,
     export_assignment_rows_ics,
@@ -37,6 +38,8 @@ from app.core.assignment_tools import (
     parse_date,
     upcoming_assignments,
 )
+from app.core.project_archive import ProjectArchive
+from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
 from app.gui.printing import print_pages
 from app.gui.responsive import ResponsiveActionBar
@@ -76,8 +79,9 @@ class ProjectCenterDialog(QDialog):
         self.summary.setWordWrap(True)
         hero_text.addWidget(title)
         hero_text.addWidget(self.summary)
-        refresh = QPushButton("Przelicz dane")
-        refresh.clicked.connect(self.reload)
+        refresh = QPushButton("Odśwież wybrane pliki")
+        refresh.setToolTip("Ponownie odczytuje z dysku projekty wybrane przed otwarciem Centrum.")
+        refresh.clicked.connect(self.reload_from_files)
         hero_layout.addLayout(hero_text, 1)
         hero_layout.addWidget(refresh)
         root.addWidget(hero)
@@ -149,7 +153,8 @@ class ProjectCenterDialog(QDialog):
         layout = QVBoxLayout(tab)
         info = QLabel(
             "Kolizja oznacza, że ta sama osoba ma co najmniej dwa obowiązki tego samego dnia "
-            "w jednym lub kilku wybranych projektach."
+            "w jednym lub kilku wybranych projektach. Sprzątanie sali, modlitwy i prowadzenie zbiórki "
+            "nie są traktowane jako kolizje."
         )
         info.setObjectName("helpText")
         info.setWordWrap(True)
@@ -234,6 +239,25 @@ class ProjectCenterDialog(QDialog):
         self._refresh_collisions()
         self._refresh_batch_print()
 
+    def reload_from_files(self):
+        refreshed = []
+        updated = 0
+        for entry in self.entries:
+            source_path = str(entry.get("source_path", "")).strip()
+            if source_path:
+                try:
+                    path = Path(source_path)
+                    project = ProjectIO.load_project(path)
+                    refreshed.append(ProjectArchive.entry_for_project(project, path))
+                    updated += 1
+                    continue
+                except (OSError, ValueError):
+                    pass
+            refreshed.append(entry)
+        self.entries = refreshed
+        self.reload()
+        self.summary.setText(self.summary.text() + f" Ponownie odczytano z dysku: {updated}.")
+
     def _mark_calendar_dates(self):
         clear_format = QTextCharFormat()
         for value in self._marked_dates:
@@ -264,7 +288,11 @@ class ProjectCenterDialog(QDialog):
     def _refresh_calendar_rows(self):
         selected = self._selected_python_date()
         rows = [item for item in self.assignments if parse_date(item.get("date")) == selected]
-        counts = Counter(item.get("person", "").casefold() for item in rows)
+        counts = Counter(
+            item.get("person", "").casefold()
+            for item in rows
+            if assignment_causes_collision(item)
+        )
         collisions = sum(count > 1 for count in counts.values())
         self.day_heading.setText(
             f"{selected.strftime('%d.%m.%Y')} · obowiązki: {len(rows)} · kolizje między projektami: {collisions}"
@@ -280,7 +308,10 @@ class ProjectCenterDialog(QDialog):
             for column, value in enumerate(values):
                 item = QTableWidgetItem(str(value))
                 item.setData(Qt.UserRole, assignment.get("archive_id", ""))
-                if counts[assignment.get("person", "").casefold()] > 1:
+                if (
+                    assignment_causes_collision(assignment)
+                    and counts[assignment.get("person", "").casefold()] > 1
+                ):
                     item.setBackground(QColor("#f7d9d9"))
                 self.calendar_table.setItem(row_index, column, item)
 

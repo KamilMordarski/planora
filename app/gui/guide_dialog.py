@@ -128,32 +128,15 @@ class GuideDialog(QDialog):
 
     PLANNING = [
         (
-            "Asystent układania grafików",
-            "Na ekranie głównym wybierz „Asystent planowania”, a następnie wskaż projekty, które mają być sprawdzane "
-            "pod kątem zajętych osób. Ustaw zakres dat, dni tygodnia, dostępne osoby "
-            "oraz zasady. Planora przygotuje propozycję zbiórek bez dwóch kolejnych przydziałów tej samej osoby "
-            "i z możliwie równym podziałem obowiązków.",
-        ),
-        (
-            "Automatyczne terminy",
-            "Zaznacz dowolną kombinację dni tygodnia, na przykład wszystkie środy, soboty i niedziele. "
-            "Asystent wygeneruje odpowiadające im daty z wybranego zakresu.",
-        ),
-        (
-            "Masowa edycja",
-            "Otwórz projekt, uruchom Asystenta planowania i przejdź do zakładki „Masowa edycja”. "
-            "Zaznacz konkretne terminy, aby wspólnie przesunąć ich daty albo ustawić godzinę i miejsce.",
-        ),
-        (
-            "Kalendarz i przydziały osoby",
-            "Zakładka „Kalendarz i przydziały” eksportuje cały projekt albo obowiązki wybranej osoby do ICS, "
-            "który obsługują Google Calendar, Outlook i Kalendarz Apple. Przydziały jednej osoby można też zapisać do TXT.",
-        ),
-        (
             "Centrum projektów",
             "Przed otwarciem Centrum wybierasz zapisane projekty, które chcesz wspólnie sprawdzić. Centrum pokazuje centralny kalendarz, "
             "nadchodzące obowiązki, globalne kolizje, statystyki oraz indywidualny plan wybranej osoby. "
             "Możesz skopiować gotową wiadomość z przydziałami, otworzyć ją w programie pocztowym oraz drukować wiele planów naraz.",
+        ),
+        (
+            "Zasady kolizji",
+            "Sprzątanie sali, modlitwy i prowadzenie zbiórki do służby nie wywołują kolizji. "
+            "Pozostałe podwójne przydziały tej samej osoby w jednym dniu są oznaczane do sprawdzenia.",
         ),
         (
             "Cofanie i ponawianie",
@@ -171,7 +154,8 @@ class GuideDialog(QDialog):
         (
             "Sprzątanie, nagłośnienie i porządkowi",
             "Dodaj zakresy tygodniowe i konkretne daty służby porządkowej. Panel kolizji ostrzega, "
-            "gdy ta sama osoba ma kilka obowiązków tego samego dnia. Po wybraniu grupy Planora automatycznie "
+            "gdy ta sama osoba ma kilka kolidujących obowiązków tego samego dnia; samo sprzątanie nie wywołuje kolizji. "
+            "Po wybraniu grupy Planora automatycznie "
             "ustawia jej grupowego jako osobę odpowiedzialną za sprzątanie, korzystając z ostatniego planu grup służby.",
         ),
         (
@@ -217,11 +201,11 @@ class GuideDialog(QDialog):
             "Automatyczny zapis i odzyskiwanie",
             "Podczas edycji Planora tworzy lokalną kopię awaryjną co 20 sekund. Po nieprawidłowym zamknięciu "
             "zaproponuje odzyskanie ostatniego projektu. Kopie awaryjne są przechowywane osobno i nie trafiają "
-            "do Asystenta ani Centrum projektów.",
+            "do Centrum projektów.",
         ),
         (
             "Wybór projektów do analizy",
-            "Zapisane projekty trafiają domyślnie do osobnego katalogu „projects”. Przed otwarciem Asystenta lub Centrum "
+            "Zapisane projekty trafiają domyślnie do osobnego katalogu „projects”. Przed otwarciem Centrum "
             "wybierz konkretne pliki JSON albo świadomie dołącz aktualnie otwarty projekt. Dzięki temu stare i robocze wersje "
             "nie zniekształcają kolizji ani statystyk. Plan grup służby nadal ma osobny trwały zapis.",
         ),
@@ -281,7 +265,7 @@ class GuideDialog(QDialog):
         tabs.addTab(self._cards_tab(self.QUICK_START, "Najkrótsza droga od pustego projektu do eksportu."), "Start")
         tabs.addTab(self._jw_tab(), "Import z JW")
         tabs.addTab(self._cards_tab(self.PEOPLE, "Jedna lista nazwisk dla całej aplikacji."), "Lista osób")
-        tabs.addTab(self._cards_tab(self.PLANNING, "Szybsze przygotowanie wielu terminów i przydziałów."), "Planowanie")
+        tabs.addTab(self._cards_tab(self.PLANNING, "Wspólne sprawdzanie wybranych projektów."), "Centrum projektów")
         tabs.addTab(self._cards_tab(self.GENERATORS, "Każdy generator prowadzi przez własne kroki."), "Generatory")
         tabs.addTab(self._cards_tab(self.FILES, "Co zapisywać i który format wybrać."), "Pliki i eksport")
         tabs.addTab(

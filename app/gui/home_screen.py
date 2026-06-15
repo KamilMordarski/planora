@@ -27,7 +27,6 @@ class HomeScreen(QWidget):
         check_updates: Callable,
         open_settings: Callable,
         open_guide: Callable,
-        open_planning_tools: Callable,
         open_project_center: Callable,
         open_project_transfer: Callable,
     ):
@@ -134,7 +133,6 @@ class HomeScreen(QWidget):
                 "Przenoś edytowalne projekty JSON między komputerami i folderami.",
                 open_project_transfer,
             ),
-            ("Asystent planowania", "Automatyczne daty, przydziały, masowa edycja i kalendarz.", open_planning_tools),
             (
                 "Centrum projektów",
                 "Obowiązki, globalne kolizje, wiadomości, statystyki i drukowanie zbiorcze.",

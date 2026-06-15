@@ -73,7 +73,7 @@ Terminy można tworzyć bez dodawania pustego wpisu. Wystarczy uzupełnić formu
 i wybrać **Dodaj z formularza**. Przycisk **Nowy formularz** pozwala przygotować
 kolejny termin bez przypadkowego zmieniania wcześniej wybranego wpisu.
 
-## Asystent planowania i role
+## Biblioteka osób i role
 
 Biblioteka osób przechowuje osobno role zborowe oraz możliwe przydziały. Role
 obejmują starszego, sługę pomocniczego, pioniera specjalnego, stałego i
@@ -95,23 +95,19 @@ Ekran **Import i eksport grafików** pozwala przenosić wiele edytowalnych proje
 JSON między komputerami i folderami. Pełna dokumentacja jest dostępna na stronie
 [Planora Docs](https://kamilmordarski.github.io/planora-docs/).
 
-Centralny Asystent planowania generuje wybrane dni tygodnia z zakresu dat,
-tworzy propozycję zbiórek z równym podziałem obowiązków i unika tej samej osoby
-dwa razy z rzędu. Uwzględnia obowiązki z projektów wskazanych przez użytkownika i nie
-tworzy przydziału osobie zajętej tego samego dnia. Pozwala też zaznaczyć kilka terminów do wspólnej zmiany,
-wyeksportować kalendarz ICS dla Google Calendar, Outlooka i Kalendarza Apple
-oraz zapisać listę przydziałów konkretnej osoby.
-
 Podczas edycji aktywny projekt jest automatycznie zapisywany co 20 sekund w osobnym
 katalogu odzyskiwania. Po nieprawidłowym zamknięciu Planora proponuje odzyskanie
 kopii awaryjnej, ale nie uwzględnia jej automatycznie w analizach.
 
-Przed otwarciem Centrum projektów i Asystenta użytkownik wybiera zapisane pliki,
-które mają być sprawdzane. Centrum łączy ich przydziały w centralnym kalendarzu,
+Przed otwarciem Centrum projektów użytkownik wybiera zapisane pliki, które mają
+być sprawdzane. Centrum łączy ich przydziały w centralnym kalendarzu,
 wykrywa kolizje między projektami, pokazuje statystyki równego podziału i tworzy
 indywidualny plan osoby. Przed każdym eksportem Planora pokazuje panel kontroli brakujących
 danych i kolizji. Zmiany można cofać i ponawiać przez menu **Edycja** oraz
 skróty `Ctrl+Z` i `Ctrl+Y`.
+
+Sprzątanie sali, modlitwy oraz prowadzenie zbiórki do służby nie są traktowane
+jako kolizje z innymi obowiązkami.
 
 ## Uruchomienie
 

@@ -3,7 +3,6 @@ from datetime import date
 
 
 ROLE_LABELS = {
-    "cleaning_person": "sprzątanie sali",
     "console_person": "konsola Zoom",
     "microphone_1": "mikrofon 1",
     "microphone_2": "mikrofon 2",
@@ -47,7 +46,7 @@ def find_conflicts(project: dict) -> list[dict]:
             start, end = end, start
         for duty_date in meeting_dates:
             if start <= duty_date <= end:
-                for key in ("cleaning_person", "console_person", "microphone_1", "microphone_2"):
+                for key in ("console_person", "microphone_1", "microphone_2"):
                     person = str(assignment.get(key, "")).strip()
                     if _valid_person(person):
                         duties_by_date[duty_date][person].append(ROLE_LABELS[key])

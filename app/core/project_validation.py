@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from app.core.assignment_tools import extract_assignments
+from app.core.assignment_tools import assignment_causes_collision, extract_assignments
 
 
 def _issue(message: str, severity: str = "warning") -> dict:
@@ -88,6 +88,8 @@ def validate_project(project: dict) -> list[dict]:
 
     duties_by_person_and_date = defaultdict(list)
     for assignment in assignments:
+        if not assignment_causes_collision(assignment):
+            continue
         date_value = str(assignment.get("date", "")).strip()
         if date_value:
             key = (assignment["person"].casefold(), date_value)
