@@ -7,6 +7,7 @@ from PySide6.QtCore import QDate, QUrl, Qt
 from PySide6.QtGui import QColor, QDesktopServices, QTextCharFormat
 from PySide6.QtWidgets import (
     QApplication,
+    QBoxLayout,
     QCalendarWidget,
     QComboBox,
     QDialog,
@@ -42,7 +43,7 @@ from app.core.project_archive import ProjectArchive
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
 from app.gui.printing import print_pages
-from app.gui.responsive import ResponsiveActionBar
+from app.gui.responsive import ResponsiveActionBar, fit_window_to_screen
 
 
 def _table(headers: tuple[str, ...]) -> QTableWidget:
@@ -65,12 +66,13 @@ class ProjectCenterDialog(QDialog):
         self.assignments = []
         self._marked_dates = set()
         self.setWindowTitle("Centrum projektów")
-        self.resize(1120, 780)
+        fit_window_to_screen(self, 1120, 780, 500, 400)
 
         root = QVBoxLayout(self)
         hero = QFrame()
         hero.setObjectName("heroCard")
-        hero_layout = QHBoxLayout(hero)
+        self.hero_layout = QBoxLayout(QBoxLayout.LeftToRight, hero)
+        hero_layout = self.hero_layout
         hero_text = QVBoxLayout()
         title = QLabel("Centrum projektów")
         title.setObjectName("screenTitle")
@@ -100,6 +102,17 @@ class ProjectCenterDialog(QDialog):
         root.addWidget(buttons)
         self.reload()
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not hasattr(self, "hero_layout"):
+            return
+        compact = self.width() < 850
+        self.hero_layout.setDirection(QBoxLayout.TopToBottom if compact else QBoxLayout.LeftToRight)
+        orientation = Qt.Vertical if compact else Qt.Horizontal
+        if hasattr(self, "calendar_splitter") and self.calendar_splitter.orientation() != orientation:
+            self.calendar_splitter.setOrientation(orientation)
+            self.calendar_splitter.setSizes([320, 520] if compact else [400, 650])
+
     def _calendar_tab(self) -> QWidget:
         tab = QWidget()
         layout = QVBoxLayout(tab)
@@ -107,7 +120,8 @@ class ProjectCenterDialog(QDialog):
         info.setObjectName("helpText")
         info.setWordWrap(True)
         layout.addWidget(info)
-        splitter = QSplitter()
+        self.calendar_splitter = QSplitter()
+        splitter = self.calendar_splitter
         self.calendar = QCalendarWidget()
         self.calendar.setGridVisible(True)
         self.calendar.selectionChanged.connect(self._refresh_calendar_rows)

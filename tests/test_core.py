@@ -56,7 +56,7 @@ from app.templates.field_service_groups.default_project import ROLE_LEADER
 from app.templates.midweek_meeting.default_project import normal_meeting, program_item, section
 from app.templates.midweek_meeting.renderer import numbered_program_title
 from app.templates.service_meetings.default_project import meeting_row
-from app.gui.theme_manager import THEMES, build_stylesheet, theme_options
+from app.gui.theme_manager import THEMES, build_stylesheet, responsive_scale_for_size, theme_options
 from app.gui.ui_feedback import UiFeedback
 from app.gui.project_transfer_dialog import _available_path
 from tools.update_download_catalog import update_catalog
@@ -356,6 +356,15 @@ class ThemeTests(unittest.TestCase):
         )
         self.assertIn("border-radius: 2px", stylesheet)
         self.assertIn("QComboBox QLineEdit", stylesheet)
+
+    def test_windowed_mode_uses_smaller_responsive_scale(self):
+        self.assertEqual(responsive_scale_for_size(1360, 840), 1.0)
+        self.assertEqual(responsive_scale_for_size(1000, 700), 0.90)
+        self.assertEqual(responsive_scale_for_size(680, 500), 0.78)
+        full = build_stylesheet({"theme": "ocean", "responsive_scale": 1.0})
+        compact = build_stylesheet({"theme": "ocean", "responsive_scale": 0.78})
+        self.assertIn("font-size: 13px", full)
+        self.assertIn("font-size: 10px", compact)
 
 
 class UiFeedbackTests(unittest.TestCase):

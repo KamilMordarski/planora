@@ -54,7 +54,7 @@ class PublicTalkWatchtowerEditor(QWidget):
 
     def _build_ui(self, go_back: Callable, edit_people: Callable):
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 16)
+        root.setContentsMargins(10, 8, 10, 8)
         back = QPushButton("← Wróć do menu")
         people = QPushButton("Biblioteka osób")
         save = QPushButton("Zapisz projekt")

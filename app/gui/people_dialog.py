@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QGroupBox,
     QFormLayout,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -18,7 +17,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
-    QSplitter,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -32,14 +31,14 @@ from app.core.people_roles import (
     normalize_profiles,
 )
 from app.core.project_io import ProjectIO
-from app.gui.responsive import ResponsiveActionBar
+from app.gui.responsive import ResponsiveActionBar, fit_window_to_screen
 
 
 class PeopleDialog(QDialog):
     def __init__(self, people: list[str], profiles: dict | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Biblioteka osób")
-        self.resize(920, 680)
+        fit_window_to_screen(self, 920, 680, 460, 380)
         self.people = list(people)
         self.profiles = normalize_profiles(self.people, profiles)
         self.permission_checks: dict[str, QCheckBox] = {}
@@ -55,8 +54,7 @@ class PeopleDialog(QDialog):
         layout.addWidget(title)
         layout.addWidget(subtitle)
 
-        self.splitter = QSplitter(Qt.Horizontal)
-        splitter = self.splitter
+        self.tabs = QTabWidget()
         people_panel = QWidget()
         people_layout = QVBoxLayout(people_panel)
         self.search = QLineEdit()
@@ -104,7 +102,7 @@ class PeopleDialog(QDialog):
         count.setAlignment(Qt.AlignRight)
         people_layout.addWidget(count)
         self.count = count
-        splitter.addWidget(people_panel)
+        self.tabs.addTab(people_panel, "Lista osób")
 
         roles_group = QGroupBox("Role i możliwe przydziały wybranej osoby")
         roles_layout = QVBoxLayout(roles_group)
@@ -150,9 +148,8 @@ class PeopleDialog(QDialog):
         roles_content_layout.addStretch()
         roles_scroll.setWidget(roles_content)
         roles_layout.addWidget(roles_scroll, 1)
-        splitter.addWidget(roles_group)
-        splitter.setSizes([430, 470])
-        layout.addWidget(splitter, 1)
+        self.tabs.addTab(roles_group, "Role i przydziały")
+        layout.addWidget(self.tabs, 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         layout.addWidget(buttons)
@@ -173,13 +170,6 @@ class PeopleDialog(QDialog):
         self.refresh_list()
         if self.people:
             self.list_widget.setCurrentRow(0)
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        orientation = Qt.Vertical if self.width() < 900 else Qt.Horizontal
-        if self.splitter.orientation() != orientation:
-            self.splitter.setOrientation(orientation)
-            self.splitter.setSizes([300, 430] if orientation == Qt.Vertical else [430, 470])
 
     def import_json(self):
         path, _ = QFileDialog.getOpenFileName(

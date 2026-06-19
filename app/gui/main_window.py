@@ -35,7 +35,8 @@ from app.gui.project_transfer_dialog import ProjectTransferDialog
 from app.gui.schedule_type_screen import ScheduleTypeScreen
 from app.gui.settings_dialog import SettingsDialog
 from app.gui.animated_stack import AnimatedStackedWidget
-from app.gui.theme_manager import build_stylesheet
+from app.gui.responsive import fit_window_to_screen
+from app.gui.theme_manager import build_stylesheet, responsive_scale_for_size
 from app.gui.ui_feedback import UiFeedback
 
 
@@ -53,10 +54,10 @@ class MainWindow(QMainWindow):
         self._startup_update_scheduled = False
         self._recovery_checked = False
         self._pending_update_result = consume_update_result()
+        self._last_style_signature = None
 
         self.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
-        self.resize(1360, 840)
-        self.setMinimumSize(680, 500)
+        fit_window_to_screen(self, 1360, 840, 540, 420)
         if APP_ICON.exists():
             self.setWindowIcon(QIcon(str(APP_ICON)))
 
@@ -91,6 +92,10 @@ class MainWindow(QMainWindow):
         self.history_timer.setInterval(1_500)
         self.history_timer.timeout.connect(self.observe_project_history)
         self.history_timer.start()
+        self.responsive_style_timer = QTimer(self)
+        self.responsive_style_timer.setSingleShot(True)
+        self.responsive_style_timer.setInterval(80)
+        self.responsive_style_timer.timeout.connect(self._apply_style)
         self._create_edit_actions()
 
     def showEvent(self, event):
@@ -108,8 +113,26 @@ class MainWindow(QMainWindow):
 
     def _apply_style(self):
         app = QApplication.instance()
+        styled_settings = dict(self.settings)
+        styled_settings["responsive_scale"] = responsive_scale_for_size(self.width(), self.height())
+        signature = (
+            styled_settings.get("theme"),
+            styled_settings.get("font_scale"),
+            styled_settings.get("interface_density"),
+            styled_settings.get("corner_style"),
+            styled_settings["responsive_scale"],
+        )
+        if signature == self._last_style_signature:
+            return
+        self._last_style_signature = signature
         app.setProperty("animationSpeed", self.settings.get("animation_speed", 100))
-        app.setStyleSheet(build_stylesheet(self.settings))
+        app.setProperty("responsiveScale", styled_settings["responsive_scale"])
+        app.setStyleSheet(build_stylesheet(styled_settings))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "responsive_style_timer"):
+            self.responsive_style_timer.start()
 
     def show_home(self):
         self.archive_current_project()

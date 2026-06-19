@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QInputDialog,
     QLabel,
+    QLayout,
     QLineEdit,
     QListWidget,
     QMessageBox,
@@ -77,7 +78,7 @@ class MidweekMeetingEditor(QWidget):
 
     def _build_ui(self, go_back, edit_people):
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 16)
+        root.setContentsMargins(10, 8, 10, 8)
         back = QPushButton("← Wróć do menu")
         people = QPushButton("Biblioteka osób")
         previous_meeting = QPushButton("←")
@@ -318,10 +319,12 @@ class MidweekMeetingEditor(QWidget):
         navigation = QWidget()
         lists = QVBoxLayout(navigation)
         lists.setContentsMargins(0, 0, 0, 0)
+        lists.setSizeConstraint(QLayout.SetMinimumSize)
 
         section_group = QGroupBox("Sekcje programu")
         section_side = QVBoxLayout(section_group)
         self.section_list = QListWidget()
+        self.section_list.setMinimumHeight(90)
         add_section = QPushButton("Nowa sekcja")
         add_section.setObjectName("primaryButton")
         add_standard = QPushButton("Puste sekcje")
@@ -349,6 +352,7 @@ class MidweekMeetingEditor(QWidget):
         item_group = QGroupBox("Punkty wybranej sekcji")
         item_side = QVBoxLayout(item_group)
         self.item_list = QListWidget()
+        self.item_list.setMinimumHeight(90)
         add_item = QPushButton("Dodaj punkt")
         add_item.setObjectName("primaryButton")
         duplicate_item = QPushButton("Duplikuj punkt")
@@ -360,7 +364,10 @@ class MidweekMeetingEditor(QWidget):
         item_side.addWidget(self.item_list)
         item_side.addWidget(ResponsiveActionBar([add_item, duplicate_item, delete_item, item_up, item_down], 130, 2))
         lists.addWidget(item_group)
-        self.program_splitter.addWidget(navigation)
+        navigation_scroll = QScrollArea()
+        navigation_scroll.setWidgetResizable(True)
+        navigation_scroll.setWidget(navigation)
+        self.program_splitter.addWidget(navigation_scroll)
 
         details_scroll = QScrollArea()
         details_scroll.setWidgetResizable(True)
@@ -444,10 +451,11 @@ class MidweekMeetingEditor(QWidget):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         if hasattr(self, "program_splitter"):
-            orientation = Qt.Vertical if self.width() < 1000 else Qt.Horizontal
+            orientation = Qt.Vertical if self.width() < 1100 else Qt.Horizontal
             if self.program_splitter.orientation() != orientation:
                 self.program_splitter.setOrientation(orientation)
-                self.program_splitter.setSizes([360, 760])
+                self.program_splitter.setSizes([500, 650] if orientation == Qt.Vertical else [390, 900])
+            self.program_splitter.setMinimumHeight(980 if orientation == Qt.Vertical else 360)
         if hasattr(self, "context_label"):
             compact = self.width() < 820
             self.context_label.setVisible(not compact)

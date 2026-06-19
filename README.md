@@ -53,6 +53,11 @@ animacji oraz zachowanie dźwięków i logo startowego. Przyciski, nawigacja,
 dodawanie, usuwanie, zapis i eksport mają własne subtelne efekty. Ustawienia
 interfejsu nie wpływają na wygląd eksportowanych plików.
 
+Interfejs automatycznie dopasowuje skalę, odstępy i układ paneli do rozmiaru
+okna. Każdy krok generatora ma przewijaną treść oraz przypięte menu
+**Akcje kroku**, dzięki czemu wszystkie operacje pozostają dostępne również na
+małych monitorach i przy nietypowych proporcjach okna.
+
 Poradnik dostępny z menu głównego opisuje cały proces tworzenia grafiku,
 import biblioteki osób, import programu z JW, pliki projektów, eksport,
 ustawienia i aktualizacje. Pełna dokumentacja jest rozwijana w osobnym

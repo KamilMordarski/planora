@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFrame,
-    QHBoxLayout,
+    QGridLayout,
     QLabel,
     QPushButton,
     QScrollArea,
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from app.core.app_info import APP_DISCLAIMER, APP_DOCS_URL, APP_NAME
 from app.core.wol_importer import JW_MEETINGS_BASE_URL
+from app.gui.responsive import fit_window_to_screen
 
 
 class GuideDialog(QDialog):
@@ -239,8 +240,9 @@ class GuideDialog(QDialog):
         ),
         (
             "Gdy coś wygląda źle",
-            "Sprawdź puste daty, bardzo długie teksty i podgląd ostatniego kroku. Jeśli problem "
-            "pojawił się po zmianie wyglądu, wróć do motywu Oceanicznego i skali 100%.",
+            "Każdy krok ma przewijaną treść i przypięty przycisk „Akcje kroku”, który udostępnia wszystkie "
+            "operacje nawet na małym ekranie. Jeśli tekst jest nadal zbyt duży, wróć do skali 100% lub wybierz "
+            "kompaktową gęstość interfejsu.",
         ),
         (
             "Informacja o aplikacji",
@@ -255,7 +257,7 @@ class GuideDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"Poradnik — {APP_NAME}")
-        self.resize(940, 760)
+        fit_window_to_screen(self, 940, 760, 460, 380)
 
         root = QVBoxLayout(self)
         root.setSpacing(14)
@@ -294,12 +296,12 @@ class GuideDialog(QDialog):
         docs.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(APP_DOCS_URL)))
         layout.addWidget(docs)
 
-        facts = QHBoxLayout()
-        for text in ("5 generatorów", "Import z JW", "PDF, JPG i ICS", "Lokalne dane"):
+        facts = QGridLayout()
+        for index, text in enumerate(("5 generatorów", "Import z JW", "PDF, JPG i ICS", "Lokalne dane")):
             label = QLabel(text)
             label.setObjectName("guideBadge")
             label.setAlignment(Qt.AlignCenter)
-            facts.addWidget(label)
+            facts.addWidget(label, index // 2, index % 2)
         layout.addLayout(facts)
         return hero
 

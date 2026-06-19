@@ -18,7 +18,7 @@ from app.config import PROJECTS_DIR
 from app.core.project_archive import project_display_title
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
-from app.gui.responsive import ResponsiveActionBar
+from app.gui.responsive import ResponsiveActionBar, fit_window_to_screen
 
 
 def _available_path(directory: Path, filename: str) -> Path:
@@ -34,7 +34,7 @@ class ProjectTransferDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Import i eksport grafików")
-        self.resize(760, 560)
+        fit_window_to_screen(self, 760, 560, 430, 340)
 
         layout = QVBoxLayout(self)
         title = QLabel("Import i eksport grafików")

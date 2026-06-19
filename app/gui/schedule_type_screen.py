@@ -10,7 +10,8 @@ from app.gui.template_icons import template_icon
 class ScheduleTypeScreen(QWidget):
     def __init__(self, templates: list, choose_template: Callable, go_back: Callable):
         super().__init__()
-        root = QVBoxLayout(self)
+        self.root = QVBoxLayout(self)
+        root = self.root
         root.setContentsMargins(42, 30, 42, 30)
 
         top = QHBoxLayout()
@@ -71,3 +72,12 @@ class ScheduleTypeScreen(QWidget):
         scroll.setFrameShape(QFrame.NoFrame)
         scroll.setWidget(content)
         root.addWidget(scroll)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.width() < 700:
+            self.root.setContentsMargins(12, 10, 12, 10)
+        elif self.width() < 1000:
+            self.root.setContentsMargins(24, 18, 24, 18)
+        else:
+            self.root.setContentsMargins(42, 30, 42, 30)

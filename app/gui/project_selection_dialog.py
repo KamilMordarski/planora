@@ -17,7 +17,7 @@ from app.config import PROJECTS_DIR
 from app.core.project_archive import ProjectArchive
 from app.core.project_io import ProjectIO
 from app.core.template_registry import TemplateRegistry
-from app.gui.responsive import ResponsiveActionBar
+from app.gui.responsive import ResponsiveActionBar, fit_window_to_screen
 
 
 class ProjectSelectionDialog(QDialog):
@@ -30,7 +30,7 @@ class ProjectSelectionDialog(QDialog):
     ):
         super().__init__(parent)
         self.setWindowTitle("Wybierz projekty")
-        self.resize(720, 520)
+        fit_window_to_screen(self, 720, 520, 430, 340)
         self._known_ids = set()
 
         layout = QVBoxLayout(self)

@@ -12,7 +12,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QPixmap
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
-from PySide6.QtWidgets import QFrame, QGraphicsOpacityEffect, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QFrame, QGraphicsOpacityEffect, QLabel, QVBoxLayout, QWidget
 
 from app.config import APP_ICON, STARTUP_SOUND
 from app.core.app_info import APP_AUTHOR, APP_NAME, APP_TAGLINE, APP_VERSION
@@ -25,13 +25,18 @@ class StartupSplash(QWidget):
     def __init__(self, play_sound: bool = True, volume: int = 35, parent=None):
         super().__init__(parent)
         self.play_sound = play_sound
-        self._base_panel_size = (380, 445)
+        screen = QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else QRect(0, 0, 600, 540)
+        splash_width = max(320, min(600, available.width() - 24))
+        splash_height = max(280, min(540, available.height() - 24))
+        panel_scale = min(1.0, splash_width / 600, splash_height / 540)
+        self._base_panel_size = (round(380 * panel_scale), round(445 * panel_scale))
         self._animation = None
 
         self.setObjectName("startupSplash")
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        self.setFixedSize(600, 540)
+        self.setFixedSize(splash_width, splash_height)
 
         self.panel = QFrame(self)
         self.panel.setObjectName("splashCard")
@@ -42,7 +47,10 @@ class StartupSplash(QWidget):
         self.logo = QLabel()
         self.logo.setAlignment(Qt.AlignCenter)
         if APP_ICON.exists():
-            self.logo.setPixmap(QPixmap(str(APP_ICON)).scaled(230, 230, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_size = round(230 * panel_scale)
+            self.logo.setPixmap(
+                QPixmap(str(APP_ICON)).scaled(logo_size, logo_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
 
         name = QLabel(APP_NAME)
         name.setObjectName("splashName")

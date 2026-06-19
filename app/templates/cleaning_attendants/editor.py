@@ -67,7 +67,7 @@ class CleaningAttendantsEditor(QWidget):
 
     def _build_ui(self, go_back: Callable, edit_people: Callable):
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 16)
+        root.setContentsMargins(10, 8, 10, 8)
         back = QPushButton("← Wróć do menu")
         people = QPushButton("Biblioteka osób")
         save = QPushButton("Zapisz projekt")
@@ -165,10 +165,12 @@ class CleaningAttendantsEditor(QWidget):
         if self.attendants_splitter.orientation() != orientation:
             self.attendants_splitter.setOrientation(orientation)
             self.attendants_splitter.setSizes([650, 350])
+        self.attendants_splitter.setMinimumHeight(900 if orientation == Qt.Vertical else 320)
         for splitter in (self.weekly_editor_splitter, self.attendant_editor_splitter):
             if splitter.orientation() != orientation:
                 splitter.setOrientation(orientation)
                 splitter.setSizes([330, 650] if orientation == Qt.Vertical else [360, 760])
+            splitter.setMinimumHeight(620 if orientation == Qt.Vertical else 300)
 
     def _build_weekly_tab(self):
         tab = QWidget()

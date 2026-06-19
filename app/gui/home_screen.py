@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
-from PySide6.QtWidgets import QBoxLayout, QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QBoxLayout, QFrame, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
 from app.config import APP_ICON
 from app.core.app_info import (
@@ -41,7 +41,8 @@ class HomeScreen(QWidget):
         scroll.setWidget(content)
         outer.addWidget(scroll)
 
-        top = QHBoxLayout()
+        self.top_layout = QBoxLayout(QBoxLayout.LeftToRight)
+        top = self.top_layout
         brand = QLabel(f"{APP_NAME}  •  {APP_VERSION}")
         brand.setObjectName("sectionTitle")
         top.addWidget(brand)
@@ -105,7 +106,8 @@ class HomeScreen(QWidget):
 
         duty_panel = QFrame()
         duty_panel.setObjectName("infoCard")
-        duty_layout = QHBoxLayout(duty_panel)
+        self.duty_layout = QBoxLayout(QBoxLayout.LeftToRight, duty_panel)
+        duty_layout = self.duty_layout
         duty_text = QVBoxLayout()
         duty_title = QLabel("Nadchodzące obowiązki")
         duty_title.setObjectName("sectionTitle")
@@ -182,8 +184,13 @@ class HomeScreen(QWidget):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         narrow = self.width() < 820
+        very_narrow = self.width() < 640
         self.hero_layout.setDirection(QBoxLayout.TopToBottom if narrow else QBoxLayout.LeftToRight)
         self.actions.setDirection(QBoxLayout.TopToBottom if self.width() < 600 else QBoxLayout.LeftToRight)
+        self.actions.setStretch(2, 0 if self.width() < 600 else 1)
+        self.top_layout.setDirection(QBoxLayout.TopToBottom if very_narrow else QBoxLayout.LeftToRight)
+        self.top_layout.setStretch(1, 0 if very_narrow else 1)
+        self.duty_layout.setDirection(QBoxLayout.TopToBottom if self.width() < 700 else QBoxLayout.LeftToRight)
         content = self.findChild(QScrollArea).widget()
         margins = 16 if self.width() < 760 else 48
         content.layout().setContentsMargins(margins, 24, margins, 24)

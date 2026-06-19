@@ -64,7 +64,7 @@ class FieldServiceGroupsEditor(QWidget):
 
     def _build_ui(self, go_back, edit_people):
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 16)
+        root.setContentsMargins(10, 8, 10, 8)
         back = QPushButton("← Menu")
         back.setToolTip("Wróć do menu głównego")
         people_button = QPushButton("Osoby")

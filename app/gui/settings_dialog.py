@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.config import UPDATE_URL, USER_DATA_DIR
-from app.gui.responsive import configure_form
+from app.gui.responsive import configure_form, fit_window_to_screen, scrollable_widget
 from app.gui.theme_manager import theme_options
 from app.gui.ui_feedback import UiFeedback
 
@@ -28,7 +28,7 @@ class SettingsDialog(QDialog):
     def __init__(self, settings: dict, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Ustawienia aplikacji")
-        self.resize(650, 500)
+        fit_window_to_screen(self, 650, 560, 440, 360)
 
         layout = QVBoxLayout(self)
         title = QLabel("Dostosuj aplikację do siebie")
@@ -40,9 +40,9 @@ class SettingsDialog(QDialog):
         layout.addWidget(subtitle)
 
         tabs = QTabWidget()
-        tabs.addTab(self._appearance_tab(settings), "Wygląd")
-        tabs.addTab(self._behavior_tab(settings), "Zachowanie")
-        tabs.addTab(self._updates_tab(settings), "Aktualizacje")
+        tabs.addTab(scrollable_widget(self._appearance_tab(settings)), "Wygląd")
+        tabs.addTab(scrollable_widget(self._behavior_tab(settings)), "Zachowanie")
+        tabs.addTab(scrollable_widget(self._updates_tab(settings)), "Aktualizacje")
         layout.addWidget(tabs)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)

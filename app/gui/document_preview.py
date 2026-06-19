@@ -20,18 +20,18 @@ class DocumentPreview(QWidget):
         self.zoom_label = QLabel()
         zoom_out = QPushButton("−")
         zoom_out.setToolTip("Pomniejsz podgląd")
-        fit = QPushButton("Dopasuj stronę")
+        self.fit_button = QPushButton("Dopasuj stronę")
         zoom_in = QPushButton("+")
         zoom_in.setToolTip("Powiększ podgląd")
         zoom_out.clicked.connect(lambda: self.change_zoom(-0.1))
         zoom_in.clicked.connect(lambda: self.change_zoom(0.1))
-        fit.clicked.connect(self.fit_page)
+        self.fit_button.clicked.connect(self.fit_page)
         controls.addWidget(self.info)
         controls.addStretch()
         controls.addWidget(zoom_out)
         controls.addWidget(self.zoom_label)
         controls.addWidget(zoom_in)
-        controls.addWidget(fit)
+        controls.addWidget(self.fit_button)
         root.addLayout(controls)
 
         self.label = QLabel()
@@ -68,6 +68,9 @@ class DocumentPreview(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        compact = self.width() < 520
+        self.info.setVisible(not compact)
+        self.fit_button.setText("Dopasuj" if compact else "Dopasuj stronę")
         if self._fit:
             self._schedule_render()
 

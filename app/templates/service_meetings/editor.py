@@ -64,7 +64,7 @@ class ServiceMeetingsEditor(QWidget):
 
     def _build_ui(self, go_back, edit_people):
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 16)
+        root.setContentsMargins(10, 8, 10, 8)
         back = QPushButton("← Menu")
         people_button = QPushButton("Biblioteka osób")
         save = QPushButton("Zapisz projekt")
@@ -236,6 +236,7 @@ class ServiceMeetingsEditor(QWidget):
         if self.meeting_splitter.orientation() != orientation:
             self.meeting_splitter.setOrientation(orientation)
             self.meeting_splitter.setSizes([370, 680])
+        self.meeting_splitter.setMinimumHeight(620 if orientation == Qt.Vertical else 320)
 
     def _color_control(self, key, value):
         row = QHBoxLayout()

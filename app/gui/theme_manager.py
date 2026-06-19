@@ -197,15 +197,29 @@ def theme_options():
     return light + dark
 
 
+def responsive_scale_for_size(width: int, height: int) -> float:
+    """Return a stable UI scale for windowed and compact application sizes."""
+    if width < 760 or height < 560:
+        return 0.78
+    if width < 950 or height < 650:
+        return 0.84
+    if width < 1150 or height < 740:
+        return 0.90
+    if width < 1320 or height < 800:
+        return 0.96
+    return 1.0
+
+
 def build_stylesheet(settings: dict) -> str:
     theme = THEMES.get(settings.get("theme"), THEMES["ocean"])
     accent = theme.accent
-    scale = max(80, min(140, int(settings.get("font_scale", 100)))) / 100
+    responsive_scale = max(0.72, min(1.0, float(settings.get("responsive_scale", 1.0))))
+    scale = max(80, min(140, int(settings.get("font_scale", 100)))) / 100 * responsive_scale
     density = {
         "compact": 0.78,
         "comfortable": 1.0,
         "spacious": 1.22,
-    }.get(settings.get("interface_density"), 1.0)
+    }.get(settings.get("interface_density"), 1.0) * responsive_scale
     radius = {
         "square": 2,
         "soft": 6,
@@ -213,10 +227,10 @@ def build_stylesheet(settings: dict) -> str:
     }.get(settings.get("corner_style"), 10)
 
     def px(value):
-        return max(10, round(value * scale))
+        return max(9, round(value * scale))
 
     def space(value):
-        return max(3, round(value * density))
+        return max(2, round(value * density))
 
     return f"""
         QMainWindow, QDialog, QWidget {{
@@ -450,13 +464,26 @@ def build_stylesheet(settings: dict) -> str:
             width: 11px;
             margin: 2px;
         }}
+        QScrollBar:horizontal {{
+            background: transparent;
+            height: 11px;
+            margin: 2px;
+        }}
         QScrollBar::handle:vertical {{
             background: {theme.border};
             border-radius: 5px;
             min-height: 30px;
         }}
+        QScrollBar::handle:horizontal {{
+            background: {theme.border};
+            border-radius: 5px;
+            min-width: 30px;
+        }}
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
             height: 0;
+        }}
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+            width: 0;
         }}
         QCheckBox::indicator {{
             width: {px(17)}px;
