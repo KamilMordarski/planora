@@ -40,6 +40,8 @@ def _legacy_user_data_dir() -> Path:
 
 USER_DATA_DIR = _user_data_dir()
 LEGACY_USER_DATA_DIR = _legacy_user_data_dir()
+DATABASE_FILE = USER_DATA_DIR / "planora.db"
+LEGACY_JSON_BACKUP_DIR = USER_DATA_DIR / "legacy-json-backup"
 PEOPLE_FILE = USER_DATA_DIR / "people.json"
 PEOPLE_ROLES_FILE = USER_DATA_DIR / "people-roles.json"
 SETTINGS_FILE = USER_DATA_DIR / "settings.json"

@@ -29,6 +29,7 @@ from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
 from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
+from app.gui.tutorial import tutorial_anchor
 from app.templates.service_meetings.default_project import DEFAULT_PROJECT, meeting_row
 
 
@@ -87,6 +88,7 @@ class ServiceMeetingsEditor(QWidget):
         settings_content_layout = QVBoxLayout(settings_content)
 
         text_group = QGroupBox("Teksty dokumentu")
+        tutorial_anchor(text_group, "document")
         text_form = configure_form(QFormLayout(text_group))
         self.title = QLineEdit(self.project.get("title", ""))
         self.period = QLineEdit(self.project.get("period", ""))
@@ -151,6 +153,7 @@ class ServiceMeetingsEditor(QWidget):
         new_form = QPushButton("Nowy formularz")
         new_form.setToolTip("Czyści formularz po prawej, aby przygotować nową zbiórkę bez zmieniania wybranego wpisu.")
         add = QPushButton("+ Dodaj z formularza")
+        tutorial_anchor(add, "add_entry")
         add.setToolTip("Dodaje nową zbiórkę z datą, godziną, miejscem i prowadzącym widocznymi po prawej.")
         add.setObjectName("primaryButton")
         duplicate = QPushButton("Duplikuj zbiórkę")
@@ -164,6 +167,7 @@ class ServiceMeetingsEditor(QWidget):
         self.meeting_splitter.addWidget(list_panel)
 
         detail_panel = QGroupBox("Wybrana zbiórka")
+        tutorial_anchor(detail_panel, "meeting_form")
         detail_form = configure_form(QFormLayout(detail_panel))
         self.date = QLineEdit()
         self.date.setPlaceholderText("np. Wtorek 2 czerwca")
@@ -196,6 +200,7 @@ class ServiceMeetingsEditor(QWidget):
             "Sprawdź gotowy plan w stonowanej kolorystyce, a następnie wyeksportuj PDF lub JPG.",
         )
         self.preview = DocumentPreview()
+        tutorial_anchor(self.preview, "preview")
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")

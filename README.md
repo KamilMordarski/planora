@@ -35,6 +35,8 @@ specjalnych z tytułem, podtytułem i obrazem. Właściwe punkty programu są
 automatycznie numerowane od pierwszego punktu po uwagach wstępnych. Pasek
 szybkiego wyboru pozwala zmieniać edytowane zebranie z każdego kroku, a całe
 zebranie lub pojedynczy punkt można duplikować, aby ograniczyć powtarzalne wpisywanie.
+Domyślny dzień zebrania jest wybierany w projekcie, a import programu z JW
+używa tego dnia zamiast zakładać, że każde zebranie odbywa się w środę.
 
 Plan grup służby pozwala swobodnie dodawać, usuwać i porządkować grupy oraz
 ich członków. Grupowy i asystent są czytelnie, ale subtelnie wyróżnieni
@@ -151,17 +153,22 @@ Biblioteka osób i ustawienia są przechowywane w katalogu danych użytkownika:
 - macOS: `~/Library/Application Support/Planora`
 - Linux: `~/.local/share/planora`
 
-Automatyczne archiwum projektów znajduje się w podkatalogu `project-archive`.
-Nie zastępuje ono własnych plików JSON i jest utrzymywane wyłącznie przez 90 dni.
-Plan grup służby ma dodatkowo trwały plik `field-service-groups.json`, który
-nie podlega automatycznemu usuwaniu po 90 dniach.
+Wewnętrzne dane Planory są zapisywane w lokalnej bazie SQLite `planora.db`.
+Baza przechowuje ustawienia, bibliotekę osób z rolami, trwały plan grup służby
+oraz lokalne archiwum projektów. Nie jest synchronizowana z chmurą i aplikacja
+nie wysyła jej zawartości na żaden serwer. Archiwalne projekty są usuwane po
+90 dniach, natomiast plan grup służby pozostaje zapisany bezterminowo.
 
 Przy pierwszym uruchomieniu Planora tworzy pustą bibliotekę w katalogu użytkownika.
-Dane ze starszego katalogu `GeneratorGrafikow` są automatycznie przenoszone do Planory.
+Dane ze starszego katalogu `GeneratorGrafikow` i wcześniejszych plików JSON są
+automatycznie przenoszone do bazy. Oryginały trafiają do lokalnego katalogu
+`legacy-json-backup`, dzięki czemu migracja nie wymaga korzystania z internetu.
 
 Bibliotekę można uzupełnić przez import pliku JSON zawierającego tablicę nazwisk
 albo obiekt z polem `people`. Import łączy listy i pomija duplikaty. Eksport
-biblioteki zapisuje osoby wraz z rolami w jednym przenośnym pliku JSON.
+biblioteki zapisuje osoby wraz z rolami w jednym przenośnym pliku JSON. Projekty
+JSON nadal służą do ręcznego przenoszenia, tworzenia kopii i wymiany między
+urządzeniami; nie są mechanizmem synchronizacji w chmurze.
 
 ## Aktualizacje
 

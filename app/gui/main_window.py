@@ -38,6 +38,12 @@ from app.gui.animated_stack import AnimatedStackedWidget
 from app.gui.responsive import fit_window_to_screen
 from app.gui.theme_manager import build_stylesheet, responsive_scale_for_size
 from app.gui.ui_feedback import UiFeedback
+from app.gui.tutorial import (
+    TutorialOverlay,
+    TutorialStep,
+    editor_tutorial_steps,
+    find_tutorial_anchor,
+)
 
 
 class MainWindow(QMainWindow):
@@ -53,8 +59,10 @@ class MainWindow(QMainWindow):
         self.editor = None
         self._startup_update_scheduled = False
         self._recovery_checked = False
+        self._home_tutorial_scheduled = False
         self._pending_update_result = consume_update_result()
         self._last_style_signature = None
+        self._tutorial_overlay = None
 
         self.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
         fit_window_to_screen(self, 1360, 840, 540, 420)
@@ -72,6 +80,7 @@ class MainWindow(QMainWindow):
             self.open_guide,
             self.open_project_center,
             self.open_project_transfer,
+            self.start_home_tutorial,
         )
         self.schedule_types = ScheduleTypeScreen(
             TemplateRegistry.all(),
@@ -110,6 +119,13 @@ class MainWindow(QMainWindow):
         if not self._recovery_checked:
             self._recovery_checked = True
             QTimer.singleShot(900, self.offer_recovery)
+        if (
+            self.settings.get("tutorials_enabled", True)
+            and not self._tutorial_seen("home")
+            and not self._home_tutorial_scheduled
+        ):
+            self._home_tutorial_scheduled = True
+            QTimer.singleShot(1600, self.start_home_tutorial)
 
     def _apply_style(self):
         app = QApplication.instance()
@@ -154,7 +170,11 @@ class MainWindow(QMainWindow):
         template = TemplateRegistry.get(template_id)
         if template:
             project = self.group_plan_store.load() if template_id == "field_service_groups" else None
-            self.open_editor(template, copy.deepcopy(project or template.default_project))
+            self.open_editor(
+                template,
+                copy.deepcopy(project or template.default_project),
+                offer_tutorial=True,
+            )
 
     def open_project(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -174,7 +194,14 @@ class MainWindow(QMainWindow):
         except ValueError as exc:
             QMessageBox.warning(self, "Nie można otworzyć projektu", str(exc))
 
-    def open_editor(self, template, project: dict, path: Path | None = None, reset_history: bool = True):
+    def open_editor(
+        self,
+        template,
+        project: dict,
+        path: Path | None = None,
+        reset_history: bool = True,
+        offer_tutorial: bool = False,
+    ):
         self.archive_current_project()
         if self.editor is not None:
             self.stack.removeWidget(self.editor)
@@ -191,6 +218,9 @@ class MainWindow(QMainWindow):
             animations_enabled=lambda: bool(self.settings.get("animations_enabled", True)),
         )
         self.stack.addWidget(self.editor)
+        self.editor.wizard.tutorial_requested.connect(
+            lambda template_id=template.id: self.start_editor_tutorial(template_id)
+        )
         self._apply_role_filters(template.id)
         if template.id == "field_service_groups":
             self.group_plan_store.save(self.editor.project)
@@ -203,14 +233,97 @@ class MainWindow(QMainWindow):
             self.editor.set_group_leaders(leaders, group_names)
         self.stack.setCurrentWidgetAnimated(self.editor)
         self._sync_history_actions()
+        tutorial_id = f"editor:{template.id}"
+        if (
+            offer_tutorial
+            and self.settings.get("tutorials_enabled", True)
+            and not self._tutorial_seen(tutorial_id)
+        ):
+            QTimer.singleShot(550, lambda: self.start_editor_tutorial(template.id))
+
+    def _tutorial_seen(self, tutorial_id: str) -> bool:
+        return tutorial_id in self.settings.get("tutorials_completed", [])
+
+    def _remember_tutorial(self, tutorial_id: str):
+        completed = list(self.settings.get("tutorials_completed", []))
+        if tutorial_id not in completed:
+            completed.append(tutorial_id)
+            self.settings["tutorials_completed"] = completed
+            ProjectIO.save_settings(self.settings)
+
+    def _show_tutorial(self, tutorial_id: str, title: str, steps: list[TutorialStep]):
+        if self._tutorial_overlay is not None:
+            try:
+                self._tutorial_overlay.finish(False)
+            except RuntimeError:
+                pass
+        if not steps:
+            return
+        overlay = TutorialOverlay(self, title, steps)
+        self._tutorial_overlay = overlay
+
+        def closed(_completed):
+            self._remember_tutorial(tutorial_id)
+            if self._tutorial_overlay is overlay:
+                self._tutorial_overlay = None
+
+        overlay.closed.connect(closed)
+        overlay.start()
+
+    def start_home_tutorial(self):
+        if self.stack.currentWidget() is not self.home:
+            self.show_home()
+        steps = [
+            TutorialStep(
+                "Witaj w Planorze",
+                "Ten krótki samouczek pokaże najważniejsze miejsca. Możesz go pominąć, "
+                "a później uruchomić ponownie przyciskiem „Samouczek”.",
+                target=lambda: find_tutorial_anchor(self.home, "home_tutorial"),
+            ),
+            TutorialStep(
+                "Utwórz pierwszy grafik",
+                "Tutaj wybierzesz jeden z generatorów. Każdy ma własny, krótki samouczek "
+                "pokazywany przy pierwszym użyciu.",
+                target=lambda: find_tutorial_anchor(self.home, "home_create"),
+            ),
+            TutorialStep(
+                "Najpierw przygotuj osoby",
+                "Biblioteka przechowuje nazwiska, role i możliwe przydziały. Dzięki niej listy "
+                "w generatorach podpowiadają właściwe osoby.",
+                target=lambda: find_tutorial_anchor(self.home, "home_people"),
+            ),
+            TutorialStep(
+                "Sprawdzaj gotowe projekty",
+                "Centrum projektów pokazuje kalendarz, obowiązki, statystyki i globalne kolizje "
+                "dla wybranych przez Ciebie grafików.",
+                target=lambda: find_tutorial_anchor(self.home, "home_center"),
+            ),
+            TutorialStep(
+                "Pomoc jest zawsze dostępna",
+                "Poradnik zawiera dokładniejsze opisy. W każdym generatorze przycisk „Samouczek” "
+                "ponownie uruchomi instrukcję krok po kroku.",
+                target=lambda: find_tutorial_anchor(self.home, "home_guide"),
+            ),
+        ]
+        self._show_tutorial("home", "Pierwsze uruchomienie", steps)
+
+    def start_editor_tutorial(self, template_id: str):
+        if self.editor is None or self.editor.project.get("template_id") != template_id:
+            return
+        template = TemplateRegistry.get(template_id)
+        if template:
+            self._show_tutorial(
+                f"editor:{template_id}",
+                template.name,
+                editor_tutorial_steps(template_id, self.editor),
+            )
 
     def edit_people(self):
         dialog = PeopleDialog(self.people, self.people_profiles, self)
         if dialog.exec():
             self.people = dialog.people
             self.people_profiles = dialog.profiles
-            ProjectIO.save_people(self.people)
-            ProjectIO.save_people_profiles(self.people_profiles)
+            ProjectIO.save_people_library(self.people, self.people_profiles)
             if self.editor is not None:
                 template = TemplateRegistry.for_project(self.editor.project)
                 self.editor.set_people(self.people)

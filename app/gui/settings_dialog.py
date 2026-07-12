@@ -27,6 +27,7 @@ from app.gui.ui_feedback import UiFeedback
 class SettingsDialog(QDialog):
     def __init__(self, settings: dict, parent=None):
         super().__init__(parent)
+        self.tutorials_completed = list(settings.get("tutorials_completed", []))
         self.setWindowTitle("Ustawienia aplikacji")
         fit_window_to_screen(self, 650, 560, 440, 360)
 
@@ -128,10 +129,13 @@ class SettingsDialog(QDialog):
         self.sounds.setChecked(bool(settings.get("sounds_enabled", True)))
         self.hover_sounds = QCheckBox("Odtwarzaj dźwięk po najechaniu na przycisk")
         self.hover_sounds.setChecked(bool(settings.get("hover_sounds_enabled", False)))
+        self.tutorials = QCheckBox("Pokazuj samouczek przy pierwszym użyciu generatora")
+        self.tutorials.setChecked(bool(settings.get("tutorials_enabled", True)))
         group_layout.addWidget(self.animations)
         group_layout.addWidget(self.startup_splash)
         group_layout.addWidget(self.sounds)
         group_layout.addWidget(self.hover_sounds)
+        group_layout.addWidget(self.tutorials)
 
         animation_row = QHBoxLayout()
         self.animation_speed = QSlider(Qt.Horizontal)
@@ -206,6 +210,8 @@ class SettingsDialog(QDialog):
             "sounds_enabled": self.sounds.isChecked(),
             "hover_sounds_enabled": self.hover_sounds.isChecked(),
             "sound_volume": self.sound_volume.value(),
+            "tutorials_enabled": self.tutorials.isChecked(),
+            "tutorials_completed": self.tutorials_completed,
             "update_url": UPDATE_URL,
             "check_updates_on_start": self.check_on_start.isChecked(),
         }

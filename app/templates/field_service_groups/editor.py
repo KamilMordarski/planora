@@ -29,6 +29,7 @@ from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
 from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
+from app.gui.tutorial import tutorial_anchor
 from app.templates.field_service_groups.default_project import ROLE_LABELS, ROLE_MEMBER, group, member
 
 
@@ -85,6 +86,7 @@ class FieldServiceGroupsEditor(QWidget):
             "Edytuj nagłówki dokumentu, dodawaj dowolną liczbę grup i ustawiaj ich kolejność. Każda zmiana zapisuje się automatycznie.",
         )
         document = QGroupBox("Nagłówek dokumentu")
+        tutorial_anchor(document, "document")
         form = configure_form(QFormLayout(document))
         self.congregation = QLineEdit(self.project.get("congregation", ""))
         self.title = QLineEdit(self.project.get("title", ""))
@@ -97,6 +99,7 @@ class FieldServiceGroupsEditor(QWidget):
         group_layout.addWidget(self._help("Dodaj lub usuń grupy. Ich kolejność odpowiada kolejności kolumn w eksporcie."))
         self.group_list = QListWidget()
         add_group = QPushButton("+ Dodaj grupę")
+        tutorial_anchor(add_group, "add_group")
         add_group.setObjectName("primaryButton")
         remove_group = QPushButton("Usuń grupę")
         remove_group.setObjectName("dangerButton")
@@ -121,6 +124,7 @@ class FieldServiceGroupsEditor(QWidget):
         self.members_splitter.addWidget(group_side)
 
         details = QGroupBox("Wybrana grupa")
+        tutorial_anchor(details, "group_members")
         details_layout = QVBoxLayout(details)
         name_form = configure_form(QFormLayout())
         self.member_group_picker = QComboBox()
@@ -161,6 +165,7 @@ class FieldServiceGroupsEditor(QWidget):
             "Sprawdź stonowany, czytelny plan, a następnie wyeksportuj go do PDF lub JPG.",
         )
         self.preview = DocumentPreview()
+        tutorial_anchor(self.preview, "preview")
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")

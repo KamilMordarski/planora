@@ -80,7 +80,8 @@ class GuideDialog(QDialog):
         ),
         (
             "5. Uzupełnij przydziały",
-            "Planora utworzy nowe zwykłe zebranie z datą środy oraz pobranymi sekcjami i punktami. "
+            "Planora utworzy nowe zwykłe zebranie z dniem wybranym w polu „Domyślny dzień zebrania” "
+            "oraz pobranymi sekcjami i punktami. Zebranie nie musi odbywać się w środę. "
             "Nazwiska pozostają puste, dzięki czemu możesz przypisać osoby z własnej biblioteki.",
         ),
         (
@@ -166,8 +167,8 @@ class GuideDialog(QDialog):
             "punkty są automatycznie numerowane od pierwszego punktu po uwagach wstępnych. "
             "Górny pasek przełącza dni bez wracania do listy, a duplikowanie zebrania ustawia "
             "datę tydzień później. Możesz wstawić pełny lokalny szablon punktów albo pobrać program "
-            "bieżącego lub wskazanego tygodnia z JW. Import od razu tworzy nowe zwykłe zebranie z datą środy "
-            "wybranego tygodnia; importowane przydziały osób pozostają puste.",
+            "bieżącego lub wskazanego tygodnia z JW. Przed importem wybierz domyślny dzień zebrania; "
+            "Planora użyje tego dnia w wybranym tygodniu. Importowane przydziały osób pozostają puste.",
         ),
         (
             "Plan grup służby",
@@ -205,6 +206,12 @@ class GuideDialog(QDialog):
             "do Centrum projektów.",
         ),
         (
+            "Lokalna baza danych",
+            "Ustawienia, biblioteka osób, role i trwały plan grup są zapisywane w bazie SQLite planora.db "
+            "w katalogu danych użytkownika. Baza nie jest synchronizowana z chmurą. Pliki JSON pozostają "
+            "formatem ręcznego importu, eksportu i kopii awaryjnych.",
+        ),
+        (
             "Wybór projektów do analizy",
             "Zapisane projekty trafiają domyślnie do osobnego katalogu „projects”. Przed otwarciem Centrum "
             "wybierz konkretne pliki JSON albo świadomie dołącz aktualnie otwarty projekt. Dzięki temu stare i robocze wersje "
@@ -217,8 +224,9 @@ class GuideDialog(QDialog):
         ),
         (
             "Prywatność danych",
-            "Biblioteka osób, projekty i ustawienia pozostają na Twoim urządzeniu. Do internetu "
-            "wysyłane jest jedynie zapytanie o dostępność aktualizacji.",
+            "Biblioteka osób, projekty i ustawienia pozostają na Twoim urządzeniu. Planora nie ma synchronizacji "
+            "w chmurze ani telemetrii. Z siecią łączy się tylko po uruchomieniu funkcji wymagającej internetu, "
+            "na przykład sprawdzania aktualizacji lub importu programu z JW; lokalna baza nie jest wtedy wysyłana.",
         ),
     ]
 

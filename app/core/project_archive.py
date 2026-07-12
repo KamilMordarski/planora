@@ -3,9 +3,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
-from app.config import PROJECT_ARCHIVE_DIR
+from app.config import DATABASE_FILE, PROJECT_ARCHIVE_DIR
 from app.core.assignment_tools import parse_date
-from app.core.project_io import ProjectIO
+from app.core.database import LocalDatabase
 from app.core.template_registry import TemplateRegistry
 
 
@@ -57,9 +57,20 @@ def project_display_title(project: dict) -> str:
 
 
 class ProjectArchive:
-    def __init__(self, directory: Path = PROJECT_ARCHIVE_DIR, retention_days: int = RETENTION_DAYS):
+    def __init__(
+        self,
+        directory: Path = PROJECT_ARCHIVE_DIR,
+        retention_days: int = RETENTION_DAYS,
+        database: LocalDatabase | None = None,
+    ):
         self.directory = Path(directory)
         self.retention_days = retention_days
+        database_path = (
+            DATABASE_FILE
+            if self.directory == PROJECT_ARCHIVE_DIR
+            else self.directory / "planora.db"
+        )
+        self.database = database or LocalDatabase(database_path)
 
     @staticmethod
     def ensure_identity(project: dict, source_path: Path | None = None) -> str:
@@ -94,35 +105,17 @@ class ProjectArchive:
         entry = self.entry_for_project(project, source_path)
         archive_id = entry["archive_id"]
         project[ARCHIVE_ID_KEY] = archive_id
-        ProjectIO._write_json(self.directory / f"{archive_id}.json", entry)
+        self.database.save_archive_entry(entry)
         return entry
 
     def load_entries(self) -> list[dict]:
-        if not self.directory.exists():
-            return []
-        entries = []
-        for path in self.directory.glob("*.json"):
-            try:
-                entry = ProjectIO._read_json(path)
-            except ValueError:
-                continue
-            if not isinstance(entry, dict) or not isinstance(entry.get("project"), dict):
-                continue
-            entries.append(entry)
-        return sorted(entries, key=lambda item: str(item.get("updated_at", "")), reverse=True)
+        return self.database.load_archive_entries()
 
     def cleanup(self, now: datetime | None = None) -> int:
-        if not self.directory.exists():
-            return 0
         threshold = (now or _utc_now()).astimezone(UTC) - timedelta(days=self.retention_days)
-        removed = 0
-        for path in self.directory.glob("*.json"):
-            try:
-                entry = ProjectIO._read_json(path)
-            except ValueError:
-                continue
-            updated_at = _parse_timestamp(entry.get("updated_at", "")) if isinstance(entry, dict) else None
+        expired = []
+        for entry in self.load_entries():
+            updated_at = _parse_timestamp(entry.get("updated_at", ""))
             if updated_at and updated_at < threshold:
-                path.unlink(missing_ok=True)
-                removed += 1
-        return removed
+                expired.append(str(entry.get("archive_id", "")))
+        return self.database.delete_archive_entries(expired)

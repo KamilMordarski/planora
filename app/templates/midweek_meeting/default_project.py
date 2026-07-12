@@ -50,6 +50,7 @@ DEFAULT_PROJECT = {
     "template_id": "midweek_meeting",
     "document_title": "Plan zebrań w tygodniu",
     "congregation": "",
+    "meeting_weekday": 3,
     "meetings": [],
 }
 

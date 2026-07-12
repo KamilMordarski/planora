@@ -26,16 +26,25 @@ def current_week_url(today: date | None = None) -> str:
     return MEETINGS_URL.format(year=iso.year, week=iso.week)
 
 
-def meeting_date_from_url(url: str, today: date | None = None) -> str:
+def meeting_date_from_url(
+    url: str,
+    today: date | None = None,
+    iso_weekday: int = 3,
+) -> str:
+    iso_weekday = max(1, min(7, int(iso_weekday)))
     match = re.search(r"/(\d{4})/(\d{1,2})(?:[/?#]|$)", str(url))
     if match:
         try:
-            return date.fromisocalendar(int(match.group(1)), int(match.group(2)), 3).isoformat()
+            return date.fromisocalendar(
+                int(match.group(1)),
+                int(match.group(2)),
+                iso_weekday,
+            ).isoformat()
         except ValueError:
             pass
     value = today or date.today()
     iso = value.isocalendar()
-    return date.fromisocalendar(iso.year, iso.week, 3).isoformat()
+    return date.fromisocalendar(iso.year, iso.week, iso_weekday).isoformat()
 
 
 def _download(url: str) -> tuple[str, str]:
@@ -104,13 +113,16 @@ def parse_wol_program(source: str) -> dict:
     return result
 
 
-def fetch_wol_program(url: str | None = None) -> dict:
+def fetch_wol_program(url: str | None = None, meeting_weekday: int = 3) -> dict:
     requested_url = url or current_week_url()
     source, resolved_url = _download(requested_url)
     source, resolved_url = _resolve_program_page(source, resolved_url)
     result = parse_wol_program(source)
     result["source_url"] = resolved_url
-    result["meeting_date"] = meeting_date_from_url(requested_url)
+    result["meeting_date"] = meeting_date_from_url(
+        requested_url,
+        iso_weekday=meeting_weekday,
+    )
     return result
 
 

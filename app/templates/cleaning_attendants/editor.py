@@ -30,6 +30,7 @@ from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
 from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
+from app.gui.tutorial import tutorial_anchor
 from app.templates.cleaning_attendants.conflicts import find_conflicts
 from app.templates.cleaning_attendants.default_project import attendant_row, weekly_row
 
@@ -86,6 +87,7 @@ class CleaningAttendantsEditor(QWidget):
         )
         settings_form = configure_form(QFormLayout())
         self.title_edit = QPlainTextEdit(self.project.get("title", ""))
+        tutorial_anchor(self.title_edit, "document")
         self.title_edit.setMinimumHeight(100)
         self.title_edit.setMaximumHeight(150)
         self.attendant_title_edit = QLineEdit(self.project.get("attendant_title", ""))
@@ -131,6 +133,7 @@ class CleaningAttendantsEditor(QWidget):
             "Sprawdź cały dokument w dużym podglądzie, a następnie wybierz format eksportu.",
         )
         self.preview = DocumentPreview()
+        tutorial_anchor(self.preview, "preview")
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
@@ -184,6 +187,7 @@ class CleaningAttendantsEditor(QWidget):
         self.weekly_list = QListWidget()
         new_form = QPushButton("Nowy formularz")
         add = QPushButton("+ Dodaj z formularza")
+        tutorial_anchor(add, "add_weekly")
         add.setToolTip("Dodaje tydzień wraz z aktualnie wpisanymi datami, grupą i osobami.")
         delete = QPushButton("Usuń tydzień")
         delete.setObjectName("dangerButton")
@@ -194,6 +198,7 @@ class CleaningAttendantsEditor(QWidget):
         self.weekly_editor_splitter.addWidget(list_panel)
 
         form_panel = QWidget()
+        tutorial_anchor(form_panel, "weekly_form")
         form = configure_form(QFormLayout(form_panel))
         self.start_date = self._date_edit()
         self.end_date = self._date_edit()
@@ -240,6 +245,7 @@ class CleaningAttendantsEditor(QWidget):
         self.attendant_list = QListWidget()
         new_form = QPushButton("Nowy formularz")
         add = QPushButton("+ Dodaj z formularza")
+        tutorial_anchor(add, "add_attendant")
         add.setToolTip("Dodaje datę zebrania wraz z aktualnie wybranymi porządkowymi.")
         delete = QPushButton("Usuń datę")
         delete.setObjectName("dangerButton")
@@ -250,6 +256,7 @@ class CleaningAttendantsEditor(QWidget):
         self.attendant_editor_splitter.addWidget(list_panel)
 
         form_panel = QWidget()
+        tutorial_anchor(form_panel, "attendant_form")
         form = configure_form(QFormLayout(form_panel))
         self.meeting_date = self._date_edit()
         self.lobby_attendant = self._person_combo()

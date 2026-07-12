@@ -34,6 +34,7 @@ from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
 from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
+from app.gui.tutorial import tutorial_anchor
 from app.core.wol_importer import (
     JW_MEETINGS_BASE_URL,
     WolImportError,
@@ -117,11 +118,31 @@ class MidweekMeetingEditor(QWidget):
             "Ustaw nazwę dokumentu oraz zboru, potem dodaj lub wybierz zebranie do edycji.",
         )
         header_group = QGroupBox("Ustawienia dokumentu")
+        tutorial_anchor(header_group, "document")
         header = configure_form(QFormLayout(header_group))
         self.document_title = QLineEdit(self.project.get("document_title", "Plan zebrań w tygodniu"))
         self.congregation = QLineEdit(self.project.get("congregation", ""))
+        self.meeting_weekday = QComboBox()
+        for weekday, label in enumerate(
+            (
+                "Poniedziałek",
+                "Wtorek",
+                "Środa",
+                "Czwartek",
+                "Piątek",
+                "Sobota",
+                "Niedziela",
+            ),
+            start=1,
+        ):
+            self.meeting_weekday.addItem(label, weekday)
+        weekday_index = self.meeting_weekday.findData(
+            int(self.project.get("meeting_weekday", 3))
+        )
+        self.meeting_weekday.setCurrentIndex(max(0, weekday_index))
         header.addRow("Tytuł dokumentu:", self.document_title)
         header.addRow("Zbór:", self.congregation)
+        header.addRow("Domyślny dzień zebrania:", self.meeting_weekday)
         meetings_layout.addWidget(header_group)
 
         left = QGroupBox("Zebrania w projekcie")
@@ -131,6 +152,7 @@ class MidweekMeetingEditor(QWidget):
         ))
         self.meeting_list = QListWidget()
         new_form = QPushButton("Nowy formularz")
+        tutorial_anchor(new_form, "new_entry")
         new_form.setToolTip("Czyści krok „Dane”, aby przygotować nowe zebranie bez zmieniania wybranego wpisu.")
         add_normal = QPushButton("+ Dodaj zwykłe z formularza")
         add_special = QPushButton("+ Dodaj specjalne z formularza")
@@ -176,6 +198,7 @@ class MidweekMeetingEditor(QWidget):
             "Sprawdź cały plan w dużym podglądzie, a następnie wybierz format eksportu.",
         )
         self.preview = DocumentPreview()
+        tutorial_anchor(self.preview, "preview")
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")
         both = QPushButton("Eksportuj PDF + JPG")
@@ -211,6 +234,7 @@ class MidweekMeetingEditor(QWidget):
         self.meeting_list.itemDoubleClicked.connect(lambda _item: self.wizard.set_step(1))
         self.document_title.textChanged.connect(self.update_document)
         self.congregation.textChanged.connect(self.update_document)
+        self.meeting_weekday.currentIndexChanged.connect(self.update_document)
 
 
     @staticmethod
@@ -232,6 +256,7 @@ class MidweekMeetingEditor(QWidget):
         self.meeting_type.addItem("Zwykłe zebranie", "normal")
         self.meeting_type.addItem("Wydarzenie specjalne", "special")
         self.meeting_date = self._date_edit()
+        tutorial_anchor(self.meeting_date, "date")
         self.bible_reading = QLineEdit()
         self.chairman = self._person_combo()
         self.opening_prayer = self._person_combo()
@@ -277,6 +302,7 @@ class MidweekMeetingEditor(QWidget):
             closing_form.addRow(label, field)
         content_layout.addWidget(closing)
         add_from_form = QPushButton("Dodaj jako nowe zebranie z formularza")
+        tutorial_anchor(add_from_form, "add_entry")
         add_from_form.setObjectName("primaryButton")
         add_from_form.setToolTip("Tworzy nowy termin z aktualnie widocznych danych bez dodawania pustego wpisu.")
         add_from_form.clicked.connect(self.add_from_form)
@@ -322,6 +348,7 @@ class MidweekMeetingEditor(QWidget):
         lists.setSizeConstraint(QLayout.SetMinimumSize)
 
         section_group = QGroupBox("Sekcje programu")
+        tutorial_anchor(section_group, "program_actions")
         section_side = QVBoxLayout(section_group)
         self.section_list = QListWidget()
         self.section_list.setMinimumHeight(90)
@@ -385,6 +412,7 @@ class MidweekMeetingEditor(QWidget):
         details_layout.addWidget(section_details)
 
         item_details = QGroupBox("Szczegóły wybranego punktu")
+        tutorial_anchor(item_details, "item_details")
         item_form = configure_form(QFormLayout(item_details))
         self.item_time = QLineEdit()
         self.item_time.setPlaceholderText("np. 18:30")
@@ -529,6 +557,7 @@ class MidweekMeetingEditor(QWidget):
     def update_document(self, *_args):
         self.project["document_title"] = self.document_title.text()
         self.project["congregation"] = self.congregation.text()
+        self.project["meeting_weekday"] = int(self.meeting_weekday.currentData() or 3)
         self.refresh_preview()
 
     def refresh_meetings(self, selected=None):
@@ -950,7 +979,10 @@ class MidweekMeetingEditor(QWidget):
 
     def _import_wol_program(self, url):
         try:
-            imported = fetch_wol_program(url)
+            imported = fetch_wol_program(
+                url,
+                meeting_weekday=int(self.meeting_weekday.currentData() or 3),
+            )
         except WolImportError as exc:
             QMessageBox.warning(
                 self,

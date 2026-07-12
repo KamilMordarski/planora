@@ -16,6 +16,7 @@ from app.core.app_info import (
     LAST_UPDATE,
 )
 from app.gui.responsive import ResponsiveCardGrid
+from app.gui.tutorial import tutorial_anchor
 
 
 class HomeScreen(QWidget):
@@ -29,6 +30,7 @@ class HomeScreen(QWidget):
         open_guide: Callable,
         open_project_center: Callable,
         open_project_transfer: Callable,
+        start_tutorial: Callable,
     ):
         super().__init__()
         outer = QVBoxLayout(self)
@@ -48,10 +50,14 @@ class HomeScreen(QWidget):
         top.addWidget(brand)
         top.addStretch()
         guide = QPushButton("Poradnik")
+        tutorial = QPushButton("Samouczek")
         settings = QPushButton("Ustawienia")
         guide.clicked.connect(open_guide)
+        tutorial.clicked.connect(start_tutorial)
         settings.clicked.connect(open_settings)
+        tutorial_anchor(tutorial, "home_tutorial")
         top.addWidget(guide)
+        top.addWidget(tutorial)
         top.addWidget(settings)
         root.addLayout(top)
 
@@ -75,6 +81,7 @@ class HomeScreen(QWidget):
         actions = self.actions
         create = QPushButton("Utwórz nowy grafik")
         create.setObjectName("primaryButton")
+        tutorial_anchor(create, "home_create")
         create.setMinimumHeight(36)
         open_button = QPushButton("Otwórz projekt")
         open_button.setMinimumHeight(36)
@@ -159,6 +166,12 @@ class HomeScreen(QWidget):
             card_text.setWordWrap(True)
             button = QPushButton("Otwórz")
             button.clicked.connect(callback)
+            if title == "Biblioteka osób i role":
+                tutorial_anchor(button, "home_people")
+            elif title == "Centrum projektów":
+                tutorial_anchor(button, "home_center")
+            elif title == "Poradnik":
+                tutorial_anchor(button, "home_guide")
             card_layout.addWidget(card_title)
             card_layout.addWidget(card_text)
             card_layout.addStretch()

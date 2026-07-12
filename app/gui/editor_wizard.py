@@ -19,6 +19,7 @@ from app.gui.responsive import scrollable_widget
 
 class EditorWizard(QWidget):
     step_changed = Signal(int)
+    tutorial_requested = Signal()
 
     def __init__(self, animations_enabled: Callable[[], bool] | None = None, parent=None):
         super().__init__(parent)
@@ -50,13 +51,17 @@ class EditorWizard(QWidget):
         self.actions_menu.aboutToShow.connect(self._rebuild_actions_menu)
         self.actions_button = QPushButton("Akcje kroku")
         self.actions_button.setMenu(self.actions_menu)
+        self.tutorial_button = QPushButton("Samouczek")
+        self.tutorial_button.setToolTip("Pokaż interaktywny samouczek tego generatora")
         self.back_button = QPushButton("← Poprzedni krok")
         self.next_button = QPushButton("Następny krok →")
         self.next_button.setObjectName("primaryButton")
         self.back_button.clicked.connect(self.previous_step)
         self.next_button.clicked.connect(self.next_step)
+        self.tutorial_button.clicked.connect(self.tutorial_requested)
         footer_layout.addWidget(self.step_hint)
         footer_layout.addStretch()
+        footer_layout.addWidget(self.tutorial_button)
         footer_layout.addWidget(self.actions_button)
         footer_layout.addWidget(self.back_button)
         footer_layout.addWidget(self.next_button)
@@ -142,6 +147,7 @@ class EditorWizard(QWidget):
         compact = self.width() < 760
         self.step_hint.setVisible(not compact)
         self.actions_button.setText("Akcje" if compact else "Akcje kroku")
+        self.tutorial_button.setText("Pomoc" if compact else "Samouczek")
         self.back_button.setText("Wstecz" if compact else "← Poprzedni krok")
         self.next_button.setText("Dalej" if compact else "Następny krok →")
         for index, (title, _subtitle, _widget, _page) in enumerate(self._steps):

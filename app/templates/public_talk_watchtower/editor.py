@@ -26,6 +26,7 @@ from app.gui.editor_wizard import EditorWizard, page_layout
 from app.gui.export_validation import confirm_export
 from app.gui.printing import print_project
 from app.gui.responsive import ResponsiveActionBar, configure_editable_combo, configure_form, editor_toolbar
+from app.gui.tutorial import tutorial_anchor
 
 
 class PublicTalkWatchtowerEditor(QWidget):
@@ -74,6 +75,7 @@ class PublicTalkWatchtowerEditor(QWidget):
         title_group = QGroupBox("Ustawienia dokumentu")
         title_form = configure_form(QFormLayout(title_group))
         self.title_edit = QLineEdit(self.project.get("title", ""))
+        tutorial_anchor(self.title_edit, "document")
         title_form.addRow("Tytuł dokumentu:", self.title_edit)
         weeks_layout.addWidget(title_group)
 
@@ -89,6 +91,7 @@ class PublicTalkWatchtowerEditor(QWidget):
         self.week_list = QListWidget()
         left_layout.addWidget(self.week_list)
         new_form = QPushButton("Nowy formularz")
+        tutorial_anchor(new_form, "new_entry")
         new_form.setToolTip("Czyści krok „Dane”, aby przygotować nowy tydzień bez zmieniania wybranego wpisu.")
         add = QPushButton("+ Dodaj z formularza")
         add.setToolTip("Dodaje nowy tydzień z datą, osobami i tematami wpisanymi w kroku „Dane”.")
@@ -113,6 +116,7 @@ class PublicTalkWatchtowerEditor(QWidget):
         basics = QGroupBox("Podstawowe informacje")
         basics_form = configure_form(QFormLayout(basics))
         self.date_edit = QLineEdit()
+        tutorial_anchor(self.date_edit, "date")
         self.date_edit.setPlaceholderText("np. 14 czerwca 2026")
         self.normal_radio = QRadioButton("Standardowy")
         self.special_radio = QRadioButton("Wydarzenie specjalne")
@@ -127,6 +131,7 @@ class PublicTalkWatchtowerEditor(QWidget):
         self.combo_fields = {}
         self.text_fields = {}
         normal_group = QGroupBox("Wykład publiczny i Studium Strażnicy")
+        tutorial_anchor(normal_group, "details")
         normal_form = configure_form(QFormLayout(normal_group))
         for key, label, use_combo in [
             ("chairman", "Przewodniczący", True),
@@ -161,6 +166,7 @@ class PublicTalkWatchtowerEditor(QWidget):
         form.addWidget(special_group)
         new_form_from_data = QPushButton("Wyczyść i przygotuj nowy formularz")
         add_from_data = QPushButton("Dodaj jako nowy tydzień z formularza")
+        tutorial_anchor(add_from_data, "add_entry")
         add_from_data.setObjectName("primaryButton")
         form.addWidget(ResponsiveActionBar([new_form_from_data, add_from_data], 190, 2))
         form.addStretch()
@@ -174,6 +180,7 @@ class PublicTalkWatchtowerEditor(QWidget):
             "Sprawdź cały dokument w dużym podglądzie, a następnie wybierz format eksportu.",
         )
         self.preview = DocumentPreview()
+        tutorial_anchor(self.preview, "preview")
         preview_layout.addWidget(self.preview, 1)
         pdf = QPushButton("Eksportuj PDF")
         jpg = QPushButton("Eksportuj JPG")

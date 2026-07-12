@@ -24,6 +24,7 @@ from app.core.assignment_tools import (
     upcoming_assignments,
 )
 from app.core.people_roles import ASSIGNMENT_OPTIONS, ALL_PERMISSIONS, eligible_people, normalize_profile, normalize_profiles
+from app.core.database import GROUP_PLAN_KEY, LEGACY_MIGRATION_KEY, LocalDatabase
 from app.core.group_tools import group_leaders_from_project, latest_group_leaders, normalize_group_name
 from app.core.group_plan_store import GroupPlanStore
 from app.core.project_io import DEFAULT_PEOPLE, ProjectIO
@@ -482,6 +483,14 @@ class TemplateRegistryTests(unittest.TestCase):
 
 
 class RendererTests(unittest.TestCase):
+    def test_every_template_provides_printable_pages(self):
+        for template in TemplateRegistry.all():
+            with self.subTest(template=template.id):
+                pages = template.renderer_class.render_pages(template.default_project)
+
+                self.assertGreaterEqual(len(pages), 1)
+                self.assertTrue(all(page.size[0] > 0 and page.size[1] > 0 for page in pages))
+
     def test_every_template_exports_pdf_and_jpg(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -614,7 +623,7 @@ class GroupToolsTests(unittest.TestCase):
 
 
 class GroupPlanStoreTests(unittest.TestCase):
-    def test_group_plan_is_saved_and_loaded_from_permanent_file(self):
+    def test_group_plan_is_saved_and_loaded_from_permanent_database(self):
         with tempfile.TemporaryDirectory() as directory:
             store = GroupPlanStore(Path(directory) / "field-service-groups.json")
             project = TemplateRegistry.get("field_service_groups").default_project
@@ -651,7 +660,7 @@ class GroupPlanStoreTests(unittest.TestCase):
             store.save(project)
             entry = archive.save(project)
             entry["updated_at"] = datetime(2026, 1, 1, tzinfo=UTC).isoformat()
-            ProjectIO._write_json(root / "archive" / f"{entry['archive_id']}.json", entry)
+            archive.database.save_archive_entry(entry)
 
             archive.cleanup(datetime(2026, 6, 14, tzinfo=UTC))
             permanent = store.load()
@@ -720,6 +729,13 @@ class AssignmentToolsTests(unittest.TestCase):
         self.assertEqual(current_week_url(date(2026, 6, 14)).split("/")[-2:], ["2026", "24"])
         self.assertEqual(JW_MEETINGS_BASE_URL, "https://wol.jw.org/pl/wol/meetings/r12/lp-p/")
         self.assertEqual(meeting_date_from_url(current_week_url(date(2026, 6, 14))), "2026-06-10")
+        self.assertEqual(
+            meeting_date_from_url(
+                current_week_url(date(2026, 6, 14)),
+                iso_weekday=2,
+            ),
+            "2026-06-09",
+        )
         self.assertEqual(parsed["bible_reading"], "JEREMIASZA 4-6")
         self.assertEqual(parsed["sections"][0]["items"][0]["title"], "Pierwszy punkt (10 min)")
         self.assertEqual(len(preset), 3)
@@ -797,7 +813,7 @@ class ProjectArchiveTests(unittest.TestCase):
             project = TemplateRegistry.get("service_meetings").default_project
             entry = archive.save(project)
             entry["updated_at"] = (datetime(2026, 1, 1, tzinfo=UTC)).isoformat()
-            ProjectIO._write_json(Path(directory) / f"{entry['archive_id']}.json", entry)
+            archive.database.save_archive_entry(entry)
 
             removed = archive.cleanup(datetime(2026, 6, 14, tzinfo=UTC))
 
@@ -827,6 +843,35 @@ class ProjectStorageTests(unittest.TestCase):
             (root / "grafik-2.json").write_text("{}", encoding="utf-8")
 
             self.assertEqual(_available_path(root, "grafik.json"), root / "grafik-3.json")
+
+    def test_internal_storage_is_local_sqlite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = LocalDatabase(Path(directory) / "planora.db")
+            database.save_settings({"theme": "graphite"})
+
+            self.assertTrue(database.path.exists())
+            self.assertEqual(database.load_settings()["theme"], "graphite")
+
+    def test_database_transaction_is_rolled_back_after_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = LocalDatabase(Path(directory) / "planora.db")
+            database.initialize()
+
+            with self.assertRaises(RuntimeError):
+                with database.connection() as connection:
+                    connection.execute(
+                        "INSERT INTO settings(id, payload, updated_at) VALUES(1, '{}', 'test')"
+                    )
+                    raise RuntimeError("przerwane zapisywanie")
+
+            self.assertEqual(database.load_settings(), {})
+
+    def test_people_names_are_unique_without_case_sensitivity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = LocalDatabase(Path(directory) / "planora.db")
+            database.save_people(["Jan Test", "jan test", "Anna Test"])
+
+            self.assertEqual(database.load_people(), ["Jan Test", "Anna Test"])
 
 
 class ProjectHistoryTests(unittest.TestCase):
@@ -888,17 +933,16 @@ class ProjectValidationTests(unittest.TestCase):
 class ProjectIOTests(unittest.TestCase):
     def test_legacy_custom_accent_is_removed_from_settings(self):
         with tempfile.TemporaryDirectory() as directory:
-            settings_path = Path(directory) / "settings.json"
-            settings_path.write_text(
-                json.dumps({"theme": "graphite", "accent_color": "#123456"}),
-                encoding="utf-8",
-            )
+            database_path = Path(directory) / "planora.db"
             with (
-                patch("app.core.project_io.SETTINGS_FILE", settings_path),
+                patch("app.core.project_io.DATABASE_FILE", database_path),
                 patch.object(ProjectIO, "ensure_user_data"),
             ):
+                ProjectIO.database().save_settings(
+                    {"theme": "graphite", "accent_color": "#123456"}
+                )
                 settings = ProjectIO.load_settings()
-                saved = json.loads(settings_path.read_text(encoding="utf-8"))
+                saved = ProjectIO.database().load_settings()
 
         self.assertEqual(settings["theme"], "graphite")
         self.assertNotIn("accent_color", settings)
@@ -982,8 +1026,8 @@ class ProjectIOTests(unittest.TestCase):
 
     def test_people_profiles_are_migrated_and_saved(self):
         with tempfile.TemporaryDirectory() as directory:
-            roles_path = Path(directory) / "people-roles.json"
-            with patch("app.core.project_io.PEOPLE_ROLES_FILE", roles_path):
+            database_path = Path(directory) / "planora.db"
+            with patch("app.core.project_io.DATABASE_FILE", database_path):
                 profiles = ProjectIO.load_people_profiles(["Jan Test"])
                 profiles["Jan Test"] = {
                     "permissions": ["console"],
@@ -995,6 +1039,62 @@ class ProjectIOTests(unittest.TestCase):
 
         self.assertEqual(loaded["Jan Test"]["permissions"], ["console"])
         self.assertEqual(loaded["Jan Test"]["roles"], ["elder"])
+
+    def test_legacy_json_is_migrated_once_and_backed_up_locally(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive_directory = root / "project-archive"
+            backup_directory = root / "legacy-json-backup"
+            archive_directory.mkdir()
+            settings_path = root / "settings.json"
+            people_path = root / "people.json"
+            profiles_path = root / "people-roles.json"
+            group_plan_path = root / "field-service-groups.json"
+            settings_path.write_text(json.dumps({"theme": "graphite"}), encoding="utf-8")
+            people_path.write_text(json.dumps(["Jan Test"]), encoding="utf-8")
+            profiles_path.write_text(
+                json.dumps({"Jan Test": {"permissions": ["console"]}}),
+                encoding="utf-8",
+            )
+            group_project = TemplateRegistry.get("field_service_groups").default_project
+            group_plan_path.write_text(json.dumps(group_project), encoding="utf-8")
+            archive_project = TemplateRegistry.get("service_meetings").default_project
+            archive_entry = ProjectArchive.entry_for_project(archive_project)
+            (archive_directory / f"{archive_entry['archive_id']}.json").write_text(
+                json.dumps(archive_entry),
+                encoding="utf-8",
+            )
+            database = LocalDatabase(root / "planora.db")
+
+            migrated = database.migrate_legacy_json(
+                settings_path=settings_path,
+                people_path=people_path,
+                profiles_path=profiles_path,
+                group_plan_path=group_plan_path,
+                archive_directory=archive_directory,
+                backup_directory=backup_directory,
+            )
+            migrated_again = database.migrate_legacy_json(
+                settings_path=settings_path,
+                people_path=people_path,
+                profiles_path=profiles_path,
+                group_plan_path=group_plan_path,
+                archive_directory=archive_directory,
+                backup_directory=backup_directory,
+            )
+
+            self.assertTrue(migrated)
+            self.assertFalse(migrated_again)
+            self.assertIsNotNone(database.metadata(LEGACY_MIGRATION_KEY))
+            self.assertEqual(database.load_people(), ["Jan Test"])
+            self.assertEqual(database.load_people_profiles()["Jan Test"]["permissions"], ["console"])
+            self.assertEqual(
+                database.load_document(GROUP_PLAN_KEY)["template_id"],
+                "field_service_groups",
+            )
+            self.assertEqual(len(database.load_archive_entries()), 1)
+            self.assertTrue((backup_directory / "people.json").exists())
+            self.assertFalse(people_path.exists())
 
     def test_legacy_project_gets_default_template_id(self):
         with tempfile.TemporaryDirectory() as directory:

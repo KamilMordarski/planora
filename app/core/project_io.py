@@ -5,15 +5,20 @@ from typing import Any
 
 from app.config import (
     AUTOSAVE_FILE,
+    DATABASE_FILE,
+    FIELD_SERVICE_GROUPS_FILE,
     LEGACY_USER_DATA_DIR,
+    LEGACY_JSON_BACKUP_DIR,
     PEOPLE_FILE,
     PEOPLE_ROLES_FILE,
+    PROJECT_ARCHIVE_DIR,
     PROJECTS_DIR,
     RECOVERY_DIR,
     SETTINGS_FILE,
     UPDATE_URL,
     USER_DATA_DIR,
 )
+from app.core.database import LocalDatabase
 from app.core.people_roles import normalize_profiles
 
 
@@ -32,10 +37,16 @@ DEFAULT_SETTINGS = {
     "sounds_enabled": True,
     "hover_sounds_enabled": False,
     "sound_volume": 35,
+    "tutorials_enabled": True,
+    "tutorials_completed": [],
 }
 
 
 class ProjectIO:
+    @staticmethod
+    def database() -> LocalDatabase:
+        return LocalDatabase(DATABASE_FILE)
+
     @staticmethod
     def ensure_user_data():
         if (
@@ -56,10 +67,14 @@ class ProjectIO:
                 legacy_autosave.replace(AUTOSAVE_FILE)
             except OSError:
                 pass
-        if not PEOPLE_FILE.exists():
-            ProjectIO._write_json(PEOPLE_FILE, DEFAULT_PEOPLE)
-        if not SETTINGS_FILE.exists():
-            ProjectIO._write_json(SETTINGS_FILE, DEFAULT_SETTINGS)
+        ProjectIO.database().migrate_legacy_json(
+            settings_path=SETTINGS_FILE,
+            people_path=PEOPLE_FILE,
+            profiles_path=PEOPLE_ROLES_FILE,
+            group_plan_path=FIELD_SERVICE_GROUPS_FILE,
+            archive_directory=PROJECT_ARCHIVE_DIR,
+            backup_directory=LEGACY_JSON_BACKUP_DIR,
+        )
 
     @staticmethod
     def _read_json(path: Path) -> Any:
@@ -99,34 +114,28 @@ class ProjectIO:
     @staticmethod
     def load_people() -> list[str]:
         ProjectIO.ensure_user_data()
-        try:
-            value = ProjectIO._read_json(PEOPLE_FILE)
-        except ValueError:
-            value = list(DEFAULT_PEOPLE)
-            ProjectIO.save_people(value)
-        if not isinstance(value, list):
-            value = list(DEFAULT_PEOPLE)
-            ProjectIO.save_people(value)
-        return [str(person) for person in value]
+        return ProjectIO.database().load_people()
 
     @staticmethod
     def save_people(people: list[str]):
-        ProjectIO._write_json(PEOPLE_FILE, people)
+        ProjectIO.database().save_people(people)
 
     @staticmethod
     def load_people_profiles(people: list[str] | None = None) -> dict[str, dict]:
         people = list(people if people is not None else ProjectIO.load_people())
-        try:
-            value = ProjectIO._read_json(PEOPLE_ROLES_FILE)
-        except ValueError:
-            value = {}
+        value = ProjectIO.database().load_people_profiles()
         profiles = normalize_profiles(people, value)
         ProjectIO.save_people_profiles(profiles)
         return profiles
 
     @staticmethod
     def save_people_profiles(profiles: dict[str, dict]):
-        ProjectIO._write_json(PEOPLE_ROLES_FILE, profiles)
+        ProjectIO.database().save_people_profiles(profiles)
+
+    @staticmethod
+    def save_people_library(people: list[str], profiles: dict[str, dict]):
+        normalized = normalize_profiles(people, profiles)
+        ProjectIO.database().save_people_library(people, normalized)
 
     @staticmethod
     def import_people(path: Path, current_people: list[str] | None = None) -> tuple[list[str], int]:
@@ -201,10 +210,7 @@ class ProjectIO:
     @staticmethod
     def load_settings() -> dict:
         ProjectIO.ensure_user_data()
-        try:
-            value = ProjectIO._read_json(SETTINGS_FILE)
-        except ValueError:
-            value = {}
+        value = ProjectIO.database().load_settings()
         settings = dict(DEFAULT_SETTINGS)
         if isinstance(value, dict):
             settings.update(value)
@@ -217,4 +223,4 @@ class ProjectIO:
     def save_settings(settings: dict):
         saved = dict(settings)
         saved.pop("accent_color", None)
-        ProjectIO._write_json(SETTINGS_FILE, saved)
+        ProjectIO.database().save_settings(saved)

@@ -180,21 +180,25 @@ class PublicTalkWatchtowerRenderer:
         return image
 
     @classmethod
+    def render_pages(cls, project: dict) -> list[Image.Image]:
+        title = project.get("title", "")
+        return [cls.render_page(title, page) for page in cls.paginate(project.get("weeks", []))]
+
+    @classmethod
     def export_jpg(cls, path: str, project: dict):
-        pages = cls.paginate(project.get("weeks", []))
+        pages = cls.render_pages(project)
         if len(pages) == 1:
-            cls.render_page(project.get("title", ""), pages[0]).save(path, quality=95)
+            pages[0].save(path, quality=95)
             return
         base = Path(path)
-        for index, page in enumerate(pages, start=1):
+        for index, image in enumerate(pages, start=1):
             output = base.with_name(f"{base.stem}_strona_{index}{base.suffix}")
-            cls.render_page(project.get("title", ""), page).save(output, quality=95)
+            image.save(output, quality=95)
 
     @classmethod
     def export_pdf(cls, path: str, project: dict):
         pdf = canvas.Canvas(path, pagesize=A4)
-        for page in cls.paginate(project.get("weeks", [])):
-            image = cls.render_page(project.get("title", ""), page)
+        for image in cls.render_pages(project):
             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp:
                 temp_path = temp.name
             try:
