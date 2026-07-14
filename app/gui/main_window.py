@@ -277,33 +277,51 @@ class MainWindow(QMainWindow):
         steps = [
             TutorialStep(
                 "Witaj w Planorze",
-                "Ten krótki samouczek pokaże najważniejsze miejsca. Możesz go pominąć, "
-                "a później uruchomić ponownie przyciskiem „Samouczek”.",
-                target=lambda: find_tutorial_anchor(self.home, "home_tutorial"),
-            ),
-            TutorialStep(
-                "Utwórz pierwszy grafik",
-                "Tutaj wybierzesz jeden z generatorów. Każdy ma własny, krótki samouczek "
-                "pokazywany przy pierwszym użyciu.",
+                "Ten samouczek przeprowadzi Cię przez główne bloki aplikacji. Podświetlenie trzyma się całych kart, "
+                "więc działa też w trybie okienkowym i na mniejszych monitorach.",
                 target=lambda: find_tutorial_anchor(self.home, "home_create"),
             ),
             TutorialStep(
-                "Najpierw przygotuj osoby",
-                "Biblioteka przechowuje nazwiska, role i możliwe przydziały. Dzięki niej listy "
-                "w generatorach podpowiadają właściwe osoby.",
+                "Utwórz pierwszy grafik",
+                "W tym bloku zaczynasz pracę. Kliknij „Utwórz nowy grafik”, wybierz generator, a potem przechodź "
+                "krokami: dane, program lub osoby, podgląd i eksport.",
+                target=lambda: find_tutorial_anchor(self.home, "home_create"),
+            ),
+            TutorialStep(
+                "Biblioteka osób i role",
+                "Tutaj dodajesz osoby, role oraz uprawnienia do konkretnych przydziałów. Generatory korzystają z tej "
+                "listy do podpowiadania właściwych osób, ale w razie potrzeby można wpisać kogoś ręcznie.",
                 target=lambda: find_tutorial_anchor(self.home, "home_people"),
             ),
             TutorialStep(
-                "Sprawdzaj gotowe projekty",
-                "Centrum projektów pokazuje kalendarz, obowiązki, statystyki i globalne kolizje "
-                "dla wybranych przez Ciebie grafików.",
+                "Import i eksport projektów",
+                "Ten blok służy do przenoszenia edytowalnych grafików między komputerami. To nie jest eksport PDF, "
+                "tylko kopia projektu, którą można później dalej poprawiać.",
+                target=lambda: find_tutorial_anchor(self.home, "home_transfer"),
+            ),
+            TutorialStep(
+                "Centrum projektów",
+                "W centrum wybierasz zapisane grafiki do wspólnej analizy. Tam sprawdzisz nadchodzące obowiązki, "
+                "statystyki, globalne kolizje i drukowanie zbiorcze.",
                 target=lambda: find_tutorial_anchor(self.home, "home_center"),
             ),
             TutorialStep(
-                "Pomoc jest zawsze dostępna",
-                "Poradnik zawiera dokładniejsze opisy. W każdym generatorze przycisk „Samouczek” "
-                "ponownie uruchomi instrukcję krok po kroku.",
+                "Aktualizacje",
+                "Tutaj sprawdzisz, czy jest nowsza wersja Planory. Jeśli automatyczna instalacja nie ma uprawnień, "
+                "aplikacja pozwoli pobrać gotowy plik EXE ręcznie.",
+                target=lambda: find_tutorial_anchor(self.home, "home_updates"),
+            ),
+            TutorialStep(
+                "Poradnik i dokumentacja",
+                "Poradnik jest krótszą pomocą w aplikacji, a dokumentacja online opisuje funkcje dokładniej. "
+                "Warto zajrzeć tam przy imporcie programu z JW albo przy pracy z kilkoma grafikami.",
                 target=lambda: find_tutorial_anchor(self.home, "home_guide"),
+            ),
+            TutorialStep(
+                "Ustawienia i ponowny samouczek",
+                "W ustawieniach zmienisz motyw, skalę interfejsu, dźwięki, drukowanie oraz uruchomisz ten samouczek "
+                "ponownie. Każdy generator ma też własny przycisk „Samouczek” w dolnym pasku kroków.",
+                target=lambda: find_tutorial_anchor(self.home, "home_settings"),
             ),
         ]
         self._show_tutorial("home", "Pierwsze uruchomienie", steps)
@@ -383,6 +401,8 @@ class MainWindow(QMainWindow):
             self.settings.update(dialog.values())
             ProjectIO.save_settings(self.settings)
             self._apply_style()
+            if getattr(dialog, "start_tutorial_requested", False):
+                QTimer.singleShot(250, self.start_home_tutorial)
 
     def open_guide(self):
         GuideDialog(self).exec()

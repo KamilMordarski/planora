@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QScrollA
 
 from app.gui.responsive import ResponsiveCardGrid
 from app.gui.template_icons import template_icon
+from app.gui.tutorial import tutorial_anchor
 
 
 class ScheduleTypeScreen(QWidget):
@@ -30,6 +31,7 @@ class ScheduleTypeScreen(QWidget):
         root.addSpacing(14)
 
         content = QWidget()
+        tutorial_anchor(content, "schedule_types_grid")
         content_layout = QVBoxLayout(content)
         cards = ResponsiveCardGrid(min_column_width=310, max_columns=3)
         content_layout.addWidget(cards)
@@ -38,6 +40,7 @@ class ScheduleTypeScreen(QWidget):
         for index, template in enumerate(templates):
             card = QFrame()
             card.setObjectName("templateCard")
+            tutorial_anchor(card, f"schedule_type:{template.id}")
             card.setMinimumHeight(250)
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(24, 22, 24, 22)

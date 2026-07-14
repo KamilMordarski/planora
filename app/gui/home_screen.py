@@ -56,6 +56,7 @@ class HomeScreen(QWidget):
         tutorial.clicked.connect(start_tutorial)
         settings.clicked.connect(open_settings)
         tutorial_anchor(tutorial, "home_tutorial")
+        tutorial_anchor(settings, "home_settings")
         top.addWidget(guide)
         top.addWidget(tutorial)
         top.addWidget(settings)
@@ -63,6 +64,7 @@ class HomeScreen(QWidget):
 
         hero = QFrame()
         hero.setObjectName("heroCard")
+        tutorial_anchor(hero, "home_create")
         self.hero_layout = QBoxLayout(QBoxLayout.LeftToRight, hero)
         hero_layout = self.hero_layout
         hero_layout.setContentsMargins(34, 28, 34, 28)
@@ -81,7 +83,6 @@ class HomeScreen(QWidget):
         actions = self.actions
         create = QPushButton("Utwórz nowy grafik")
         create.setObjectName("primaryButton")
-        tutorial_anchor(create, "home_create")
         create.setMinimumHeight(36)
         open_button = QPushButton("Otwórz projekt")
         open_button.setMinimumHeight(36)
@@ -100,6 +101,7 @@ class HomeScreen(QWidget):
 
         disclaimer = QFrame()
         disclaimer.setObjectName("disclaimerCard")
+        tutorial_anchor(disclaimer, "home_disclaimer")
         disclaimer_layout = QVBoxLayout(disclaimer)
         disclaimer_title = QLabel("Niezależne narzędzie")
         disclaimer_title.setObjectName("sectionTitle")
@@ -113,6 +115,7 @@ class HomeScreen(QWidget):
 
         duty_panel = QFrame()
         duty_panel.setObjectName("infoCard")
+        tutorial_anchor(duty_panel, "home_duties")
         self.duty_layout = QBoxLayout(QBoxLayout.LeftToRight, duty_panel)
         duty_layout = self.duty_layout
         duty_text = QVBoxLayout()
@@ -155,9 +158,19 @@ class HomeScreen(QWidget):
                 lambda: QDesktopServices.openUrl(QUrl(APP_DOCS_URL)),
             ),
         ]
+        anchors = {
+            "Biblioteka osób i role": "home_people",
+            "Import i eksport grafików": "home_transfer",
+            "Centrum projektów": "home_center",
+            "Sprawdź aktualizacje": "home_updates",
+            "Poradnik": "home_guide",
+            "Dokumentacja online": "home_docs",
+        }
         for index, (title, description, callback) in enumerate(items):
             card = QFrame()
             card.setObjectName("infoCard")
+            if title in anchors:
+                tutorial_anchor(card, anchors[title])
             card_layout = QVBoxLayout(card)
             card_title = QLabel(title)
             card_title.setObjectName("cardTitle")
@@ -166,12 +179,6 @@ class HomeScreen(QWidget):
             card_text.setWordWrap(True)
             button = QPushButton("Otwórz")
             button.clicked.connect(callback)
-            if title == "Biblioteka osób i role":
-                tutorial_anchor(button, "home_people")
-            elif title == "Centrum projektów":
-                tutorial_anchor(button, "home_center")
-            elif title == "Poradnik":
-                tutorial_anchor(button, "home_guide")
             card_layout.addWidget(card_title)
             card_layout.addWidget(card_text)
             card_layout.addStretch()

@@ -1,6 +1,6 @@
 APP_NAME = "Planora"
 APP_TAGLINE = "Kreator przejrzystych grafików"
-APP_VERSION = "1.13.7"
+APP_VERSION = "1.13.8"
 APP_AUTHOR = "Kamil Mordarski"
 APP_AUTHOR_URL = "https://www.kamilmordarski.pl"
 APP_DOCS_URL = "https://kamilmordarski.github.io/planora-docs/"

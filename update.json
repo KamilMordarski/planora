@@ -1,16 +1,16 @@
 {
-  "latest_version": "1.13.7",
+  "latest_version": "1.13.8",
   "release_date": "2026-07-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.7/Planora-Windows.zip",
-  "manual_download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.7/Planora-latest.exe",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-Windows.zip",
+  "manual_download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-latest.exe",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.7/Planora-Windows.zip",
-    "windows_exe": "https://github.com/KamilMordarski/planora/releases/download/v1.13.7/Planora-latest.exe",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.7/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-Windows.zip",
+    "windows_exe": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-latest.exe",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-macOS.zip"
   },
   "notes": [
-    "Dodano awaryjne pobieranie gotowego pliku EXE, gdy automatyczna instalacja nie ma uprawnień",
-    "Wzmocniono pobieranie aktualizacji przez dłuższy timeout i ponawianie pobrania",
-    "Dodano ustawienia drukowania: pogrubienie tekstu, kontrast, skalę strony i tryb szarości"
+    "Poprawiono samouczek, żeby podświetlał całe bloki i działał lepiej w trybie okienkowym",
+    "Rozbudowano samouczek ekranu głównego o bibliotekę osób, centrum projektów, import, aktualizacje i ustawienia",
+    "Dodano możliwość uruchomienia samouczka bezpośrednio z ustawień aplikacji"
   ]
 }

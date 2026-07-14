@@ -5,6 +5,7 @@ from PySide6.QtCore import QEvent, QPoint, QRect, QRectF, QTimer, Qt, Signal
 from PySide6.QtGui import QColor, QKeyEvent, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QFrame,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -15,6 +16,17 @@ from PySide6.QtWidgets import (
 
 
 TUTORIAL_PROPERTY = "planoraTutorialId"
+BLOCK_OBJECT_NAMES = {
+    "heroCard",
+    "infoCard",
+    "disclaimerCard",
+    "templateCard",
+    "editorToolbar",
+    "editorContextBar",
+    "wizardHeader",
+    "wizardFooter",
+}
+BLOCK_CLASS_NAMES = {"ResponsiveActionBar", "ResponsiveCardGrid"}
 
 
 def tutorial_anchor(widget: QWidget, anchor_id: str) -> QWidget:
@@ -141,13 +153,13 @@ class TutorialOverlay(QWidget):
         if step.before:
             step.before()
         self.counter.setText(
-            f"{self.tutorial_title}  ·  krok {index + 1} z {len(self.steps)}"
+            f"{self.tutorial_title}  -  krok {index + 1} z {len(self.steps)}"
         )
         self.heading.setText(step.title)
         self.description.setText(step.text)
         self.back_button.setEnabled(index > 0)
         self.next_button.setText("Zakończ" if index == len(self.steps) - 1 else "Dalej")
-        QTimer.singleShot(80, self._position_step)
+        QTimer.singleShot(90, self._position_step)
 
     def next(self):
         if self.index >= len(self.steps) - 1:
@@ -168,37 +180,93 @@ class TutorialOverlay(QWidget):
     def _position_step(self):
         step = self.steps[self.index]
         target = step.target() if callable(step.target) else step.target
-        self.target = target if target and target.isVisible() else None
+        self.target = self._preferred_block(target)
         if self.target is not None:
             self._ensure_visible(self.target)
-            top_left = self.target.mapTo(self, QPoint(0, 0))
-            rect = QRect(top_left, self.target.size()).adjusted(-7, -7, 7, 7)
-            self.highlight_rect = rect.intersected(self.rect().adjusted(8, 8, -8, -8))
+            self.highlight_rect = self._visible_rect_for(self.target)
         else:
             self.highlight_rect = QRect()
-        self.card.setFixedWidth(max(300, min(430, self.width() - 28)))
-        self.card.adjustSize()
+        self._resize_card()
         self._position_card()
         self.update()
         self.raise_()
+
+    def _preferred_block(self, target: QWidget | None) -> QWidget | None:
+        if target is None or not target.isVisible():
+            return None
+        if target.width() >= 180 and target.height() >= 70:
+            return target
+
+        current = target.parentWidget()
+        while current is not None and current is not self.host:
+            if not current.isVisible():
+                current = current.parentWidget()
+                continue
+            if self._is_tutorial_block(current):
+                return current
+            current = current.parentWidget()
+        return target
+
+    @staticmethod
+    def _is_tutorial_block(widget: QWidget) -> bool:
+        return (
+            isinstance(widget, QGroupBox)
+            or widget.objectName() in BLOCK_OBJECT_NAMES
+            or widget.__class__.__name__ in BLOCK_CLASS_NAMES
+        )
 
     @staticmethod
     def _ensure_visible(target: QWidget):
         current = target.parentWidget()
         while current is not None:
             if isinstance(current, QScrollArea):
-                current.ensureWidgetVisible(target, 30, 30)
+                current.ensureWidgetVisible(target, 36, 36)
             current = current.parentWidget()
+
+    def _visible_rect_for(self, target: QWidget) -> QRect:
+        rect = QRect(target.mapTo(self, QPoint(0, 0)), target.size())
+        current: QWidget | None = target.parentWidget()
+        while current is not None:
+            if current.isVisible():
+                clip = QRect(current.mapTo(self, QPoint(0, 0)), current.size())
+                rect = rect.intersected(clip)
+            if isinstance(current.parentWidget(), QScrollArea):
+                viewport = current.parentWidget().viewport()
+                clip = QRect(viewport.mapTo(self, QPoint(0, 0)), viewport.size())
+                rect = rect.intersected(clip)
+            if current is self.host:
+                break
+            current = current.parentWidget()
+        rect = rect.adjusted(-7, -7, 7, 7).intersected(self.rect().adjusted(8, 8, -8, -8))
+        if rect.width() < 18 or rect.height() < 18:
+            return QRect()
+        return rect
+
+    def _resize_card(self):
+        available_width = max(1, self.width() - 28)
+        preferred = 430 if self.width() >= 520 else 360
+        width = max(260, min(preferred, available_width))
+        self.card.setFixedWidth(width)
+        self.card.setMinimumHeight(0)
+        self.card.setMaximumHeight(16_777_215)
+        self.card.adjustSize()
+        max_height = max(180, self.height() - 28)
+        if self.card.height() > max_height:
+            self.card.setFixedHeight(max_height)
+        else:
+            self.card.setFixedHeight(self.card.sizeHint().height())
 
     def _position_card(self):
         margin = 14
-        card_size = self.card.sizeHint()
         width = min(self.card.width(), self.width() - margin * 2)
-        height = min(card_size.height(), self.height() - margin * 2)
+        height = min(self.card.height(), self.height() - margin * 2)
         if self.highlight_rect.isValid():
-            below = self.highlight_rect.bottom() + 14
-            above = self.highlight_rect.top() - height - 14
-            y = below if below + height <= self.height() - margin else max(margin, above)
+            below_space = self.height() - self.highlight_rect.bottom() - margin
+            above_space = self.highlight_rect.top() - margin
+            if below_space >= height + 14 or below_space >= above_space:
+                y = min(self.highlight_rect.bottom() + 14, self.height() - height - margin)
+            else:
+                y = max(margin, self.highlight_rect.top() - height - 14)
             x = max(
                 margin,
                 min(
@@ -218,11 +286,11 @@ class TutorialOverlay(QWidget):
         shade.setFillRule(Qt.OddEvenFill)
         shade.addRect(QRectF(self.rect()))
         if self.highlight_rect.isValid():
-            shade.addRoundedRect(QRectF(self.highlight_rect), 10, 10)
+            shade.addRoundedRect(QRectF(self.highlight_rect), 12, 12)
         painter.fillPath(shade, QColor(8, 15, 25, 185))
         if self.highlight_rect.isValid():
             painter.setPen(QPen(QColor("#9fd4ff"), 3))
-            painter.drawRoundedRect(self.highlight_rect, 10, 10)
+            painter.drawRoundedRect(self.highlight_rect, 12, 12)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -265,44 +333,44 @@ def _step(
 
 def editor_tutorial_steps(template_id: str, editor: QWidget) -> list[TutorialStep]:
     common_preview = (
-        "Sprawdź gotowy dokument. Tutaj możesz go powiększyć, wydrukować albo wyeksportować "
-        "do PDF i JPG. Motyw aplikacji nie zmienia wyglądu eksportu."
+        "Na końcu sprawdź podgląd strony. Jeśli coś nie pasuje, wróć do poprzedniego kroku, "
+        "popraw dane i dopiero wtedy użyj drukowania albo eksportu PDF/JPG."
     )
     definitions = {
         "public_talk_watchtower": [
-            (0, "document", "Nadaj dokumentowi nazwę", "Wpisz tytuł, który pojawi się na gotowym planie."),
-            (0, "new_entry", "Przygotuj nowy tydzień", "Kliknij „Nowy formularz”, aby rozpocząć pusty wpis bez nadpisywania wcześniejszego tygodnia."),
-            (1, "date", "Wpisz datę", "Data nie jest narzucona. Wpisz dzień odpowiadający rzeczywistemu terminowi zebrania."),
-            (1, "details", "Przypisz program i osoby", "Uzupełnij temat wykładu, Studium Strażnicy oraz wybierz osoby z biblioteki."),
-            (1, "add_entry", "Dodaj wypełniony tydzień", "Ten przycisk zapisuje cały widoczny formularz jako nową pozycję planu."),
+            (0, "document", "Nazwij dokument", "W tym bloku ustawiasz tytuł widoczny na gotowym planie."),
+            (0, "new_entry", "Zarządzaj tygodniami", "Tu widzisz listę tygodni. Możesz wybrać istniejący wpis, dodać nowy, usunąć go albo zmienić kolejność."),
+            (1, "date", "Uzupełnij dane tygodnia", "Wpisz datę i rodzaj tygodnia. Ten krok nie wymaga wcześniejszego dodawania pustej pozycji."),
+            (1, "details", "Przypisz program i osoby", "W tym bloku uzupełniasz temat wykładu, prowadzących oraz lektora z biblioteki osób."),
+            (1, "add_entry", "Dodaj gotowy wpis", "Po uzupełnieniu formularza kliknij dodawanie z formularza, a tydzień trafi na listę."),
             (2, "preview", "Sprawdź i wyeksportuj", common_preview),
         ],
         "cleaning_attendants": [
             (0, "document", "Ustaw tytuły dokumentu", "Nadaj nazwy części dotyczącej sprzątania oraz służby porządkowej."),
-            (1, "weekly_form", "Uzupełnij tydzień", "Wybierz zakres dat i grupę. Grupowy może zostać automatycznie podpowiedziany jako osoba odpowiedzialna za sprzątanie."),
-            (1, "add_weekly", "Dodaj tydzień", "Dodaj aktualnie wypełniony zakres wraz z konsolą i mikrofonami."),
+            (1, "weekly_form", "Uzupełnij tydzień", "Wybierz zakres dat, grupę, osobę od sprzątania, konsolę oraz mikrofony."),
+            (1, "add_weekly", "Dodaj tydzień", "Dodaj aktualnie wypełniony zakres do listy. Grupowy może być podpowiedziany automatycznie."),
             (2, "attendant_form", "Dodaj porządkowych", "Ustaw rzeczywistą datę zebrania i przypisz osoby na hol oraz salę."),
-            (2, "add_attendant", "Zapisz dyżur", "Dodaj dyżur do listy. Kontrola kolizji odświeży się automatycznie."),
+            (2, "add_attendant", "Zapisz dyżur", "Po dodaniu dyżuru kontrola kolizji odświeży się automatycznie."),
             (3, "preview", "Sprawdź i wyeksportuj", common_preview),
         ],
         "midweek_meeting": [
-            (0, "document", "Ustaw dokument i dzień", "Wpisz nazwę zboru oraz wybierz domyślny dzień zebrania. Nie musi to być środa."),
-            (0, "new_entry", "Rozpocznij nowe zebranie", "Przygotuj pusty formularz albo przejdź do importu programu z JW w kroku „Program”."),
-            (1, "date", "Wybierz rzeczywistą datę", "Ustaw dzień konkretnego zebrania oraz uzupełnij rozpoczęcie, zakończenie i osoby."),
-            (1, "add_entry", "Dodaj zebranie", "Formularz zostanie dodany jako nowy termin, bez wcześniejszego tworzenia pustej pozycji."),
-            (2, "program_actions", "Utwórz program", "Dodaj szablon punktów, puste sekcje albo pobierz wybrany tydzień z JW. Import użyje ustawionego dnia zebrania."),
-            (2, "item_details", "Uzupełnij punkt", "Wybierz sekcję i punkt, a następnie wpisz godzinę, nazwę i uczestników. Numer pojawi się automatycznie."),
+            (0, "document", "Ustaw dokument i dzień", "Wpisz nazwę zboru oraz domyślny dzień zebrania. Zebranie nie musi być w środę."),
+            (0, "new_entry", "Lista zebrań", "Tutaj dodajesz, duplikujesz i układasz kolejność zebrań w projekcie."),
+            (1, "date", "Dane konkretnego zebrania", "Ustaw datę, przewodniczącego, modlitwy oraz początek i zakończenie programu."),
+            (1, "add_entry", "Dodaj wypełnione zebranie", "Ten przycisk tworzy nowy termin z widocznego formularza, bez pustego wpisu po drodze."),
+            (2, "program_actions", "Sekcje i import z JW", "W tym bloku dodasz sekcje, szablon punktów albo wkleisz link z JW do wybranego tygodnia."),
+            (2, "item_details", "Edycja punktu", "Wybierz punkt z listy i uzupełnij godzinę, nazwę oraz osoby. Numer punktu pojawi się automatycznie."),
             (3, "preview", "Sprawdź i wyeksportuj", common_preview),
         ],
         "field_service_groups": [
-            (0, "document", "Ustaw nagłówek", "Wpisz zbór lub miejscowość oraz nazwę dokumentu."),
-            (0, "add_group", "Dodaj potrzebne grupy", "Możesz utworzyć dowolną liczbę grup i zmieniać ich kolejność."),
-            (1, "group_members", "Dodaj osoby do grupy", "Wybierz grupę, dodaj osoby z biblioteki i przypisz rolę grupowego, asystenta lub członka."),
+            (0, "document", "Ustaw nagłówek", "Wpisz zbór lub miejscowość oraz nazwę dokumentu. Domyślnie dokument jest pusty."),
+            (0, "add_group", "Dodaj potrzebne grupy", "Tu kontrolujesz liczbę grup i ich kolejność w gotowym eksporcie."),
+            (1, "group_members", "Dodaj osoby do grupy", "Wybierz grupę, dodaj osoby z biblioteki i przypisz rolę: grupowy, asystent albo członek."),
             (2, "preview", "Sprawdź i wyeksportuj", common_preview),
         ],
         "service_meetings": [
-            (0, "document", "Ustaw wygląd dokumentu", "Wpisz tytuł, okres, nazwy kolumn i opcjonalną notatkę."),
-            (1, "meeting_form", "Uzupełnij zbiórkę", "Wpisz opis dnia, godzinę, miejsce oraz wybierz osobę prowadzącą."),
+            (0, "document", "Ustaw teksty dokumentu", "Wpisz tytuł, okres, nazwy kolumn i notatkę pod tabelą."),
+            (1, "meeting_form", "Uzupełnij zbiórkę", "W tym bloku wpisujesz opis dnia, godzinę, miejsce i prowadzącego."),
             (1, "add_entry", "Dodaj termin", "Dodaj cały wypełniony formularz do planu jednym kliknięciem."),
             (2, "preview", "Sprawdź i wyeksportuj", common_preview),
         ],

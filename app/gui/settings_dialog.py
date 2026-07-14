@@ -28,6 +28,7 @@ class SettingsDialog(QDialog):
     def __init__(self, settings: dict, parent=None):
         super().__init__(parent)
         self.tutorials_completed = list(settings.get("tutorials_completed", []))
+        self.start_tutorial_requested = False
         self.setWindowTitle("Ustawienia aplikacji")
         fit_window_to_screen(self, 650, 600, 440, 360)
 
@@ -202,11 +203,15 @@ class SettingsDialog(QDialog):
         self.hover_sounds.setChecked(bool(settings.get("hover_sounds_enabled", False)))
         self.tutorials = QCheckBox("Pokazuj samouczek przy pierwszym użyciu generatora")
         self.tutorials.setChecked(bool(settings.get("tutorials_enabled", True)))
+        self.start_tutorial = QPushButton("Zapisz i uruchom samouczek")
+        self.start_tutorial.setToolTip("Zamknie ustawienia i pokaże samouczek na ekranie głównym.")
+        self.start_tutorial.clicked.connect(self.request_tutorial)
         group_layout.addWidget(self.animations)
         group_layout.addWidget(self.startup_splash)
         group_layout.addWidget(self.sounds)
         group_layout.addWidget(self.hover_sounds)
         group_layout.addWidget(self.tutorials)
+        group_layout.addWidget(self.start_tutorial)
 
         animation_row = QHBoxLayout()
         self.animation_speed = QSlider(Qt.Horizontal)
@@ -242,6 +247,10 @@ class SettingsDialog(QDialog):
     def preview_sound(self):
         self.sound_preview.setVolume(self.sound_volume.value() / 100)
         self.sound_preview.play()
+
+    def request_tutorial(self):
+        self.start_tutorial_requested = True
+        self.accept()
 
     def _updates_tab(self, settings):
         tab = QWidget()
