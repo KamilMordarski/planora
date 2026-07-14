@@ -22,6 +22,7 @@ from app.core.updater import (
 )
 from app.core.update_installer import (
     UpdateInstallError,
+    can_install_automatically,
     consume_update_result,
     is_install_supported,
     launch_update_installer,
@@ -523,7 +524,7 @@ class MainWindow(QMainWindow):
         AUTOSAVE_FILE.unlink(missing_ok=True)
         super().closeEvent(event)
 
-    def check_updates(self, quiet_if_current: bool = False):
+    def _legacy_check_updates_unused(self, quiet_if_current: bool = False):
         checker = UpdateChecker(UPDATE_URL)
         try:
             available = checker.check_for_updates()
@@ -558,7 +559,7 @@ class MainWindow(QMainWindow):
         if message.clickedButton() is download:
             self.download_update(checker)
 
-    def download_update(self, checker: UpdateChecker):
+    def _legacy_download_update_unused(self, checker: UpdateChecker):
         install_supported = is_install_supported()
         if install_supported:
             UPDATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -619,6 +620,131 @@ class MainWindow(QMainWindow):
                 "Aktualizacja pobrana",
                 f"Zapisano aktualizację w:\n{downloaded_path}\n\n"
                 "Automatyczna instalacja jest dostępna w gotowej wersji Planory dla Windows i macOS.",
+            )
+
+    def check_updates(self, quiet_if_current: bool = False):
+        checker = UpdateChecker(UPDATE_URL)
+        try:
+            available = checker.check_for_updates()
+        except UpdateCheckError as exc:
+            QMessageBox.warning(self, "Aktualizacje", str(exc))
+            return
+
+        info = checker.get_update_info() or {}
+        if not available:
+            if not quiet_if_current:
+                QMessageBox.information(self, "Aktualizacje", "Masz najnowszą wersję aplikacji.")
+            return
+
+        notes = info.get("notes", [])
+        notes_text = "\n".join(f"• {note}" for note in notes) if isinstance(notes, list) else str(notes)
+        auto_install = can_install_automatically()
+        install_possible = is_install_supported()
+        message = QMessageBox(self)
+        message.setWindowTitle("Dostępna aktualizacja")
+        message.setIcon(QMessageBox.Information)
+        message.setText(f"Dostępna jest wersja {info.get('latest_version')}.")
+        details = f"Data wydania: {info.get('release_date', 'brak')}\n\n{notes_text}"
+        if auto_install:
+            details += (
+                "\n\nPlanora zostanie zamknięta, zaktualizowana i uruchomiona ponownie. "
+                "Przed kontynuowaniem zapisz otwarty projekt."
+            )
+        elif install_possible:
+            details += (
+                "\n\nNie wygląda na to, żeby Planora mogła sama podmienić plik programu w obecnym folderze. "
+                "Możesz pobrać gotowy EXE i uruchomić go ręcznie."
+            )
+        else:
+            details += "\n\nW tym uruchomieniu dostępne jest ręczne pobranie pliku aktualizacji."
+        message.setInformativeText(details)
+
+        auto_button = None
+        if auto_install:
+            auto_button = message.addButton("Pobierz i zainstaluj", QMessageBox.AcceptRole)
+        manual_button = message.addButton("Pobierz EXE ręcznie", QMessageBox.ActionRole)
+        message.addButton(QMessageBox.Close)
+        message.exec()
+        if auto_button is not None and message.clickedButton() is auto_button:
+            self.download_update(checker, install_automatically=True)
+        elif message.clickedButton() is manual_button:
+            self.download_update(checker, install_automatically=False, force_manual=True)
+
+    def download_update(
+        self,
+        checker: UpdateChecker,
+        install_automatically: bool | None = None,
+        force_manual: bool = False,
+    ):
+        install_automatically = can_install_automatically() if install_automatically is None else install_automatically
+        manual_url = checker.get_manual_download_url()
+        use_manual_file = force_manual or (not install_automatically and bool(manual_url))
+        download_url = manual_url if use_manual_file else None
+
+        if install_automatically:
+            UPDATE_DIR.mkdir(parents=True, exist_ok=True)
+            path = UPDATE_DIR / checker.suggested_filename()
+        else:
+            filename = checker.suggested_manual_filename() if use_manual_file else checker.suggested_filename()
+            default_path = Path.home() / "Downloads" / filename
+            selected_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Zapisz aktualizację Planory",
+                str(default_path),
+                "Aplikacja EXE (*.exe);;Archiwum ZIP (*.zip);;Wszystkie pliki (*)",
+            )
+            if not selected_path:
+                return
+            path = Path(selected_path)
+
+        progress = QProgressDialog("Pobieranie aktualizacji...", "Anuluj", 0, 100, self)
+        progress.setWindowTitle("Aktualizacja Planory")
+        progress.setMinimumDuration(0)
+        progress.setAutoClose(False)
+        progress.setAutoReset(False)
+        progress.setValue(0)
+
+        def update_progress(downloaded: int, total: int) -> bool:
+            if total:
+                progress.setRange(0, 100)
+                progress.setValue(min(100, round(downloaded * 100 / total)))
+                progress.setLabelText(f"Pobieranie aktualizacji... {downloaded / 1024 / 1024:.1f} MB")
+            else:
+                progress.setRange(0, 0)
+                progress.setLabelText(f"Pobieranie aktualizacji... {downloaded / 1024 / 1024:.1f} MB")
+            QApplication.processEvents()
+            return not progress.wasCanceled()
+
+        try:
+            downloaded_path = checker.download_update(path, update_progress, url=download_url)
+        except UpdateDownloadCancelled:
+            return
+        except UpdateDownloadError as exc:
+            QMessageBox.warning(self, "Aktualizacja Planory", str(exc))
+            return
+        finally:
+            progress.close()
+
+        if install_automatically:
+            info = checker.get_update_info() or {}
+            try:
+                launch_update_installer(downloaded_path, str(info.get("latest_version", "")))
+            except UpdateInstallError as exc:
+                QMessageBox.warning(
+                    self,
+                    "Aktualizacja Planory",
+                    f"{exc}\n\nPaczka została pobrana tutaj:\n{downloaded_path}",
+                )
+                return
+            self.hide()
+            QApplication.closeAllWindows()
+            QApplication.exit(0)
+        else:
+            QMessageBox.information(
+                self,
+                "Aktualizacja pobrana",
+                f"Zapisano aktualizację w:\n{downloaded_path}\n\n"
+                "Jeśli pobrałeś plik EXE, zamknij starą Planorę i uruchom pobrany plik.",
             )
 
     def _show_update_result(self, result: dict):

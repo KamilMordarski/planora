@@ -39,6 +39,11 @@ DEFAULT_SETTINGS = {
     "sound_volume": 35,
     "tutorials_enabled": True,
     "tutorials_completed": [],
+    "print_text_weight": "normal",
+    "print_contrast": 100,
+    "print_scale": 100,
+    "print_grayscale": False,
+    "print_smooth_scaling": True,
 }
 
 

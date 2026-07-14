@@ -29,12 +29,15 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.tutorials_completed = list(settings.get("tutorials_completed", []))
         self.setWindowTitle("Ustawienia aplikacji")
-        fit_window_to_screen(self, 650, 560, 440, 360)
+        fit_window_to_screen(self, 650, 600, 440, 360)
 
         layout = QVBoxLayout(self)
         title = QLabel("Dostosuj aplikację do siebie")
         title.setObjectName("screenTitle")
-        subtitle = QLabel("Zmiany dotyczą wyłącznie interfejsu. Wygląd eksportowanych dokumentów pozostaje bez zmian.")
+        subtitle = QLabel(
+            "Zmiany wyglądu interfejsu są niezależne od eksportu. Osobne ustawienia drukowania "
+            "działają tylko dla przycisku „Drukuj”."
+        )
         subtitle.setObjectName("screenSubtitle")
         subtitle.setWordWrap(True)
         layout.addWidget(title)
@@ -42,6 +45,7 @@ class SettingsDialog(QDialog):
 
         tabs = QTabWidget()
         tabs.addTab(scrollable_widget(self._appearance_tab(settings)), "Wygląd")
+        tabs.addTab(scrollable_widget(self._printing_tab(settings)), "Drukowanie")
         tabs.addTab(scrollable_widget(self._behavior_tab(settings)), "Zachowanie")
         tabs.addTab(scrollable_widget(self._updates_tab(settings)), "Aktualizacje")
         layout.addWidget(tabs)
@@ -76,9 +80,8 @@ class SettingsDialog(QDialog):
         self.font_scale.setRange(80, 140)
         self.font_scale.setTickInterval(10)
         self.font_scale.setValue(int(settings.get("font_scale", 100)))
-        self.font_value = QLabel()
+        self.font_value = QLabel(f"{self.font_scale.value()}%")
         self.font_scale.valueChanged.connect(lambda value: self.font_value.setText(f"{value}%"))
-        self.font_value.setText(f"{self.font_scale.value()}%")
         font_row = QHBoxLayout()
         font_row.addWidget(self.font_scale)
         font_row.addWidget(self.font_value)
@@ -108,6 +111,74 @@ class SettingsDialog(QDialog):
         note_title.setObjectName("sectionTitle")
         note_text = QLabel(
             "PDF i JPG nadal będą białe z czarnym tekstem. Plan zebrań w tygodniu zachowa własne kolorowe sekcje."
+        )
+        note_text.setWordWrap(True)
+        note_layout.addWidget(note_title)
+        note_layout.addWidget(note_text)
+        layout.addWidget(note)
+        layout.addStretch()
+        return tab
+
+    def _printing_tab(self, settings):
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+
+        group = QGroupBox("Bezpośrednie drukowanie")
+        form = configure_form(QFormLayout(group))
+        help_text = QLabel(
+            "Te opcje działają tylko dla przycisku „Drukuj”. Eksport PDF/JPG pozostaje zgodny z szablonem."
+        )
+        help_text.setObjectName("helpText")
+        help_text.setWordWrap(True)
+
+        self.print_text_weight = QComboBox()
+        self.print_text_weight.addItem("Normalny tekst", "normal")
+        self.print_text_weight.addItem("Lekko pogrubiony", "bold")
+        self.print_text_weight.addItem("Mocno pogrubiony", "extra_bold")
+        weight_index = self.print_text_weight.findData(settings.get("print_text_weight", "normal"))
+        self.print_text_weight.setCurrentIndex(max(0, weight_index))
+
+        self.print_contrast = QSlider(Qt.Horizontal)
+        self.print_contrast.setRange(80, 150)
+        self.print_contrast.setTickInterval(10)
+        self.print_contrast.setValue(int(settings.get("print_contrast", 100)))
+        self.print_contrast_value = QLabel(f"{self.print_contrast.value()}%")
+        self.print_contrast.valueChanged.connect(lambda value: self.print_contrast_value.setText(f"{value}%"))
+        contrast_row = QHBoxLayout()
+        contrast_row.addWidget(self.print_contrast, 1)
+        contrast_row.addWidget(self.print_contrast_value)
+
+        self.print_scale = QSlider(Qt.Horizontal)
+        self.print_scale.setRange(80, 100)
+        self.print_scale.setTickInterval(5)
+        self.print_scale.setValue(int(settings.get("print_scale", 100)))
+        self.print_scale_value = QLabel(f"{self.print_scale.value()}%")
+        self.print_scale.valueChanged.connect(lambda value: self.print_scale_value.setText(f"{value}%"))
+        scale_row = QHBoxLayout()
+        scale_row.addWidget(self.print_scale, 1)
+        scale_row.addWidget(self.print_scale_value)
+
+        self.print_grayscale = QCheckBox("Drukuj w skali szarości")
+        self.print_grayscale.setChecked(bool(settings.get("print_grayscale", False)))
+        self.print_smooth_scaling = QCheckBox("Wygładzaj dokument podczas dopasowania do strony")
+        self.print_smooth_scaling.setChecked(bool(settings.get("print_smooth_scaling", True)))
+
+        form.addRow("", help_text)
+        form.addRow("Grubość tekstu:", self.print_text_weight)
+        form.addRow("Kontrast wydruku:", contrast_row)
+        form.addRow("Skala na stronie:", scale_row)
+        form.addRow("", self.print_grayscale)
+        form.addRow("", self.print_smooth_scaling)
+        layout.addWidget(group)
+
+        note = QFrame()
+        note.setObjectName("infoCard")
+        note_layout = QVBoxLayout(note)
+        note_title = QLabel("Do szybkiej korekty wydruku")
+        note_title.setObjectName("sectionTitle")
+        note_text = QLabel(
+            "Jeśli drukarka robi zbyt cienki tekst, wybierz pogrubienie i lekko podbij kontrast. "
+            "Jeśli ucina krawędzie, zmniejsz skalę do 95% albo 90%."
         )
         note_text.setWordWrap(True)
         note_layout.addWidget(note_title)
@@ -190,7 +261,7 @@ class SettingsDialog(QDialog):
         warning = QLabel(
             "Adres aktualizacji jest ustawiony przez autora aplikacji. "
             "Nie należy go zmieniać, ponieważ nieprawidłowy adres może zepsuć sprawdzanie aktualizacji. "
-            "Po Twoim potwierdzeniu gotowa aplikacja może automatycznie zainstalować nową wersję i uruchomić się ponownie."
+            "Jeśli automatyczna podmiana programu nie jest możliwa, Planora pozwoli pobrać gotowy plik EXE ręcznie."
         )
         warning.setObjectName("helpText")
         warning.setWordWrap(True)
@@ -212,6 +283,11 @@ class SettingsDialog(QDialog):
             "sound_volume": self.sound_volume.value(),
             "tutorials_enabled": self.tutorials.isChecked(),
             "tutorials_completed": self.tutorials_completed,
+            "print_text_weight": self.print_text_weight.currentData(),
+            "print_contrast": self.print_contrast.value(),
+            "print_scale": self.print_scale.value(),
+            "print_grayscale": self.print_grayscale.isChecked(),
+            "print_smooth_scaling": self.print_smooth_scaling.isChecked(),
             "update_url": UPDATE_URL,
             "check_updates_on_start": self.check_on_start.isChecked(),
         }

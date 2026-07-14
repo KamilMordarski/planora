@@ -37,6 +37,19 @@ def current_install_target() -> Path:
     raise UpdateInstallError("Automatyczna instalacja nie jest dostępna dla tego uruchomienia Planory.")
 
 
+def can_install_automatically() -> bool:
+    if not is_install_supported():
+        return False
+    try:
+        target = current_install_target()
+        probe = target.parent / f".planora-write-test-{os.getpid()}.tmp"
+        probe.write_bytes(b"ok")
+        probe.unlink(missing_ok=True)
+        return True
+    except Exception:
+        return False
+
+
 def validate_update_archive(archive: Path, platform: str | None = None):
     archive = Path(archive)
     platform = platform or ("windows" if sys.platform.startswith("win") else "macos")

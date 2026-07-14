@@ -24,8 +24,10 @@ def main():
         "latest_version": args.version,
         "release_date": date.today().isoformat(),
         "download_url": f"{release_url}/Planora-Windows.zip",
+        "manual_download_url": f"{release_url}/Planora-latest.exe",
         "download_urls": {
             "windows": f"{release_url}/Planora-Windows.zip",
+            "windows_exe": f"{release_url}/Planora-latest.exe",
             "macos": f"{release_url}/Planora-macOS.zip",
         },
         "notes": args.note or ["Nowa wersja Planory jest dostępna do pobrania."],

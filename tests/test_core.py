@@ -7,6 +7,7 @@ import zipfile
 from datetime import UTC, date, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from PIL import Image, ImageDraw
 
 from app.config import AUTOSAVE_FILE, PROJECTS_DIR, RECOVERY_DIR, UPDATE_URL
 from app.core.assignment_tools import (
@@ -46,6 +47,7 @@ from app.core.update_installer import (
     _independent_process_environment,
     _launch_installed_app,
     _replace_installation,
+    can_install_automatically,
     consume_update_result,
     run_update_installer_from_args,
     validate_update_archive,
@@ -59,6 +61,7 @@ from app.templates.midweek_meeting.renderer import numbered_program_title
 from app.templates.service_meetings.default_project import meeting_row
 from app.gui.theme_manager import THEMES, build_stylesheet, responsive_scale_for_size, theme_options
 from app.gui.ui_feedback import UiFeedback
+from app.gui.printing import _normalized_print_settings, _prepare_print_image
 from app.gui.project_transfer_dialog import _available_path
 from tools.update_download_catalog import update_catalog
 from tools.generate_windows_version_info import render_version_info, version_tuple
@@ -103,14 +106,18 @@ class UpdateCheckerTests(unittest.TestCase):
         checker = UpdateChecker()
         checker._update_info = {
             "download_url": "https://example.com/fallback.zip",
+            "manual_download_url": "https://example.com/Planora-latest.exe",
             "download_urls": {
                 "windows": "https://example.com/Planora-Windows.zip",
+                "windows_exe": "https://example.com/Planora-latest.exe",
                 "macos": "https://example.com/Planora-macOS.zip",
             },
         }
 
         self.assertEqual(checker.get_download_url("windows"), "https://example.com/Planora-Windows.zip")
+        self.assertEqual(checker.get_manual_download_url("windows"), "https://example.com/Planora-latest.exe")
         self.assertEqual(checker.suggested_filename("macos"), "Planora-macOS.zip")
+        self.assertEqual(checker.suggested_manual_filename("windows"), "Planora-latest.exe")
 
     def test_update_is_downloaded_directly_to_selected_file(self):
         payload = b"planora-update"
@@ -144,6 +151,33 @@ class UpdateCheckerTests(unittest.TestCase):
             self.assertEqual(downloaded.read_bytes(), payload)
             self.assertEqual(progress[-1], (len(payload), len(payload)))
 
+    def test_update_download_retries_transient_errors(self):
+        payload = b"planora-update"
+
+        class Response:
+            headers = {"Content-Length": str(len(payload))}
+
+            def __init__(self):
+                self.stream = io.BytesIO(payload)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self, size=-1):
+                return self.stream.read(size)
+
+        checker = UpdateChecker()
+        checker._update_info = {"download_url": "https://example.com/Planora-Windows.zip"}
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "Planora-Windows.zip"
+            with patch("app.core.updater.urlopen", side_effect=[OSError("timeout"), Response()]):
+                downloaded = checker.download_update(destination)
+
+            self.assertEqual(downloaded.read_bytes(), payload)
+
 
 class UpdateInstallerTests(unittest.TestCase):
     def test_restart_environment_resets_pyinstaller_state(self):
@@ -155,6 +189,16 @@ class UpdateInstallerTests(unittest.TestCase):
             environment = _independent_process_environment()
 
         self.assertEqual(environment["PYINSTALLER_RESET_ENVIRONMENT"], "1")
+
+    def test_auto_install_requires_writable_install_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "Planora.exe"
+            target.write_bytes(b"app")
+            with (
+                patch("app.core.update_installer.is_install_supported", return_value=True),
+                patch("app.core.update_installer.current_install_target", return_value=target),
+            ):
+                self.assertTrue(can_install_automatically())
 
     def test_windows_restart_runs_as_independent_process(self):
         target = Path("C:/Planora/Planora.exe")
@@ -376,6 +420,39 @@ class UiFeedbackTests(unittest.TestCase):
                 path = Path(directory) / f"{name}.wav"
                 UiFeedback._write_sound(path, name)
                 self.assertGreater(path.stat().st_size, 500)
+
+
+class PrintingTests(unittest.TestCase):
+    @staticmethod
+    def _dark_pixels(image):
+        gray = image.convert("L")
+        values = gray.get_flattened_data() if hasattr(gray, "get_flattened_data") else gray.getdata()
+        return sum(1 for value in values if value < 40)
+
+    def test_print_settings_are_normalized(self):
+        settings = _normalized_print_settings(
+            {
+                "print_text_weight": "extra_bold",
+                "print_contrast": 999,
+                "print_scale": 1,
+                "print_grayscale": True,
+            }
+        )
+
+        self.assertEqual(settings["print_text_weight"], "extra_bold")
+        self.assertEqual(settings["print_contrast"], 150)
+        self.assertEqual(settings["print_scale"], 80)
+        self.assertTrue(settings["print_grayscale"])
+
+    def test_bold_print_setting_thickens_dark_content(self):
+        image = Image.new("RGB", (40, 40), "white")
+        draw = ImageDraw.Draw(image)
+        draw.line((20, 5, 20, 35), fill="black", width=1)
+
+        normal = _prepare_print_image(image, {"print_text_weight": "normal"})
+        bold = _prepare_print_image(image, {"print_text_weight": "bold"})
+
+        self.assertGreater(self._dark_pixels(bold), self._dark_pixels(normal))
 
 
 class TemplateRegistryTests(unittest.TestCase):
