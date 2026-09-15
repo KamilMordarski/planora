@@ -2,6 +2,8 @@ from PySide6.QtCore import QEvent, QTimer, Qt
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
+from app.gui.page_fit import trim_page_to_content
+
 
 class DocumentPreview(QWidget):
     def __init__(self, parent=None):
@@ -44,7 +46,7 @@ class DocumentPreview(QWidget):
         root.addWidget(self.scroll, 1)
 
     def set_image(self, image, page_count: int = 1):
-        rgb = image.convert("RGB")
+        rgb = trim_page_to_content(image).convert("RGB")
         data = rgb.tobytes("raw", "RGB")
         qimage = QImage(data, rgb.width, rgb.height, rgb.width * 3, QImage.Format_RGB888).copy()
         self._source = QPixmap.fromImage(qimage)

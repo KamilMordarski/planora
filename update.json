@@ -1,16 +1,16 @@
 {
-  "latest_version": "1.13.8",
-  "release_date": "2026-07-14",
-  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-Windows.zip",
-  "manual_download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-latest.exe",
+  "latest_version": "1.13.9",
+  "release_date": "2026-09-15",
+  "download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.9/Planora-Windows.zip",
+  "manual_download_url": "https://github.com/KamilMordarski/planora/releases/download/v1.13.9/Planora-latest.exe",
   "download_urls": {
-    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-Windows.zip",
-    "windows_exe": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-latest.exe",
-    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.8/Planora-macOS.zip"
+    "windows": "https://github.com/KamilMordarski/planora/releases/download/v1.13.9/Planora-Windows.zip",
+    "windows_exe": "https://github.com/KamilMordarski/planora/releases/download/v1.13.9/Planora-latest.exe",
+    "macos": "https://github.com/KamilMordarski/planora/releases/download/v1.13.9/Planora-macOS.zip"
   },
   "notes": [
-    "Poprawiono samouczek, żeby podświetlał całe bloki i działał lepiej w trybie okienkowym",
-    "Rozbudowano samouczek ekranu głównego o bibliotekę osób, centrum projektów, import, aktualizacje i ustawienia",
-    "Dodano możliwość uruchomienia samouczka bezpośrednio z ustawień aplikacji"
+    "Poprawiono skalowanie podglądu, żeby grafiki lepiej wypełniały dostępne miejsce",
+    "Drukowanie automatycznie usuwa nadmiarowe białe marginesy i ustawia wydruk na A4",
+    "Zachowano proporcje strony, więc dokument jest większy bez rozciągania treści"
   ]
 }

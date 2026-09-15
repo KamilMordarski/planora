@@ -1,9 +1,11 @@
-from PySide6.QtCore import QRect, QSize, Qt
-from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtCore import QMarginsF, QRect, QSize, Qt
+from PySide6.QtGui import QPageLayout, QPageSize, QPainter, QPixmap
 from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import QMessageBox
 from PIL import ImageEnhance, ImageFilter, ImageOps
 from PIL.ImageQt import ImageQt
+
+from app.gui.page_fit import trim_page_to_content
 
 
 def _load_print_settings(settings: dict | None = None) -> dict:
@@ -45,6 +47,23 @@ def _prepare_print_image(image, settings: dict | None = None):
     return prepared
 
 
+def _configure_a4_printing(printer: QPrinter):
+    try:
+        printer.setPageSize(QPageSize(QPageSize.A4))
+        printer.setPageMargins(QMarginsF(0, 0, 0, 0), QPageLayout.Millimeter)
+        printer.setFullPage(True)
+    except Exception:
+        pass
+
+
+def _printable_rect(printer: QPrinter):
+    layout = printer.pageLayout()
+    rect = layout.paintRectPixels(printer.resolution())
+    if rect.width() <= 0 or rect.height() <= 0:
+        rect = layout.fullRectPixels(printer.resolution())
+    return rect
+
+
 def print_pages(parent, pages, title="Planora", settings: dict | None = None) -> bool:
     pages = list(pages)
     if not pages:
@@ -53,11 +72,13 @@ def print_pages(parent, pages, title="Planora", settings: dict | None = None) ->
 
     options = _normalized_print_settings(settings)
     printer = QPrinter(QPrinter.HighResolution)
+    _configure_a4_printing(printer)
     printer.setDocName(title)
     dialog = QPrintDialog(printer, parent)
     dialog.setWindowTitle("Drukuj dokument")
     if dialog.exec() != QPrintDialog.Accepted:
         return False
+    _configure_a4_printing(printer)
 
     painter = QPainter()
     if not painter.begin(printer):
@@ -65,10 +86,11 @@ def print_pages(parent, pages, title="Planora", settings: dict | None = None) ->
         return False
     try:
         painter.setRenderHint(QPainter.SmoothPixmapTransform, options["print_smooth_scaling"])
-        page_rect = printer.pageLayout().paintRectPixels(printer.resolution())
+        page_rect = _printable_rect(printer)
         scale = options["print_scale"] / 100
         for index, image in enumerate(pages):
             prepared = _prepare_print_image(image, options)
+            prepared = trim_page_to_content(prepared)
             pixmap = QPixmap.fromImage(ImageQt(prepared.convert("RGBA")))
             scaled = pixmap.size().scaled(page_rect.size(), Qt.KeepAspectRatio)
             scaled = QSize(max(1, round(scaled.width() * scale)), max(1, round(scaled.height() * scale)))

@@ -62,6 +62,7 @@ from app.templates.service_meetings.default_project import meeting_row
 from app.gui.theme_manager import THEMES, build_stylesheet, responsive_scale_for_size, theme_options
 from app.gui.ui_feedback import UiFeedback
 from app.gui.printing import _normalized_print_settings, _prepare_print_image
+from app.gui.page_fit import trim_page_to_content
 from app.gui.project_transfer_dialog import _available_path
 from tools.update_download_catalog import update_catalog
 from tools.generate_windows_version_info import render_version_info, version_tuple
@@ -453,6 +454,24 @@ class PrintingTests(unittest.TestCase):
         bold = _prepare_print_image(image, {"print_text_weight": "bold"})
 
         self.assertGreater(self._dark_pixels(bold), self._dark_pixels(normal))
+
+    def test_page_fit_trims_white_margin_and_keeps_page_aspect(self):
+        image = Image.new("RGB", (1000, 1414), "white")
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((300, 360, 700, 760), fill="black")
+
+        trimmed = trim_page_to_content(image)
+
+        self.assertLess(trimmed.width, image.width)
+        self.assertLess(trimmed.height, image.height)
+        self.assertAlmostEqual(trimmed.width / trimmed.height, image.width / image.height, places=2)
+
+    def test_page_fit_keeps_blank_page_unchanged(self):
+        image = Image.new("RGB", (1000, 1414), "white")
+
+        trimmed = trim_page_to_content(image)
+
+        self.assertEqual(trimmed.size, image.size)
 
 
 class TemplateRegistryTests(unittest.TestCase):
@@ -1059,7 +1078,7 @@ class ProjectIOTests(unittest.TestCase):
                     "Jan Test": {
                         "permissions": ["console", "microphone"],
                         "roles": ["elder", "auxiliary_pioneer"],
-                        "auxiliary_pioneer_until": "2026-07-31",
+                        "auxiliary_pioneer_until": "2026-12-31",
                     },
                     "Anna Test": ["service_conductor"],
                 },
@@ -1071,7 +1090,7 @@ class ProjectIOTests(unittest.TestCase):
         self.assertEqual(people, ["Jan Test", "Anna Test"])
         self.assertEqual(profiles["Jan Test"]["permissions"], ["console", "microphone"])
         self.assertEqual(profiles["Jan Test"]["roles"], ["elder", "auxiliary_pioneer"])
-        self.assertEqual(profiles["Jan Test"]["auxiliary_pioneer_until"], "2026-07-31")
+        self.assertEqual(profiles["Jan Test"]["auxiliary_pioneer_until"], "2026-12-31")
         self.assertEqual(profiles["Anna Test"]["permissions"], ["service_conductor"])
         self.assertEqual(added, 2)
         self.assertEqual(roles_updated, 2)
@@ -1079,7 +1098,7 @@ class ProjectIOTests(unittest.TestCase):
         self.assertEqual(payload["version"], 2)
         self.assertEqual(payload["people"][0]["permissions"], ["console", "microphone"])
         self.assertEqual(payload["people"][0]["roles"], ["elder", "auxiliary_pioneer"])
-        self.assertEqual(payload["people"][0]["auxiliary_pioneer_until"], "2026-07-31")
+        self.assertEqual(payload["people"][0]["auxiliary_pioneer_until"], "2026-12-31")
 
     def test_people_library_import_updates_roles_without_duplicating_names(self):
         with tempfile.TemporaryDirectory() as directory:
